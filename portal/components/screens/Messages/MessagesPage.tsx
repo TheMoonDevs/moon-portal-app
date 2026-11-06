@@ -16,6 +16,7 @@ import {
 import { useChat, useChatEvents } from './ChatProvider';
 import { ChatThread } from './ChatThread';
 import { ConversationList } from './ConversationList';
+import { NewGroupPanel } from './GroupPanels';
 import { NewChatPanel } from './NewChatPanel';
 import { Icon, Spin } from './parts';
 
@@ -24,7 +25,8 @@ const LIST_POLL_MS = 15_000;
 /**
  * Messages: the chats list and the open chat, side by side on wide screens
  * and one at a time on phones. `/messages/<chatId>` opens a chat;
- * `/messages?to=<userId>` starts one with someone.
+ * `/messages?to=<userId>` starts one with someone, and
+ * `/messages?project=<projectId>` opens (or starts) a project's group.
  */
 export const MessagesPage = ({
   conversationId,
@@ -37,7 +39,7 @@ export const MessagesPage = ({
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [opened, setOpened] = useState<ChatConversation | null>(null);
-  const [newChat, setNewChat] = useState(false);
+  const [newChat, setNewChat] = useState<false | 'chat' | 'group'>(false);
   const [jumpTo, setJumpTo] = useState<string | null>(params?.get('m') ?? null);
   const reloadTimer = useRef<ReturnType<typeof setTimeout>>();
 
@@ -102,6 +104,23 @@ export const MessagesPage = ({
     [conversations],
   );
 
+  // `?project=<projectId>`: the project page's group chat shortcut.
+  const projectId = params?.get('project');
+  useEffect(() => {
+    if (!projectId || loading) return;
+    chatApi<{ conversation: ChatConversation }>('/api/chat/projects', 'POST', {
+      projectId,
+    })
+      .then((res) => {
+        setOpened(res.conversation);
+        router.replace(`/messages/${res.conversation.id}`);
+      })
+      .catch((e: Error) => {
+        toast.error(e.message);
+        router.replace('/messages');
+      });
+  }, [projectId, loading, router]);
+
   // `?to=<userId>`: start a chat from someone's profile.
   const to = params?.get('to');
   useEffect(() => {
@@ -125,8 +144,16 @@ export const MessagesPage = ({
     setConversations((list) => {
       const has = list.some((c) => c.id === room.id);
       if (!has) return room.lastMessage ? [room, ...list] : list;
+      // A direct chat keeps the partner it was listed with; a group's name
+      // and photo may have changed.
       return list.map((c) =>
-        c.id === room.id ? { ...c, ...room, partner: c.partner } : c,
+        c.id === room.id
+          ? {
+              ...c,
+              ...room,
+              partner: room.kind === 'direct' ? c.partner : room.partner,
+            }
+          : c,
       );
     });
   }, []);
@@ -209,9 +236,22 @@ export const MessagesPage = ({
           showThread ? 'hidden' : 'flex',
         )}
       >
-        {newChat ? (
+        {newChat === 'group' ? (
+          <NewGroupPanel
+            onBack={() => setNewChat('chat')}
+            onCreated={(room) => {
+              setOpened(room);
+              setConversations((list) => [
+                room,
+                ...list.filter((c) => c.id !== room.id),
+              ]);
+              open(room);
+            }}
+          />
+        ) : newChat ? (
           <NewChatPanel
             onBack={() => setNewChat(false)}
+            onNewGroup={() => setNewChat('group')}
             onPick={async (person) => {
               try {
                 open(await openChatWith(person));
@@ -228,7 +268,7 @@ export const MessagesPage = ({
             activeId={conversationId}
             typingIn={partnerTyping ? conversationId : null}
             onOpen={(c) => open(c)}
-            onNewChat={() => setNewChat(true)}
+            onNewChat={() => setNewChat('chat')}
             onOpenSearchResult={(m) => {
               const room = conversations.find((c) => c.id === m.conversationId);
               if (room) open(room, m.id);
@@ -254,6 +294,13 @@ export const MessagesPage = ({
             onBack={() => router.push('/messages')}
             onChanged={onChanged}
             openChatWith={openChatWith}
+            onLeft={() => {
+              setConversations((list) =>
+                list.filter((c) => c.id !== active.id),
+              );
+              setOpened(null);
+              router.push('/messages');
+            }}
           />
         ) : showThread ? (
           <div className="flex h-full items-center justify-center gap-2 text-sm text-neutral-500">
@@ -266,13 +313,14 @@ export const MessagesPage = ({
             </span>
             <h2 className="text-xl font-semibold">Portal Messages</h2>
             <p className="max-w-sm text-sm text-neutral-400 auto-light:text-neutral-600">
-              Chat with anyone who works in a company with you. Send photos,
-              videos and files, and see when your messages are delivered and
-              read.
+              Chat with anyone who works in a company with you, start groups,
+              and talk with your project's team in its project group. Send
+              photos, videos and files, and see when your messages are delivered
+              and read.
             </p>
             <p className="flex items-center gap-1 text-xs text-neutral-500">
-              <Icon name="lock" className="text-[14px]" /> Only the two people
-              in a chat can see it.
+              <Icon name="lock" className="text-[14px]" /> Only the people in a
+              chat can see it.
             </p>
           </div>
         )}

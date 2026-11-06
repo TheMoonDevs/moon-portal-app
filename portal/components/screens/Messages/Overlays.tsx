@@ -23,7 +23,7 @@ import { Icon, RoundButton, Spin, Ticks, UserAvatar } from './parts';
 /*                                Small dialog                                */
 /* -------------------------------------------------------------------------- */
 
-const Sheet = ({
+export const Sheet = ({
   open,
   onClose,
   title,
@@ -123,22 +123,32 @@ const stamp = (value?: string | null) =>
 
 export const InfoDialog = ({
   message,
+  group = false,
   onClose,
 }: {
   message: ChatMessage | null;
+  /** In a group, ticks mean everyone; show how many have read it. */
+  group?: boolean;
   onClose: () => void;
 }) => (
   <Sheet open={!!message} onClose={onClose} title="Message info">
     {message && (
       <div className="flex flex-col gap-4 p-4 text-sm">
+        {group && message.recipientCount ? (
+          <Row
+            icon={<Icon name="visibility" />}
+            label="Seen by"
+            value={`${message.readCount ?? 0} of ${message.recipientCount}`}
+          />
+        ) : null}
         <Row
           icon={<Ticks message={{ readAt: 'x' }} />}
-          label="Read"
+          label={group ? 'Read by everyone' : 'Read'}
           value={stamp(message.readAt)}
         />
         <Row
           icon={<Ticks message={{ deliveredAt: 'x', readAt: null }} />}
-          label="Delivered"
+          label={group ? 'Delivered to everyone' : 'Delivered'}
           value={stamp(message.deliveredAt)}
         />
         <Row

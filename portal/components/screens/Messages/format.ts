@@ -58,6 +58,7 @@ export const previewOf = (m: {
   deletedAt?: string | null;
 }) => {
   if (m.deletedAt) return 'This message was deleted';
+  if (m.kind === 'system') return m.text;
   const text = m.text.replace(/\s+/g, ' ').trim();
   if (m.kind === 'image') return text ? `📷 ${text}` : '📷 Photo';
   if (m.kind === 'video') return text ? `🎥 ${text}` : '🎥 Video';
@@ -69,3 +70,50 @@ export const newClientId = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+/** A group note ("Asha added Ravi"), with "You" for the viewer. */
+export const systemTextOf = (
+  m: {
+    text: string;
+    senderId: string;
+    system?: {
+      action: string;
+      actorName: string;
+      targetIds?: string[];
+      targetNames?: string[];
+      name?: string | null;
+    } | null;
+  },
+  me: string | null,
+) => {
+  const note = m.system;
+  if (!note) return m.text;
+  const actor = m.senderId === me ? 'You' : note.actorName;
+  const names = (note.targetIds ?? []).map((id, i) =>
+    id === me ? 'you' : note.targetNames?.[i] || 'someone',
+  );
+  const them =
+    names.length <= 1
+      ? names[0] || 'someone'
+      : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+  switch (note.action) {
+    case 'created':
+      return note.name
+        ? `${actor} created the group “${note.name}”`
+        : `${actor} started the group`;
+    case 'added':
+      return `${actor} added ${them}`;
+    case 'removed':
+      return `${actor} removed ${them}`;
+    case 'left':
+      return `${actor} left`;
+    case 'renamed':
+      return `${actor} renamed the group to “${note.name ?? ''}”`;
+    case 'photo':
+      return `${actor} changed the group photo`;
+    case 'admin':
+      return `${actor} made ${them} an admin`;
+    default:
+      return m.text;
+  }
+};

@@ -26,9 +26,11 @@ export function useContacts() {
 export const NewChatPanel = ({
   onBack,
   onPick,
+  onNewGroup,
 }: {
   onBack: () => void;
   onPick: (person: ChatPerson) => void;
+  onNewGroup: () => void;
 }) => {
   const { contacts, error } = useContacts();
   const [query, setQuery] = useState('');
@@ -77,6 +79,18 @@ export const NewChatPanel = ({
         </label>
       </div>
       <div className="quiet-scrollbar min-h-0 flex-1 overflow-y-auto pb-24 md:pb-4">
+        {!q && (
+          <button
+            type="button"
+            onClick={onNewGroup}
+            className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-white/[0.04] auto-light:hover:bg-black/[0.03]"
+          >
+            <span className="flex size-11 items-center justify-center rounded-full bg-emerald-500 text-[24px] text-neutral-950">
+              <Icon name="group_add" />
+            </span>
+            <span className="font-medium">New group</span>
+          </button>
+        )}
         {error && <p className="px-4 py-6 text-sm text-rose-400">{error}</p>}
         {!contacts && !error && (
           <div className="flex justify-center gap-2 py-12 text-sm text-neutral-500">

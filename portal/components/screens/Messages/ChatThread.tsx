@@ -2,6 +2,7 @@
 
 import * as Menu from '@radix-ui/react-dropdown-menu';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Fragment,
   useCallback,
@@ -27,7 +28,14 @@ import {
 } from './api';
 import { useChat, useChatEvents } from './ChatProvider';
 import { Composer } from './Composer';
-import { dayLabelOf, lastSeenText, newClientId, previewOf } from './format';
+import {
+  dayLabelOf,
+  lastSeenText,
+  newClientId,
+  previewOf,
+  systemTextOf,
+} from './format';
+import { GroupInfoSheet } from './GroupPanels';
 import { type PreparedFile, prepareFile } from './media';
 import { type BubbleAction, MessageBubble } from './MessageBubble';
 import {
@@ -39,13 +47,14 @@ import {
   StagedFiles,
 } from './Overlays';
 import {
+  ChatAvatar,
   floatingPanel,
   Icon,
   menuItem,
+  ProjectTag,
   RoundButton,
   type SendState,
   Spin,
-  UserAvatar,
 } from './parts';
 
 const PAGE = 40;
@@ -108,6 +117,7 @@ export const ChatThread = ({
   onBack,
   onChanged,
   openChatWith,
+  onLeft,
 }: {
   conversation: ChatConversation;
   conversations: ChatConversation[];
@@ -118,18 +128,39 @@ export const ChatThread = ({
   /** The chat's settings or last message changed. */
   onChanged: (conversation: ChatConversation) => void;
   openChatWith: (person: ChatPerson) => Promise<ChatConversation>;
+  /** The person left this group. */
+  onLeft: () => void;
 }) => {
   const conversationId = conversation.id;
   const partner = conversation.partner;
   const partnerName = partner.name || 'Someone';
+  const group = conversation.group ?? null;
+  const isGroup = conversation.kind !== 'direct';
   const {
     live,
     setOpenChat,
     partnerOnline,
     partnerTyping,
+    typingUserId,
     notifyTyping,
     refreshUnread,
   } = useChat();
+  const [infoOpen, setInfoOpen] = useState(false);
+  const router = useRouter();
+
+  /** Who wrote a message: "You", the other person, or a group member. */
+  const membersById = useMemo(
+    () => new Map((group?.members ?? []).map((p) => [p.id, p])),
+    [group?.members],
+  );
+  const nameOf = useCallback(
+    (id: string) => {
+      if (id === me) return 'You';
+      if (!isGroup) return partnerName;
+      return membersById.get(id)?.name || 'Someone';
+    },
+    [me, isGroup, partnerName, membersById],
+  );
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [pending, setPending] = useState<Pending[]>([]);
@@ -167,6 +198,9 @@ export const ChatThread = ({
   const [newBelow, setNewBelow] = useState(0);
   const restoreHeight = useRef<number | null>(null);
   const readTimer = useRef<ReturnType<typeof setTimeout>>();
+  const unreadAtOpen = useRef(conversation.unread);
+  /** Groups: the newest message from others already marked read. */
+  const lastMarked = useRef('');
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
 
@@ -197,8 +231,14 @@ export const ChatThread = ({
         const list = [...res.messages].reverse();
         setMessages(list);
         setHasMore(res.hasMore);
-        const unread = list.filter((m) => m.senderId !== me && !m.readAt);
-        if (unread.length)
+        // In a group, `readAt` means everyone has read it, so the divider
+        // goes by the person's own unread count.
+        const unread = isGroup
+          ? list
+              .filter((m) => m.senderId !== me && m.kind !== 'system')
+              .slice(-unreadAtOpen.current)
+          : list.filter((m) => m.senderId !== me && !m.readAt);
+        if (unread.length && (!isGroup || unreadAtOpen.current > 0))
           setFirstUnread({ id: unread[0].id, count: unread.length });
       })
       .catch((e: Error) => !cancelled && setError(e.message))
@@ -206,13 +246,15 @@ export const ChatThread = ({
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId, fetchLatest, me]);
 
   // Typing and online status for this chat.
+  const partnerId = isGroup ? null : partner.id;
   useEffect(() => {
-    setOpenChat({ conversationId, partnerId: partner.id });
+    setOpenChat({ conversationId, partnerId });
     return () => setOpenChat(null);
-  }, [conversationId, partner.id, setOpenChat]);
+  }, [conversationId, partnerId, setOpenChat]);
 
   // Without Ably, ask for new messages every few seconds.
   useEffect(() => {
@@ -260,10 +302,15 @@ export const ChatThread = ({
     clearTimeout(readTimer.current);
     readTimer.current = setTimeout(() => {
       if (document.visibilityState !== 'visible') return;
-      const unread = messagesRef.current.some(
-        (m) => m.senderId !== me && !m.readAt,
-      );
+      const list = messagesRef.current;
+      const newest = [...list]
+        .reverse()
+        .find((m) => m.senderId !== me && m.kind !== 'system');
+      const unread = isGroup
+        ? !!newest && newest.createdAt > lastMarked.current
+        : list.some((m) => m.senderId !== me && !m.readAt);
       if (!unread && !conversation.unread) return;
+      if (newest) lastMarked.current = newest.createdAt;
       // Shown as read here straight away; the server tells the sender.
       const now = new Date().toISOString();
       setMessages((current) =>
@@ -278,7 +325,7 @@ export const ChatThread = ({
         })
         .catch(() => undefined);
     }, 400);
-  }, [conversation, conversationId, me, onChanged, refreshUnread]);
+  }, [conversation, conversationId, isGroup, me, onChanged, refreshUnread]);
 
   useEffect(() => {
     if (!loading) markRead();
@@ -822,7 +869,9 @@ export const ChatThread = ({
   const clearChat = async () => {
     if (
       !window.confirm(
-        `Clear all messages with ${partnerName}? This only clears them for you.`,
+        isGroup
+          ? `Clear all messages in “${partnerName}”? This only clears them for you.`
+          : `Clear all messages with ${partnerName}? This only clears them for you.`,
       )
     )
       return;
@@ -879,12 +928,27 @@ export const ChatThread = ({
     [messages],
   );
 
-  const status = partnerTyping
-    ? 'typing…'
-    : partnerOnline
-      ? 'online'
-      : lastSeenText(conversation.partnerLastSeenAt) ||
-        (partner.companies ?? []).join(', ');
+  const typingName =
+    isGroup && typingUserId
+      ? (membersById.get(typingUserId)?.name || 'Someone').split(' ')[0]
+      : null;
+  const memberLine = group
+    ? group.members
+        .map((p) => (p.id === me ? 'You' : (p.name || 'Someone').split(' ')[0]))
+        .sort((a, b) => (a === 'You' ? 1 : b === 'You' ? -1 : 0))
+        .join(', ')
+    : '';
+  const status = isGroup
+    ? typingName
+      ? `${typingName} is typing…`
+      : memberLine
+    : partnerTyping
+      ? 'typing…'
+      : partnerOnline
+        ? 'online'
+        : lastSeenText(conversation.partnerLastSeenAt) ||
+          (partner.companies ?? []).join(', ');
+  const statusLive = isGroup ? !!typingName : partnerTyping || partnerOnline;
 
   return (
     <div
@@ -921,7 +985,11 @@ export const ChatThread = ({
               autoFocus
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={`Search in chat with ${partnerName}`}
+              placeholder={
+                isGroup
+                  ? `Search in ${partnerName}`
+                  : `Search in chat with ${partnerName}`
+              }
               className="h-10 min-w-0 flex-1 rounded-full bg-white/[0.07] px-4 text-sm outline-none auto-light:bg-white"
             />
           </>
@@ -933,27 +1001,46 @@ export const ChatThread = ({
               onClick={onBack}
               className="md:hidden"
             />
-            <Link
-              href={`/user/${partner.id}`}
-              className="flex min-w-0 flex-1 items-center gap-3 rounded-lg py-1 pl-1"
-            >
-              <UserAvatar src={partner.avatar} name={partner.name} size={40} />
-              <span className="min-w-0">
-                <span className="block truncate font-semibold leading-tight">
-                  {partnerName}
-                </span>
-                <span
-                  className={cn(
-                    'block truncate text-xs',
-                    partnerTyping || partnerOnline
-                      ? 'text-emerald-400 auto-light:text-emerald-600'
-                      : 'text-neutral-500',
-                  )}
+            {(() => {
+              const inner = (
+                <>
+                  <ChatAvatar conversation={conversation} size={40} />
+                  <span className="min-w-0">
+                    <span className="flex items-center gap-1.5">
+                      <span className="truncate font-semibold leading-tight">
+                        {partnerName}
+                      </span>
+                      {conversation.kind === 'project' && <ProjectTag />}
+                    </span>
+                    <span
+                      className={cn(
+                        'block truncate text-xs',
+                        statusLive
+                          ? 'text-emerald-400 auto-light:text-emerald-600'
+                          : 'text-neutral-500',
+                      )}
+                    >
+                      {status}
+                    </span>
+                  </span>
+                </>
+              );
+              const className =
+                'flex min-w-0 flex-1 items-center gap-3 rounded-lg py-1 pl-1 text-left';
+              return isGroup ? (
+                <button
+                  type="button"
+                  onClick={() => setInfoOpen(true)}
+                  className={className}
                 >
-                  {status}
-                </span>
-              </span>
-            </Link>
+                  {inner}
+                </button>
+              ) : (
+                <Link href={`/user/${partner.id}`} className={className}>
+                  {inner}
+                </Link>
+              );
+            })()}
             <RoundButton
               icon="search"
               label="Search in chat"
@@ -976,6 +1063,17 @@ export const ChatThread = ({
                   sideOffset={4}
                   className={cn(floatingPanel, 'w-56 py-1')}
                 >
+                  {isGroup && (
+                    <Menu.Item
+                      className={menuItem}
+                      onSelect={() => setInfoOpen(true)}
+                    >
+                      <Icon name="info" className="text-[18px]" />
+                      {conversation.kind === 'project'
+                        ? 'Project group info'
+                        : 'Group info'}
+                    </Menu.Item>
+                  )}
                   <Menu.Item
                     className={menuItem}
                     onSelect={() => setSearchOpen(true)}
@@ -1062,8 +1160,7 @@ export const ChatThread = ({
               className={cn(menuItem, 'flex-col items-start gap-0.5')}
             >
               <span className="text-xs text-neutral-500">
-                {m.senderId === me ? 'You' : partnerName} ·{' '}
-                {dayLabelOf(m.createdAt)}
+                {nameOf(m.senderId)} · {dayLabelOf(m.createdAt)}
               </span>
               <span className="line-clamp-2">{previewOf(m)}</span>
             </button>
@@ -1094,15 +1191,22 @@ export const ChatThread = ({
               ) : !hasMore ? (
                 <p className="mx-6 max-w-sm rounded-lg bg-amber-500/10 px-3 py-2 text-center text-xs text-amber-200/80 auto-light:bg-amber-100 auto-light:text-amber-900">
                   <Icon name="lock" className="mr-1 align-[-2px] text-[13px]" />
-                  Only you and {partnerName} can see these messages. Photos,
-                  videos and files are kept for 90 days.
+                  {conversation.kind === 'project'
+                    ? "Everyone on the project's team can see these messages, including people who join later."
+                    : isGroup
+                      ? 'Only people in this group can see these messages.'
+                      : `Only you and ${partnerName} can see these messages.`}{' '}
+                  Photos, videos and files are kept for 90 days.
                 </p>
               ) : null}
             </div>
             {items.map(({ message: m, pending: p }, i) => {
               const prev = items[i - 1]?.message;
               const newDay = !prev || !sameDay(prev.createdAt, m.createdAt);
-              const first = newDay || prev?.senderId !== m.senderId;
+              const first =
+                newDay ||
+                prev?.senderId !== m.senderId ||
+                prev?.kind === 'system';
               return (
                 <Fragment key={m.id}>
                   {newDay && (
@@ -1123,36 +1227,48 @@ export const ChatThread = ({
                       </span>
                     </div>
                   )}
-                  <MessageBubble
-                    message={m}
-                    mine={m.senderId === me}
-                    state={p ? p.state : 'sent'}
-                    progress={p?.progress}
-                    localUrl={p?.localUrl}
-                    partnerName={partnerName}
-                    me={me}
-                    first={first}
-                    highlighted={highlight === m.id}
-                    onAction={onAction}
-                    onReact={react}
-                    onOpenMedia={(msg) =>
-                      setViewer({ items: visualMedia, start: msg.id })
-                    }
-                    onJumpTo={jumpToMessage}
-                  />
+                  {m.kind === 'system' ? (
+                    <div className="flex justify-center px-6 py-1.5">
+                      <span className="max-w-md rounded-lg bg-neutral-800/90 px-3 py-1 text-center text-xs text-neutral-300 shadow auto-light:bg-white auto-light:text-neutral-600">
+                        {systemTextOf(m, me)}
+                      </span>
+                    </div>
+                  ) : (
+                    <MessageBubble
+                      message={m}
+                      mine={m.senderId === me}
+                      state={p ? p.state : 'sent'}
+                      progress={p?.progress}
+                      localUrl={p?.localUrl}
+                      partnerName={partnerName}
+                      nameOf={nameOf}
+                      senderName={
+                        isGroup && first && m.senderId !== me
+                          ? nameOf(m.senderId)
+                          : null
+                      }
+                      me={me}
+                      first={first}
+                      highlighted={highlight === m.id}
+                      onAction={onAction}
+                      onReact={react}
+                      onOpenMedia={(msg) =>
+                        setViewer({ items: visualMedia, start: msg.id })
+                      }
+                      onJumpTo={jumpToMessage}
+                    />
+                  )}
                 </Fragment>
               );
             })}
-            {!items.length && (
+            {!items.some((x) => x.message.kind !== 'system') && (
               <div className="flex flex-col items-center gap-2 px-6 py-16 text-center">
-                <UserAvatar
-                  src={partner.avatar}
-                  name={partner.name}
-                  size={72}
-                />
+                <ChatAvatar conversation={conversation} size={72} />
                 <p className="font-medium">{partnerName}</p>
                 <p className="text-sm text-neutral-500">
-                  {(partner.companies ?? []).join(', ')}
+                  {isGroup
+                    ? `${group?.members.length ?? 0} members`
+                    : (partner.companies ?? []).join(', ')}
                 </p>
                 <p className="mt-2 text-sm text-neutral-400">Say hi 👋</p>
               </div>
@@ -1180,7 +1296,7 @@ export const ChatThread = ({
       <Composer
         conversationId={conversationId}
         me={me}
-        partnerName={partnerName}
+        partnerName={replyTo ? nameOf(replyTo.senderId) : partnerName}
         replyTo={replyTo}
         editing={editing}
         onCancelReply={() => setReplyTo(null)}
@@ -1215,7 +1331,34 @@ export const ChatThread = ({
         onClose={() => setDeleteTarget(null)}
         onDelete={doDelete}
       />
-      <InfoDialog message={infoTarget} onClose={() => setInfoTarget(null)} />
+      <InfoDialog
+        message={infoTarget}
+        group={isGroup}
+        onClose={() => setInfoTarget(null)}
+      />
+      {isGroup && (
+        <GroupInfoSheet
+          key={`${conversationId}:${infoOpen}`}
+          conversation={conversation}
+          me={me}
+          open={infoOpen}
+          onClose={() => setInfoOpen(false)}
+          onChanged={onChanged}
+          onLeft={() => {
+            setInfoOpen(false);
+            onLeft();
+          }}
+          onMessage={async (person) => {
+            setInfoOpen(false);
+            try {
+              const room = await openChatWith(person);
+              router.push(`/messages/${room.id}`);
+            } catch (e) {
+              toast.error((e as Error).message);
+            }
+          }}
+        />
+      )}
       <ForwardDialog
         message={forwardTarget}
         conversations={conversations}
@@ -1235,7 +1378,7 @@ export const ChatThread = ({
         <MediaViewer
           items={viewer.items}
           start={viewer.start}
-          title={(m) => (m.senderId === me ? 'You' : partnerName)}
+          title={(m) => nameOf(m.senderId)}
           onClose={() => setViewer(null)}
         />
       )}

@@ -7,7 +7,7 @@ import {
 } from '@/components/screens/Admin/shared/AdminUI';
 import { cn } from '@/lib/utils';
 
-import type { ChatMessage } from './api';
+import type { ChatConversation, ChatMessage } from './api';
 
 export { Icon, Spin, UserAvatar };
 
@@ -134,3 +134,62 @@ export const floatingPanel =
 
 export const menuItem =
   'flex w-full cursor-pointer select-none items-center gap-3 px-3 py-2 text-left text-sm outline-none transition-colors hover:bg-white/[0.06] focus:bg-white/[0.06] data-[highlighted]:bg-white/[0.06] auto-light:hover:bg-black/[0.04] auto-light:focus:bg-black/[0.04] auto-light:data-[highlighted]:bg-black/[0.04]';
+
+/**
+ * A chat's picture: the person's photo, a group's photo (or a group icon),
+ * or a project group's logo with a small folder badge, so project groups
+ * stand out in every list.
+ */
+export const ChatAvatar = ({
+  conversation: c,
+  size = 48,
+}: {
+  conversation: Pick<ChatConversation, 'kind' | 'partner'>;
+  size?: number;
+}) => {
+  if (c.kind === 'direct')
+    return (
+      <UserAvatar src={c.partner.avatar} name={c.partner.name} size={size} />
+    );
+  const badge = Math.max(16, Math.round(size * 0.4));
+  return (
+    <span className="relative shrink-0" style={{ width: size, height: size }}>
+      {c.partner.avatar ? (
+        <UserAvatar src={c.partner.avatar} name={c.partner.name} size={size} />
+      ) : (
+        <span
+          style={{ width: size, height: size, fontSize: size * 0.5 }}
+          className={cn(
+            'flex items-center justify-center rounded-full border border-white/10',
+            c.kind === 'project'
+              ? 'bg-sky-500/15 text-sky-300 auto-light:bg-sky-100 auto-light:text-sky-700'
+              : 'bg-neutral-700 text-neutral-300 auto-light:bg-neutral-300 auto-light:text-neutral-600',
+          )}
+        >
+          <Icon name={c.kind === 'project' ? 'folder' : 'group'} filled />
+        </span>
+      )}
+      {c.kind === 'project' && (
+        <span
+          title="Project group"
+          style={{ width: badge, height: badge, fontSize: badge * 0.62 }}
+          className="absolute -bottom-0.5 -right-0.5 flex items-center justify-center rounded-full bg-sky-500 text-white ring-2 ring-neutral-950 auto-light:ring-neutral-100"
+        >
+          <Icon name="folder" filled />
+        </span>
+      )}
+    </span>
+  );
+};
+
+/** A small "Project" tag shown next to a project group's name. */
+export const ProjectTag = ({ className }: { className?: string }) => (
+  <span
+    className={cn(
+      'inline-flex shrink-0 items-center gap-0.5 rounded bg-sky-500/15 px-1 py-px text-[10px] font-semibold uppercase tracking-wide text-sky-300 auto-light:bg-sky-100 auto-light:text-sky-700',
+      className,
+    )}
+  >
+    <Icon name="folder" filled className="text-[11px]" /> Project
+  </span>
+);

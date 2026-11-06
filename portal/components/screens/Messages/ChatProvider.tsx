@@ -29,7 +29,8 @@ type Listener = (event: ChatEvent) => void;
 
 interface OpenChat {
   conversationId: string;
-  partnerId: string;
+  /** The other person in a direct chat; null in a group. */
+  partnerId: string | null;
 }
 
 interface ChatContextValue {
@@ -44,6 +45,8 @@ interface ChatContextValue {
   setOpenChat: (chat: OpenChat | null) => void;
   partnerOnline: boolean;
   partnerTyping: boolean;
+  /** Who is typing in the open chat (in a group, the latest to type). */
+  typingUserId: string | null;
   /** Call as the person types; sent at most every few seconds. */
   notifyTyping: () => void;
 }
@@ -77,7 +80,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [unread, setUnread] = useState(0);
   const [openChat, setOpenChatState] = useState<OpenChat | null>(null);
   const [partnerOnline, setPartnerOnline] = useState(false);
-  const [partnerTyping, setPartnerTyping] = useState(false);
+  const [typingUserId, setTypingUserId] = useState<string | null>(null);
+  const partnerTyping = !!typingUserId;
 
   const listeners = useRef(new Set<Listener>());
   const ablyRef = useRef<AblyTypes.Realtime | null>(null);
@@ -195,7 +199,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             );
           }
           if (openChatRef.current?.conversationId === event.conversationId)
-            setPartnerTyping(false);
+            setTypingUserId(null);
         }
         if (event.type === 'conversation') refreshUnread();
       });
@@ -226,30 +230,33 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     openChatRef.current = openChat;
     setPartnerOnline(false);
-    setPartnerTyping(false);
+    setTypingUserId(null);
     const client = ablyRef.current;
     if (!openChat || !client || !live) return;
     let cancelled = false;
     const dm = client.channels.get(`chat:dm:${openChat.conversationId}`);
-    const online = client.channels.get(`chat:online:${openChat.partnerId}`);
+    const partnerId = openChat.partnerId;
+    const online = partnerId
+      ? client.channels.get(`chat:online:${partnerId}`)
+      : null;
 
     const onTyping = (message: AblyTypes.Message) => {
-      if (message.clientId !== openChat.partnerId) return;
-      setPartnerTyping(true);
+      const from = message.clientId;
+      if (!from || from === me) return;
+      if (partnerId && from !== partnerId) return;
+      setTypingUserId(from);
       clearTimeout(typingTimer.current);
       typingTimer.current = setTimeout(
-        () => setPartnerTyping(false),
+        () => setTypingUserId(null),
         TYPING_SHOWN_FOR,
       );
     };
     const syncOnline = () =>
-      online.presence
+      online?.presence
         .get()
         .then((members) => {
           if (!cancelled)
-            setPartnerOnline(
-              members.some((m) => m.clientId === openChat.partnerId),
-            );
+            setPartnerOnline(members.some((m) => m.clientId === partnerId));
         })
         .catch(() => undefined);
 
@@ -258,19 +265,21 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       await client.auth.authorize();
       if (cancelled) return;
       await dm.subscribe(TYPING_EVENT, onTyping);
-      await online.presence.subscribe(syncOnline);
-      await syncOnline();
+      if (online) {
+        await online.presence.subscribe(syncOnline);
+        await syncOnline();
+      }
     })().catch((error) => console.warn('[chat] could not watch chat', error));
 
     return () => {
       cancelled = true;
       clearTimeout(typingTimer.current);
       dm.unsubscribe(TYPING_EVENT, onTyping);
-      online.presence.unsubscribe(syncOnline);
+      online?.presence.unsubscribe(syncOnline);
       dm.detach().catch(() => undefined);
-      online.detach().catch(() => undefined);
+      online?.detach().catch(() => undefined);
     };
-  }, [openChat, live]);
+  }, [openChat, live, me]);
 
   const notifyTyping = useCallback(() => {
     const chat = openChatRef.current;
@@ -295,6 +304,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setOpenChat,
       partnerOnline,
       partnerTyping,
+      typingUserId,
       notifyTyping,
     }),
     [
@@ -306,6 +316,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setOpenChat,
       partnerOnline,
       partnerTyping,
+      typingUserId,
       notifyTyping,
     ],
   );
@@ -322,6 +333,7 @@ const FALLBACK: ChatContextValue = {
   setOpenChat: () => undefined,
   partnerOnline: false,
   partnerTyping: false,
+  typingUserId: null,
   notifyTyping: () => undefined,
 };
 

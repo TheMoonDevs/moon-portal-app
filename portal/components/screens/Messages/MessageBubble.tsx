@@ -39,6 +39,10 @@ export interface BubbleProps {
   /** A local link to the file while it uploads. */
   localUrl?: string | null;
   partnerName: string;
+  /** "You", the other person, or a group member, by id. */
+  nameOf?: (userId: string) => string;
+  /** Groups: the sender's name, above the first message in a run. */
+  senderName?: string | null;
   me: string | null;
   highlighted?: boolean;
   /** First message in a run from the same person: shows the bubble's tail. */
@@ -51,6 +55,24 @@ export interface BubbleProps {
 
 const isPending = (m: ChatMessage) => m.id.startsWith('pending:');
 
+const SENDER_COLORS = [
+  'text-emerald-300 auto-light:text-emerald-700',
+  'text-sky-300 auto-light:text-sky-700',
+  'text-amber-300 auto-light:text-amber-700',
+  'text-fuchsia-300 auto-light:text-fuchsia-700',
+  'text-rose-300 auto-light:text-rose-700',
+  'text-violet-300 auto-light:text-violet-700',
+  'text-teal-300 auto-light:text-teal-700',
+  'text-orange-300 auto-light:text-orange-700',
+];
+
+/** Each group member keeps one name color. */
+const senderColor = (id: string) => {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) | 0;
+  return SENDER_COLORS[Math.abs(hash) % SENDER_COLORS.length];
+};
+
 /** One message, WhatsApp style, with its menu. */
 export const MessageBubble = memo(function MessageBubble({
   message: m,
@@ -59,6 +81,8 @@ export const MessageBubble = memo(function MessageBubble({
   progress,
   localUrl,
   partnerName,
+  nameOf,
+  senderName,
   me,
   highlighted,
   first,
@@ -92,6 +116,8 @@ export const MessageBubble = memo(function MessageBubble({
   const endPress = () => clearTimeout(pressTimer.current);
 
   const reactions = groupReactions(m.reactions);
+  const who = (id: string) =>
+    nameOf ? nameOf(id) : id === me ? 'You' : partnerName;
 
   return (
     <div
@@ -215,6 +241,18 @@ export const MessageBubble = memo(function MessageBubble({
           </Menu.Root>
         )}
 
+        {senderName && (
+          <p
+            className={cn(
+              'truncate text-xs font-semibold',
+              senderColor(m.senderId),
+              isVisual && hasMedia && 'px-1.5 pt-0.5',
+            )}
+          >
+            {senderName}
+          </p>
+        )}
+
         {m.forwarded && !deleted && (
           <p
             className={cn(
@@ -236,7 +274,7 @@ export const MessageBubble = memo(function MessageBubble({
             )}
           >
             <span className="font-semibold text-sky-300 auto-light:text-sky-700">
-              {m.replyTo.senderId === me ? 'You' : partnerName}
+              {who(m.replyTo.senderId)}
             </span>
             <span className="line-clamp-2 opacity-80">
               {m.replyTo.text || 'Message'}
@@ -316,11 +354,7 @@ export const MessageBubble = memo(function MessageBubble({
               mine ? 'right-2' : 'left-2',
             )}
             title={m.reactions
-              .map((r) =>
-                r.userId === me
-                  ? `You ${r.emoji}`
-                  : `${partnerName} ${r.emoji}`,
-              )
+              .map((r) => `${who(r.userId)} ${r.emoji}`)
               .join(', ')}
           >
             {reactions.map(([emoji]) => (

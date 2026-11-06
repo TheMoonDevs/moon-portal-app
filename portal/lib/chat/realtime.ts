@@ -10,8 +10,8 @@ import type { ChatEvent } from '@/models/chat';
  * Channels:
  *   chat:inbox:<userId>   events for one person (new messages, ticks, edits).
  *                         Only the server publishes here; the person subscribes.
- *   chat:dm:<chatId>      typing, between the two people in a chat, while it
- *                         is open.
+ *   chat:dm:<chatId>      typing, between the people in a chat (or group),
+ *                         while it is open.
  *   chat:online:<userId>  presence: the person is in the portal right now.
  *
  * Without ABLY_API_KEY the portal still works: browsers fall back to asking
@@ -58,7 +58,7 @@ export async function publishToUsers(userIds: string[], event: ChatEvent) {
  */
 export async function createTokenRequest(
   userId: string,
-  chat?: { conversationId: string; partnerId: string } | null,
+  chat?: { conversationId: string; partnerId: string | null } | null,
 ) {
   const ably = client();
   if (!ably) return null;
@@ -68,7 +68,8 @@ export async function createTokenRequest(
   };
   if (chat) {
     capability[dmChannel(chat.conversationId)] = ['publish', 'subscribe'];
-    capability[onlineChannel(chat.partnerId)] = ['subscribe'];
+    if (chat.partnerId)
+      capability[onlineChannel(chat.partnerId)] = ['subscribe'];
   }
   return ably.auth.createTokenRequest({
     clientId: userId,
