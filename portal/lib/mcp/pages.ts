@@ -12,6 +12,8 @@ import {
   projectPages,
   readParent,
 } from '@/lib/workspace/projectPageServer';
+import type { SharingViewer } from '@/lib/workspace/sharing';
+import { sharingViewer } from '@/lib/workspace/sharingServer';
 import { PROJECT_PAGE_KIND, type ProjectPage } from '@/models/workspace';
 
 import { type Tool, ToolError } from './shared';
@@ -103,6 +105,7 @@ function body(markdown: string) {
 async function parentFor(
   projectId: string,
   pages: ProjectPage[],
+  viewer: SharingViewer,
   ref: unknown,
   pageId?: string,
 ) {
@@ -110,7 +113,7 @@ async function parentFor(
     ref === undefined || ref === null || ref === ''
       ? null
       : findPage(pages, ref).id;
-  const checked = await readParent(projectId, parentId, pageId);
+  const checked = await readParent(projectId, parentId, pageId, viewer);
   if (checked.error) throw new ToolError(checked.error);
   return checked.parentId;
 }
@@ -138,7 +141,8 @@ export const PAGE_TOOLS: Tool[] = [
     annotations: { readOnlyHint: true },
     run: async (user, args, { origin }) => {
       const project = await findProject(user, args?.project, 'projects:read');
-      const pages = await projectPages(project.id);
+      const viewer = await sharingViewer(user);
+      const pages = await projectPages(project.id, viewer);
       return {
         project: project.name,
         url: `${origin}/projects/${project.id}?view=pages`,
@@ -159,7 +163,8 @@ export const PAGE_TOOLS: Tool[] = [
     annotations: { readOnlyHint: true },
     run: async (user, args, { origin }) => {
       const project = await findProject(user, args?.project, 'projects:read');
-      const pages = await projectPages(project.id);
+      const viewer = await sharingViewer(user);
+      const pages = await projectPages(project.id, viewer);
       return { page: pageView(pages, findPage(pages, args?.page), origin) };
     },
   },
@@ -185,10 +190,11 @@ export const PAGE_TOOLS: Tool[] = [
     annotations: { readOnlyHint: false, destructiveHint: false },
     run: async (user, args, { origin }) => {
       const project = await findProject(user, args?.project, 'projects:edit');
-      const pages = await projectPages(project.id);
+      const viewer = await sharingViewer(user);
+      const pages = await projectPages(project.id, viewer);
       const title = asPageTitle(args?.title);
       if (!title) throw new ToolError('Give the page a title.');
-      const parentId = await parentFor(project.id, pages, args?.parent);
+      const parentId = await parentFor(project.id, pages, viewer, args?.parent);
       const now = new Date().toISOString();
       const page: ProjectPage = await db.projectPage.create({
         data: {
@@ -238,7 +244,8 @@ export const PAGE_TOOLS: Tool[] = [
     annotations: { readOnlyHint: false, destructiveHint: false },
     run: async (user, args, { origin }) => {
       const project = await findProject(user, args?.project, 'projects:edit');
-      const pages = await projectPages(project.id);
+      const viewer = await sharingViewer(user);
+      const pages = await projectPages(project.id, viewer);
       const page = findPage(pages, args?.page);
       const data: Partial<ProjectPage> = {};
       if (typeof args?.title === 'string') {
@@ -258,6 +265,7 @@ export const PAGE_TOOLS: Tool[] = [
         data.parentId = await parentFor(
           project.id,
           pages,
+          viewer,
           args.parent,
           page.id,
         );
@@ -293,9 +301,11 @@ export const PAGE_TOOLS: Tool[] = [
     annotations: { readOnlyHint: false, destructiveHint: true },
     run: async (user, args) => {
       const project = await findProject(user, args?.project, 'projects:edit');
-      const pages = await projectPages(project.id);
+      const viewer = await sharingViewer(user);
+      const pages = await projectPages(project.id, viewer);
       const page = findPage(pages, args?.page);
-      const ids = await deletePageTree(page);
+      const { ids = [], error } = await deletePageTree(page, viewer);
+      if (error) throw new ToolError(error);
       return {
         deleted: pathOf(pages, page),
         ...(ids.length > 1 && { alsoDeleted: ids.length - 1 }),

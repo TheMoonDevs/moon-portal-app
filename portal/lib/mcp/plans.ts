@@ -13,6 +13,8 @@ import {
   withTasks,
 } from '@/lib/workspace/planServer';
 import { describeSchedule } from '@/lib/workspace/projects';
+import { canSeePlan } from '@/lib/workspace/sharing';
+import { sharingViewer } from '@/lib/workspace/sharingServer';
 import type { Plan, PlanStep } from '@/models/workspace';
 
 import { GOAL_SCHEDULE_PROPS } from './goalSchedule';
@@ -61,7 +63,10 @@ export async function findPlan(user: SessionUser, ref: unknown, edit = false) {
         where: { companyId: { in: Array.from(readable.keys()) } },
       })
     : [];
-  const matches = plans.filter((p) => p.id === wanted || same(p.title, wanted));
+  const viewer = await sharingViewer(user);
+  const matches = plans
+    .filter((p) => canSeePlan(p, viewer))
+    .filter((p) => p.id === wanted || same(p.title, wanted));
   if (!matches.length) throw new ToolError(`No plan "${wanted}".`);
   if (matches.length > 1)
     throw new ToolError(
@@ -448,7 +453,7 @@ export const PLAN_TOOLS: Tool[] = [
       const ids = args?.company
         ? [(await findCompany(user, args.company, 'tasks:read')).id]
         : Array.from(readable.keys());
-      const plans: Plan[] = ids.length
+      let plans: Plan[] = ids.length
         ? await db.plan.findMany({
             where: {
               companyId: { in: ids },
@@ -460,6 +465,8 @@ export const PLAN_TOOLS: Tool[] = [
             take: 50,
           })
         : [];
+      const viewer = await sharingViewer(user);
+      plans = plans.filter((p) => canSeePlan(p, viewer));
       const choices = new Map<string, Choices>();
       for (const id of new Set(plans.map((p) => p.companyId)))
         choices.set(id, await planChoices(id));

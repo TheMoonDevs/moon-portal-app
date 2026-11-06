@@ -270,6 +270,8 @@ export const PlansSection = ({
       newStepProjectId={projectId}
       addsTasksIn={plans.addsTasksIn}
       onMakeTask={(stepId) => plans.makeTask(plan.id, stepId)}
+      onShare={(change) => plans.share(plan.id, change)}
+      meId={plans.meId}
       onDeleteTask={(id) => deleteStepTask(id)}
     />
   );

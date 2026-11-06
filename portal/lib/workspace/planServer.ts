@@ -33,6 +33,8 @@ import {
   requireCompanyPermission,
   requireUser,
 } from './server';
+import { canSeePlan } from './sharing';
+import { sharingViewer } from './sharingServer';
 
 /** The projects and people a plan in `companyId` can name. */
 export async function planChoices(companyId: string) {
@@ -410,7 +412,9 @@ export const mayChangePlan = (
   );
 
 /**
- * Loads a plan the signed-in person can see (any member of its company).
+ * Loads a plan the signed-in person can see: any member of its company, or
+ * when it is restricted, the people it is shared with (see ./sharing). A
+ * plan that is not shared with them answers as if it did not exist.
  * `edit` and `delete` follow mayChangePlan, with `tasks:edit` or
  * `tasks:delete` as the company permission.
  */
@@ -431,6 +435,8 @@ export async function requirePlan(
   const guard = await requireCompanyPermission(plan.companyId, 'tasks:read');
   if (guard.response || !guard.user)
     return { ...guard, plan: null, response: guard.response };
+  if (!canSeePlan(plan, await sharingViewer(guard.user)))
+    return { ...guard, plan: null, response: fail(404, 'Plan not found.') };
   if (need !== 'read') {
     const permission = need === 'edit' ? 'tasks:edit' : 'tasks:delete';
     const allowed = mayChangePlan(

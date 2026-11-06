@@ -4,6 +4,7 @@ import type { ProjectPage } from '@db/client';
 import { motion } from 'framer-motion';
 
 import { childPages } from '@/lib/workspace/projectPages';
+import { isRestricted } from '@/lib/workspace/sharing';
 
 import { AdminButton, Icon, Spin } from '../../Admin/shared/AdminUI';
 import { ago, docText, pageTitle } from '../types';
@@ -67,6 +68,12 @@ const PageCards = ({
           </span>
           <span className="flex items-center gap-3 text-[11px] text-neutral-600">
             <span>Edited {ago(page.updatedAt)}</span>
+            {isRestricted(page) && (
+              <span className="flex items-center gap-1 text-amber-200/70">
+                <Icon name="lock" className="text-[13px]" />
+                Restricted
+              </span>
+            )}
             {inside > 0 && (
               <span className="flex items-center gap-1">
                 <Icon name="description" className="text-[13px]" />

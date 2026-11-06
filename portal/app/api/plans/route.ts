@@ -17,6 +17,8 @@ import {
   requireCompanyPermission,
   requireUser,
 } from '@/lib/workspace/server';
+import { canSeePlan } from '@/lib/workspace/sharing';
+import { sharingViewer } from '@/lib/workspace/sharingServer';
 import type { Plan } from '@/models/workspace';
 
 export const dynamic = 'force-dynamic';
@@ -52,6 +54,7 @@ export async function GET(request: NextRequest) {
         });
   }
 
+  const viewer = await sharingViewer(user);
   const perCompany = await Promise.all(
     companies.map(async (c) => {
       const [plans, choices, teamIds, access]: [
@@ -69,7 +72,8 @@ export async function GET(request: NextRequest) {
         getCompanyAccess(user.id, c.id),
       ]);
       return {
-        plans,
+        // Restricted plans only for the people they are shared with.
+        plans: plans.filter((p) => canSeePlan(p, viewer)),
         choices,
         can: {
           // Plans are ideas: every member can start one.

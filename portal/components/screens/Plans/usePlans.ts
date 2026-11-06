@@ -231,6 +231,44 @@ export const usePlans = (companyId: string | null | undefined) => {
     [flush],
   );
 
+  /** Sets who can open a plan: everyone in its company, or only some people. */
+  const share = useCallback(
+    async (
+      planId: string,
+      change: { restricted: boolean; userIds: string[] },
+    ) => {
+      try {
+        await flush(planId);
+        const res = await PortalSdk.putData(
+          `/api/plans/${planId}/sharing`,
+          change,
+        );
+        const saved: PlanView | undefined = res?.data?.plan;
+        setData(
+          (d) =>
+            d && {
+              ...d,
+              plans: d.plans.map((p) =>
+                p.id === planId
+                  ? { ...p, sharing: saved?.sharing ?? { ...change } }
+                  : p,
+              ),
+            },
+        );
+        toast.success(
+          change.restricted
+            ? 'Only the people you picked can open it now'
+            : 'It is open to everyone again',
+        );
+        return true;
+      } catch (err) {
+        toast.error(errorText(err, 'Could not change who can open it.'));
+        return false;
+      }
+    },
+    [flush],
+  );
+
   /** Adds a note to the task a step links to. */
   const addNote = useCallback(
     async (planId: string, stepId: string, text: string) => {
@@ -363,6 +401,8 @@ export const usePlans = (companyId: string | null | undefined) => {
     create,
     remove,
     makeTask,
+    share,
+    meId: user?.id ?? null,
     refreshSchedules,
     addNote,
     deleteStepTask,

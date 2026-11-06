@@ -13,7 +13,9 @@ import {
   childPages,
   descendantIds,
 } from '@/lib/workspace/projectPages';
+import { isRestricted, limitingParent } from '@/lib/workspace/sharing';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
+import { useUser } from '@/utils/hooks/useUser';
 import { useWorkspace } from '@/utils/hooks/useWorkspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
@@ -44,6 +46,7 @@ import { PagesGallery, PagesInside } from './sections/PagesSection';
 import { plansFor, PlansSection } from './sections/PlansSection';
 import { TasksInActionSection } from './sections/TasksInActionSection';
 import { WorklogsSection } from './sections/WorklogsSection';
+import { ShareButton, type ShareChange, ShareDialog } from './ShareDialog';
 import {
   byCreation,
   isView,
@@ -162,28 +165,43 @@ const PageTreeItem = ({
             </span>
           }
           trailing={
-            canEdit && (
-              <span
-                role="button"
-                tabIndex={0}
-                aria-label="Add a page inside"
-                title="Add a page inside"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onNewPage(page.id);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.stopPropagation();
-                    onNewPage(page.id);
-                  }
-                }}
-                className="-mr-1 flex size-5 items-center justify-center rounded text-neutral-500 opacity-0 hover:bg-white/[0.08] hover:text-white group-hover/page:opacity-100"
-              >
-                {creatingIn === page.id ? (
-                  <Spin className="size-3" />
-                ) : (
-                  <Icon name="add" className="text-[15px]" />
+            (canEdit || isRestricted(page)) && (
+              <span className="-mr-1 flex items-center gap-0.5">
+                {isRestricted(page) && (
+                  <span
+                    title="Restricted: only the people it is shared with"
+                    className="flex"
+                  >
+                    <Icon
+                      name="lock"
+                      className="text-[13px] text-amber-200/70"
+                    />
+                  </span>
+                )}
+                {canEdit && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Add a page inside"
+                    title="Add a page inside"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onNewPage(page.id);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.stopPropagation();
+                        onNewPage(page.id);
+                      }
+                    }}
+                    className="-mr-1 flex size-5 items-center justify-center rounded text-neutral-500 opacity-0 hover:bg-white/[0.08] hover:text-white group-hover/page:opacity-100"
+                  >
+                    {creatingIn === page.id ? (
+                      <Spin className="size-3" />
+                    ) : (
+                      <Icon name="add" className="text-[15px]" />
+                    )}
+                  </span>
                 )}
               </span>
             )
@@ -691,6 +709,8 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
   const [creatingIn, setCreatingIn] = useState<string | null | undefined>();
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [deleting, setDeleting] = useState<Page | null>(null);
+  const [sharing, setSharing] = useState(false);
+  const { user: me } = useUser();
   const [busy, setBusy] = useState(false);
   const [editingDetails, setEditingDetails] = useState(false);
   const [plansOpen, setPlansOpen] = useState(true);
@@ -869,6 +889,27 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
         }
       : undefined,
   });
+
+  /** Sets who can open a page (and the pages inside it). */
+  const sharePage = async (target: Page, change: ShareChange) => {
+    try {
+      const res = await PortalSdk.putData(
+        `/api/projects/${projectId}/pages/${target.id}/sharing`,
+        change,
+      );
+      const saved: Page | undefined = res?.data?.page;
+      if (saved) savePage(saved);
+      toast.success(
+        change.restricted
+          ? 'Only the people you picked can open it now'
+          : 'Everyone on the project can open it',
+      );
+      return true;
+    } catch (err) {
+      toast.error(errorText(err, 'Could not change who can open it.'));
+      return false;
+    }
+  };
 
   const deletePage = async () => {
     if (!deleting) return;
@@ -1134,6 +1175,13 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
           <div className="flex-1" />
           {isDoc && canEdit && <SaveBadge state={saveState} />}
           {openPlan && <SaveBadge state={plans.saveState} />}
+          {page && (
+            <ShareButton
+              sharing={page.sharing}
+              canShare={canEdit}
+              onClick={() => setSharing(true)}
+            />
+          )}
           {page && canEdit && (
             <button
               type="button"
@@ -1190,6 +1238,39 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
         loading={busy}
         onConfirm={deletePage}
       />
+      {page && canEdit && (
+        <ShareDialog
+          open={sharing}
+          onOpenChange={setSharing}
+          itemLabel="page"
+          title={pageTitle(page)}
+          everyoneTitle={`Everyone who can open ${project.name}`}
+          everyoneHint="It follows the project: anyone who can open the project can open this page."
+          insideNote="Pages inside this one follow it: whoever cannot open it cannot open them either."
+          sharing={page.sharing}
+          people={companyUsers}
+          keepers={
+            page.createdById
+              ? [{ id: page.createdById, reason: 'Made this page' }]
+              : []
+          }
+          meId={me?.id}
+          limitedBy={(() => {
+            const above = limitingParent(all, page.id);
+            return above
+              ? {
+                  title: pageTitle(above),
+                  emoji: above.emoji,
+                  onOpen: () => {
+                    setSharing(false);
+                    select('pages', above.id);
+                  },
+                }
+              : undefined;
+          })()}
+          onSave={(change) => sharePage(page, change)}
+        />
+      )}
       <NewProjectDialog
         open={addingSub}
         onOpenChange={setAddingSub}

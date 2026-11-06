@@ -11,6 +11,8 @@ import {
 } from '@/lib/permissions/server';
 import { sortByRecentPoints } from '@/lib/progress/myPoints';
 import { fail, memberPermissions, ok } from '@/lib/workspace/server';
+import { canSeePlan } from '@/lib/workspace/sharing';
+import { sharingViewer } from '@/lib/workspace/sharingServer';
 import type {
   Company,
   CompanyMember,
@@ -97,6 +99,9 @@ export async function GET(request: NextRequest) {
     }),
   ]);
 
+  // Restricted plans only show to the people they are shared with.
+  const looking = await sharingViewer(viewer);
+
   // The viewer's own order: the companies they work in most first.
   const ordered = await sortByRecentPoints(viewer.id, companies, (c) => c.id);
 
@@ -133,6 +138,7 @@ export async function GET(request: NextRequest) {
         ).length,
         plans: plans
           .filter((p) => p.companyId === company.id)
+          .filter((p) => canSeePlan(p, looking))
           .filter(
             (p) =>
               p.ownerId === userId ||

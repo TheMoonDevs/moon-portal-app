@@ -437,6 +437,19 @@ export enum PLAN_STATUS {
  * task linked with "/"), or a goal of a project. A task step follows the
  * task's status; a goal step is done when the goal is met.
  */
+/**
+ * Who can open a project page or a plan. Left out (or not restricted), it
+ * follows the project or company: everyone who can open those can open it.
+ * Restricted, only the people in `userIds` (and its creator or owner) can.
+ * A page's restriction also applies to every page inside it.
+ */
+export type ItemSharing = {
+  restricted: boolean;
+  userIds: string[];
+  updatedById?: Nullable<string>;
+  updatedAt?: Nullable<string>;
+};
+
 /** What a plan step is: a line of text, a to-do, a task or a goal. */
 /** A step: plain text, a task (to tick off, or made into a project task) or a goal. */
 export type PlanStepKind = 'info' | 'task' | 'goal';
@@ -479,6 +492,8 @@ export type Plan = Loose<
     memberIds: string[];
     steps: PlanStep[];
     createdById: string;
+    /** Who can open it; see ItemSharing. */
+    sharing?: Nullable<ItemSharing>;
   }
 >;
 
@@ -508,6 +523,8 @@ export type ProjectPage = Loose<
     parentId?: Nullable<string>;
     createdById: string;
     updatedById?: Nullable<string>;
+    /** Who can open it and the pages inside it; see ItemSharing. */
+    sharing?: Nullable<ItemSharing>;
   }
 >;
 
