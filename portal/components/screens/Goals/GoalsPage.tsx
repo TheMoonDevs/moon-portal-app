@@ -11,7 +11,12 @@ import {
   monthGrid,
   rangeTotals,
 } from '@/lib/workspace/goalCalendar';
-import { periodRange, toDay } from '@/lib/workspace/projects';
+import {
+  addDays,
+  mondayOf,
+  periodRange,
+  toDay,
+} from '@/lib/workspace/projects';
 import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
@@ -21,6 +26,7 @@ import { GoalDayPanel } from './GoalDayPanel';
 import { type Filters, GoalsFilters, NO_FILTERS } from './GoalsFilters';
 import { GoalsMonth } from './GoalsMonth';
 import { GoalsTimeline } from './GoalsTimeline';
+import { GoalsWeek } from './GoalsWeek';
 import {
   applyFilters,
   buildRows,
@@ -31,7 +37,9 @@ import {
 } from './model';
 import { Bar, card, EFFORTS, STATE_META } from './ui';
 
-type View = 'calendar' | 'timeline';
+type View = 'calendar' | 'week' | 'timeline';
+
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
 
 // Months already loaded, so moving back and forth shows them at once.
 const cache = new Map<string, GoalsCalendarData>();
@@ -48,6 +56,27 @@ const monthTitle = (month: string) =>
     year: 'numeric',
     timeZone: 'UTC',
   });
+
+/** "2 – 8 Nov 2026", "27 Oct – 2 Nov 2026". */
+const weekTitle = (monday: string) => {
+  const sunday = addDays(monday, 6);
+  const opts = { timeZone: 'UTC' } as const;
+  const end = new Date(`${sunday}T12:00:00Z`).toLocaleDateString('en-GB', {
+    ...opts,
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+  const start = new Date(`${monday}T12:00:00Z`).toLocaleDateString('en-GB', {
+    ...opts,
+    day: 'numeric',
+    ...(monday.slice(5, 7) !== sunday.slice(5, 7) && { month: 'short' }),
+  });
+  return `${start} – ${end}`;
+};
+
+/** The month a week belongs to: the one its Thursday is in. */
+const monthOfWeek = (monday: string) => addDays(monday, 3).slice(0, 7);
 
 const Stat = ({
   label,
@@ -170,6 +199,7 @@ export const GoalsPage = () => {
   const { user } = useUser();
   const [month, setMonth] = useState(() => toDay().slice(0, 7));
   const [view, setView] = useState<View>('calendar');
+  const [weekStart, setWeekStart] = useState(() => mondayOf(toDay()));
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [selected, setSelected] = useState<string | null>(null);
   const [data, setData] = useState<GoalsCalendarData | null>(null);
@@ -182,13 +212,21 @@ export const GoalsPage = () => {
     setFilters(filtersFromParams(params));
     const m = params.get('month');
     if (m && /^\d{4}-\d{2}$/.test(m)) setMonth(m);
-    if (params.get('view') === 'timeline') setView('timeline');
+    const v = params.get('view');
+    if (v === 'timeline' || v === 'week') setView(v);
+    const w = params.get('week');
+    if (v === 'week' && w && DAY.test(w)) {
+      setWeekStart(mondayOf(w));
+      setMonth(monthOfWeek(mondayOf(w)));
+    }
     setReady(true);
   }, []);
   useEffect(() => {
     if (!ready) return;
     const params = filtersToParams(filters, new URLSearchParams());
-    if (month !== toDay().slice(0, 7)) params.set('month', month);
+    if (view === 'week') {
+      if (weekStart !== mondayOf(toDay())) params.set('week', weekStart);
+    } else if (month !== toDay().slice(0, 7)) params.set('month', month);
     if (view !== 'calendar') params.set('view', view);
     const qs = params.toString();
     window.history.replaceState(
@@ -196,7 +234,7 @@ export const GoalsPage = () => {
       '',
       qs ? `?${qs}` : window.location.pathname,
     );
-  }, [filters, month, view, ready]);
+  }, [filters, month, view, weekStart, ready]);
 
   const weeks = useMemo(() => monthGrid(month), [month]);
   const gridFrom = weeks[0][0];
@@ -208,6 +246,10 @@ export const GoalsPage = () => {
   const monthDays = useMemo(
     () => daysBetween(monthRange.from, monthRange.to),
     [monthRange],
+  );
+  const weekDays = useMemo(
+    () => daysBetween(weekStart, addDays(weekStart, 6)),
+    [weekStart],
   );
 
   const load = useCallback(() => {
@@ -311,10 +353,33 @@ export const GoalsPage = () => {
   }, [shown, monthDays, today, monthRange]);
 
   const isThisMonth = month === today.slice(0, 7);
+  const isThisWeek = weekStart === mondayOf(today);
   const goTo = (m: string) => {
     setMonth(m);
     setSelected(null);
   };
+  /** Shows the week from `monday`; its month's data covers it. */
+  const goToWeek = (monday: string) => {
+    setWeekStart(monday);
+    setMonth(monthOfWeek(monday));
+    setSelected(null);
+  };
+  const changeView = (next: View) => {
+    if (next === 'week' && view !== 'week') {
+      // The week of the day picked, else this week, else the month's first.
+      const monday = selected
+        ? mondayOf(selected)
+        : isThisMonth
+          ? mondayOf(today)
+          : mondayOf(addDays(`${month}-01`, 3));
+      setWeekStart(monday);
+      setMonth(monthOfWeek(monday));
+    }
+    setView(next);
+  };
+  const isWeek = view === 'week';
+  const step = (n: number) =>
+    isWeek ? goToWeek(addDays(weekStart, 7 * n)) : goTo(shiftMonth(month, n));
 
   return (
     <TipProvider delayDuration={120}>
@@ -329,27 +394,29 @@ export const GoalsPage = () => {
             <div className="flex items-center gap-1">
               <button
                 type="button"
-                aria-label="Previous month"
-                onClick={() => goTo(shiftMonth(month, -1))}
+                aria-label={isWeek ? 'Previous week' : 'Previous month'}
+                onClick={() => step(-1)}
                 className="flex size-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/[0.06] hover:text-white auto-light:text-neutral-500 auto-light:hover:bg-black/[0.05] auto-light:hover:text-neutral-950"
               >
                 <Icon name="chevron_left" className="text-[20px]" />
               </button>
-              <p className="min-w-[140px] text-center text-sm font-semibold text-white auto-light:text-neutral-950">
-                {monthTitle(month)}
+              <p className="min-w-[150px] text-center text-sm font-semibold text-white auto-light:text-neutral-950">
+                {isWeek ? weekTitle(weekStart) : monthTitle(month)}
               </p>
               <button
                 type="button"
-                aria-label="Next month"
-                onClick={() => goTo(shiftMonth(month, 1))}
+                aria-label={isWeek ? 'Next week' : 'Next month'}
+                onClick={() => step(1)}
                 className="flex size-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/[0.06] hover:text-white auto-light:text-neutral-500 auto-light:hover:bg-black/[0.05] auto-light:hover:text-neutral-950"
               >
                 <Icon name="chevron_right" className="text-[20px]" />
               </button>
-              {!isThisMonth && (
+              {(isWeek ? !isThisWeek : !isThisMonth) && (
                 <button
                   type="button"
-                  onClick={() => goTo(today.slice(0, 7))}
+                  onClick={() =>
+                    isWeek ? goToWeek(mondayOf(today)) : goTo(today.slice(0, 7))
+                  }
                   className="ml-1 h-8 rounded-lg px-2.5 text-xs font-medium text-neutral-300 ring-1 ring-inset ring-white/10 hover:bg-white/[0.06] auto-light:text-neutral-700 auto-light:ring-black/10 auto-light:hover:bg-black/[0.04]"
                 >
                   Today
@@ -361,16 +428,17 @@ export const GoalsPage = () => {
                 [
                   {
                     key: 'calendar',
-                    label: 'Calendar',
+                    label: 'Month',
                     icon: 'calendar_month',
                   },
+                  { key: 'week', label: 'Week', icon: 'view_week' },
                   { key: 'timeline', label: 'Timeline', icon: 'view_timeline' },
                 ] as const
               ).map((v) => (
                 <button
                   key={v.key}
                   type="button"
-                  onClick={() => setView(v.key)}
+                  onClick={() => changeView(v.key)}
                   aria-pressed={view === v.key}
                   className={cn(
                     'flex h-8 items-center gap-1.5 rounded-[10px] px-3 text-xs font-medium transition-colors',
@@ -485,6 +553,14 @@ export const GoalsPage = () => {
                       description="Clear a filter or two to see more."
                     />
                   </div>
+                ) : view === 'week' ? (
+                  <GoalsWeek
+                    days={weekDays}
+                    rows={shown}
+                    today={today}
+                    selected={selected}
+                    onSelect={(d) => setSelected(d === selected ? null : d)}
+                  />
                 ) : view === 'calendar' ? (
                   <GoalsMonth
                     weeks={weeks}
