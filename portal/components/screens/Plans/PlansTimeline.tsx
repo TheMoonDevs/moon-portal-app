@@ -129,7 +129,7 @@ export const PlansTimeline = ({
 }: {
   data: TimelineData;
   onOpen: (planId: string, stepId?: string) => void;
-  /** One plan, in its sidebar: smaller, no plan names or lanes. */
+  /** One plan, under its steps: the calendar beside what is coming up. */
   inPlan?: boolean;
 }) => {
   const today = iso(new Date());
@@ -209,102 +209,111 @@ export const PlansTimeline = ({
     )?.color || '#525252';
 
   return (
-    <div className={cn(!inPlan && 'h-full overflow-y-auto px-5 py-6 sm:px-8')}>
-      {inPlan ? (
-        <>
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
-            How the plan works out
-          </h3>
-          <p className="mt-1 text-[11px] text-neutral-500">
-            Tasks due, repeating goals and the plan’s end, day by day. Pick a
-            day to see it.
-          </p>
-        </>
-      ) : (
-        <>
-          <h2 className="text-lg font-semibold text-white">
-            How the plans work out
-          </h2>
-          <p className="mt-1 text-xs text-neutral-500">
-            Tasks due, repeating goals and plan ends, day by day, across the
-            open plans shown. Pick a day to see it; pick a plan to open it.
-          </p>
-        </>
+    <div
+      className={cn(
+        inPlan
+          ? 'grid gap-x-10 gap-y-6 lg:grid-cols-[auto_minmax(0,1fr)]'
+          : 'h-full overflow-y-auto px-5 py-6 sm:px-8',
       )}
+    >
+      <div className="min-w-0">
+        {inPlan ? (
+          <>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
+              How the plan works out
+            </h3>
+            <p className="mt-1 text-[11px] text-neutral-500">
+              Tasks due, repeating goals and the plan’s end, day by day. Pick a
+              day to see it.
+            </p>
+          </>
+        ) : (
+          <>
+            <h2 className="text-lg font-semibold text-white">
+              How the plans work out
+            </h2>
+            <p className="mt-1 text-xs text-neutral-500">
+              Tasks due, repeating goals and plan ends, day by day, across the
+              open plans shown. Pick a day to see it; pick a plan to open it.
+            </p>
+          </>
+        )}
 
-      {/* The calendar */}
-      <div className={cn('overflow-x-auto pb-2', inPlan ? 'mt-3' : 'mt-5')}>
-        <div className="inline-flex flex-col gap-1">
-          <div className="flex gap-[3px] pl-8 text-[10px] text-neutral-500">
-            {months.map((m, w) => (
-              <span
-                key={w}
-                className="w-[13px] overflow-visible whitespace-nowrap"
-              >
-                {m}
-              </span>
-            ))}
-          </div>
-          <div className="flex gap-[3px]">
-            <div className="flex w-7 flex-col gap-[3px] text-[10px] leading-[13px] text-neutral-500">
-              {WEEKDAYS.map((d, i) => (
-                <span key={i}>{d}</span>
+        {/* The calendar */}
+        <div className={cn('overflow-x-auto pb-2', inPlan ? 'mt-3' : 'mt-5')}>
+          <div className="inline-flex flex-col gap-1">
+            <div className="flex gap-[3px] pl-8 text-[10px] text-neutral-500">
+              {months.map((m, w) => (
+                <span
+                  key={w}
+                  className="w-[13px] overflow-visible whitespace-nowrap"
+                >
+                  {m}
+                </span>
               ))}
             </div>
-            {weeks.map((days, w) => (
-              <div key={w} className="flex flex-col gap-[3px]">
-                {days.map((day) => {
-                  const list = byDay.get(day) ?? [];
-                  const work = list.filter((i) => i.type !== 'end');
-                  const late = work.some((i) => !i.done && day < today);
-                  const ends = list.some((i) => i.type === 'end');
-                  return (
-                    <button
-                      key={day}
-                      type="button"
-                      onClick={() => setPicked(picked === day ? null : day)}
-                      title={`${shortDay(day)}: ${
-                        work.length
-                          ? `${work.length} thing${work.length > 1 ? 's' : ''}`
-                          : 'nothing'
-                      }${ends ? ', a plan ends' : ''}`}
-                      className={cn(
-                        cell,
-                        'relative transition-transform hover:scale-125',
-                        late ? 'bg-rose-500/60' : shade(work.length),
-                        day === today && 'ring-1 ring-white/70',
-                        picked === day && 'ring-2 ring-sky-300',
-                      )}
-                    >
-                      {ends && (
-                        <span className="absolute -right-0.5 -top-0.5 size-1.5 rounded-full bg-amber-300" />
-                      )}
-                    </button>
-                  );
-                })}
+            <div className="flex gap-[3px]">
+              <div className="flex w-7 flex-col gap-[3px] text-[10px] leading-[13px] text-neutral-500">
+                {WEEKDAYS.map((d, i) => (
+                  <span key={i}>{d}</span>
+                ))}
               </div>
-            ))}
-          </div>
-          <div className="mt-1 flex items-center gap-3 pl-8 text-[10px] text-neutral-500">
-            <span className="flex items-center gap-1">
-              Less
-              {[0, 1, 3, 6, 7].map((n) => (
-                <span key={n} className={cn(cell, shade(n))} />
+              {weeks.map((days, w) => (
+                <div key={w} className="flex flex-col gap-[3px]">
+                  {days.map((day) => {
+                    const list = byDay.get(day) ?? [];
+                    const work = list.filter((i) => i.type !== 'end');
+                    const late = work.some((i) => !i.done && day < today);
+                    const ends = list.some((i) => i.type === 'end');
+                    return (
+                      <button
+                        key={day}
+                        type="button"
+                        onClick={() => setPicked(picked === day ? null : day)}
+                        title={`${shortDay(day)}: ${
+                          work.length
+                            ? `${work.length} thing${work.length > 1 ? 's' : ''}`
+                            : 'nothing'
+                        }${ends ? ', a plan ends' : ''}`}
+                        className={cn(
+                          cell,
+                          'relative transition-transform hover:scale-125',
+                          late ? 'bg-rose-500/60' : shade(work.length),
+                          day === today && 'ring-1 ring-white/70',
+                          picked === day && 'ring-2 ring-sky-300',
+                        )}
+                      >
+                        {ends && (
+                          <span className="absolute -right-0.5 -top-0.5 size-1.5 rounded-full bg-amber-300" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               ))}
-              More
-            </span>
-            <span className="flex items-center gap-1">
-              <span className={cn(cell, 'bg-rose-500/60')} /> Late
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="size-1.5 rounded-full bg-amber-300" /> Plan ends
-            </span>
+            </div>
+            <div className="mt-1 flex items-center gap-3 pl-8 text-[10px] text-neutral-500">
+              <span className="flex items-center gap-1">
+                Less
+                {[0, 1, 3, 6, 7].map((n) => (
+                  <span key={n} className={cn(cell, shade(n))} />
+                ))}
+                More
+              </span>
+              <span className="flex items-center gap-1">
+                <span className={cn(cell, 'bg-rose-500/60')} /> Late
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="size-1.5 rounded-full bg-amber-300" /> Plan
+                ends
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
       {/* What is on the picked day, or coming up */}
-      <div className="mt-6">
+      <div className={cn(!inPlan && 'mt-6')}>
         <div className="flex items-center gap-2">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
             {picked ? shortDay(picked) : 'Next two weeks'}

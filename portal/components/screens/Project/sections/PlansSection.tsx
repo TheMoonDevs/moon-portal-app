@@ -1,6 +1,5 @@
 'use client';
 
-import { useMediaQuery } from '@mui/material';
 import { useState } from 'react';
 
 import { cn } from '@/lib/utils';
@@ -128,13 +127,11 @@ export const PlansSection = ({
   /** A plan made here, kept in the list until it has a step for the project. */
   onCreated: (plan: PlanView) => void;
 }) => {
-  const wide = useMediaQuery('(min-width: 1024px)');
   const { data, change, flush } = plans;
   const [stepId, setStepId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [makingTask, setMakingTask] = useState(false);
   const [freshId, setFreshId] = useState<string | null>(null);
 
   const plan = linked.find((p) => p.id === planId) ?? null;
@@ -229,13 +226,6 @@ export const PlansSection = ({
     return done;
   };
 
-  const makeTask = async () => {
-    if (!step) return;
-    setMakingTask(true);
-    await plans.makeTask(plan.id, step.id);
-    setMakingTask(false);
-  };
-
   const deletePlan = async () => {
     setDeleting(true);
     const gone = await plans.remove(plan.id);
@@ -251,6 +241,25 @@ export const PlansSection = ({
     setStepId(null);
     onOpen(null);
   };
+
+  // The picked step in full, under it in the steps.
+  const details = step && (
+    <StepPanel
+      plan={plan}
+      step={step}
+      projects={choices.projects}
+      stepProjects={choices.stepProjects}
+      people={choices.people}
+      canEdit={canEdit}
+      canMakeTask={plans.addsTasksIn(step.projectId)}
+      onChange={changeStep}
+      onRemove={removeStep}
+      onAddNote={(text) => plans.addNote(plan.id, step.id, text)}
+      onRefresh={() => plans.refresh(plan.id)}
+      onClose={() => setStepId(null)}
+      onDeleteTask={() => deleteStepTask(step.id)}
+    />
+  );
 
   const editor = (
     <PlanEditor
@@ -269,50 +278,18 @@ export const PlansSection = ({
       fresh={plan.id === freshId}
       newStepProjectId={projectId}
       addsTasksIn={plans.addsTasksIn}
-      onMakeTask={(stepId) => plans.makeTask(plan.id, stepId)}
+      onMakeTask={(stepId, quiet) => plans.makeTask(plan.id, stepId, quiet)}
+      onTickTask={(stepId, done) => plans.setTaskDone(plan.id, stepId, done)}
+      stepDetails={details}
       onShare={(change) => plans.share(plan.id, change)}
       meId={plans.meId}
       onDeleteTask={(id) => deleteStepTask(id)}
     />
   );
 
-  const side = (
-    <StepPanel
-      plan={plan}
-      step={step}
-      projects={choices.projects}
-      stepProjects={choices.stepProjects}
-      people={choices.people}
-      canEdit={canEdit}
-      canMakeTask={plans.addsTasksIn(step?.projectId)}
-      makingTask={makingTask}
-      onChange={changeStep}
-      onRemove={removeStep}
-      onMakeTask={makeTask}
-      onAddNote={(text) =>
-        step ? plans.addNote(plan.id, step.id, text) : Promise.resolve(false)
-      }
-      onRefresh={() => plans.refresh(plan.id)}
-      onClose={() => setStepId(null)}
-      onOpenStep={setStepId}
-      onDeleteTask={() =>
-        step ? deleteStepTask(step.id) : Promise.resolve(false)
-      }
-    />
-  );
-
   return (
     <div className="flex h-full min-h-0">
-      {wide ? (
-        <>
-          <div className="min-w-0 flex-1">{editor}</div>
-          <div className="w-[340px] shrink-0 border-l border-white/[0.07]">
-            {side}
-          </div>
-        </>
-      ) : (
-        <div className="min-w-0 flex-1">{step ? side : editor}</div>
-      )}
+      <div className="min-w-0 flex-1">{editor}</div>
       <ConfirmDialog
         open={confirmDelete}
         onOpenChange={setConfirmDelete}

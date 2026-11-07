@@ -35,14 +35,7 @@ import {
   TASK_STATUS_META,
 } from '../Admin/Workspace/shared';
 import { DeleteStepDialog } from './DeleteStepDialog';
-import {
-  goalLine,
-  GoalStar,
-  GrowingText,
-  ProjectDot,
-  ProjectOptions,
-} from './planBits';
-import { PlansTimeline } from './PlansTimeline';
+import { goalLine, GoalStar, ProjectDot, ProjectOptions } from './planBits';
 import {
   linkFields,
   LinkMenu,
@@ -55,20 +48,19 @@ import type { Person, PlanView, ProjectChoice } from './types';
 import { stepCount, stepKind } from './types';
 
 /*
- * The right side of a plan: the picked step in full (its task or goal
- * editable right here), or the plan at a glance when no step is picked.
+ * A plan's step in full, opened with Details right under the step (its task
+ * or goal editable there), and the plan at a glance for the top of the page.
  */
 
-const Glance = ({
+/** Under a plan's title: how far it is, and the projects and people in it. */
+export const PlanGlance = ({
   plan,
   projects,
   people,
-  onOpenStep,
 }: {
   plan: PlanView;
   projects: ProjectChoice[];
   people: Person[];
-  onOpenStep?: (stepId: string) => void;
 }) => {
   const byProject = new Map<string, number>();
   const byPerson = new Map<string, number>();
@@ -78,93 +70,73 @@ const Glance = ({
       s.projectId ?? '',
       (byProject.get(s.projectId ?? '') ?? 0) + 1,
     );
-    for (const id of s.assigneeIds)
-      byPerson.set(id, (byPerson.get(id) ?? 0) + 1);
+    const who = s.task?.assigneeIds?.length
+      ? s.task.assigneeIds
+      : s.assigneeIds;
+    for (const id of who) byPerson.set(id, (byPerson.get(id) ?? 0) + 1);
   }
   const count = stepCount(plan);
+  if (!count.total) return null;
   return (
-    <div className="flex h-full flex-col gap-6 overflow-y-auto p-5">
-      <PlansTimeline
-        inPlan
-        data={{ plans: [plan], projects }}
-        onOpen={(_planId, stepId) => stepId && onOpenStep?.(stepId)}
-      />
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
-          At a glance
-        </p>
-        <p className="mt-2 text-sm text-neutral-300">
-          {count.total
-            ? `${count.done} of ${count.total} steps done`
-            : 'No steps yet. Type / in a step to pick what it is: text, a task or a goal.'}
-        </p>
-        {count.total > 0 && (
-          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.07]">
-            <div
-              className="h-full rounded-full bg-emerald-400"
-              style={{ width: `${(count.done / count.total) * 100}%` }}
-            />
-          </div>
-        )}
+    <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2.5 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3.5 py-2.5">
+      <div
+        className="flex items-center gap-2.5"
+        title={`${count.done} of ${count.total} steps done`}
+      >
+        <div className="h-1.5 w-28 overflow-hidden rounded-full bg-white/[0.07]">
+          <div
+            className="h-full rounded-full bg-emerald-400"
+            style={{ width: `${(count.done / count.total) * 100}%` }}
+          />
+        </div>
+        <span className="whitespace-nowrap text-xs text-neutral-300">
+          {count.done} of {count.total} done
+        </span>
       </div>
       {byProject.size > 0 && (
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">
-            Projects
-          </p>
-          <div className="flex flex-col gap-1.5">
-            {Array.from(byProject.entries()).map(([id, n]) => {
-              const project = projects.find((p) => p.id === id);
-              return (
-                <div
-                  key={id || 'none'}
-                  className="flex items-center gap-2 text-sm text-neutral-300"
-                >
-                  <ProjectDot project={project} />
-                  <span className="flex-1 truncate">
-                    {project?.name ?? 'No project yet'}
-                  </span>
-                  <span className="text-xs text-neutral-500">{n}</span>
-                </div>
-              );
-            })}
-          </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {Array.from(byProject.entries()).map(([id, n]) => {
+            const project = projects.find((p) => p.id === id);
+            return (
+              <span
+                key={id || 'none'}
+                title={`${n} ${n === 1 ? 'step' : 'steps'} for ${project?.name ?? 'no project yet'}`}
+                className="flex items-center gap-1.5 rounded-full bg-white/[0.05] px-2 py-0.5 text-[11px] text-neutral-300"
+              >
+                <ProjectDot project={project} />
+                <span className="max-w-[140px] truncate">
+                  {project?.name ?? 'No project yet'}
+                </span>
+                <span className="text-neutral-500">{n}</span>
+              </span>
+            );
+          })}
         </div>
       )}
       {byPerson.size > 0 && (
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">
-            People
-          </p>
-          <div className="flex flex-col gap-1.5">
-            {Array.from(byPerson.entries()).map(([id, n]) => {
-              const person = people.find((p) => p.id === id);
-              return (
-                <div
-                  key={id}
-                  className="flex items-center gap-2 text-sm text-neutral-300"
-                >
-                  <UserAvatar
-                    src={person?.avatar}
-                    name={person?.name}
-                    size={22}
-                  />
-                  <span className="flex-1 truncate">
-                    {person?.name ?? 'Someone'}
-                  </span>
-                  <span className="text-xs text-neutral-500">
-                    {n} {n === 1 ? 'step' : 'steps'}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {Array.from(byPerson.entries()).map(([id, n]) => {
+            const person = people.find((p) => p.id === id);
+            return (
+              <span
+                key={id}
+                title={`${person?.name ?? 'Someone'}: ${n} ${n === 1 ? 'step' : 'steps'}`}
+                className="flex items-center gap-1 rounded-full bg-white/[0.05] py-0.5 pl-0.5 pr-2 text-[11px] text-neutral-300"
+              >
+                <UserAvatar
+                  src={person?.avatar}
+                  name={person?.name}
+                  size={18}
+                />
+                <span className="max-w-[110px] truncate">
+                  {person?.name?.split(' ')[0] ?? 'Someone'}
+                </span>
+                <span className="text-neutral-500">{n}</span>
+              </span>
+            );
+          })}
         </div>
       )}
-      <p className="text-xs text-neutral-600">
-        Pick a step to see it in full here: its task or goal can be changed
-        right on this side.
-      </p>
     </div>
   );
 };
@@ -497,11 +469,9 @@ export const StepPanel = ({
   makingTask,
   onChange,
   onRemove,
-  onMakeTask,
   onAddNote,
   onRefresh,
   onClose,
-  onOpenStep,
   onDeleteTask,
 }: {
   plan: PlanView;
@@ -513,16 +483,13 @@ export const StepPanel = ({
   canEdit: boolean;
   /** Whether they can add tasks in the step's project. */
   canMakeTask?: boolean;
-  makingTask: boolean;
+  makingTask?: boolean;
   onChange: (fields: Partial<EditorStep>) => void;
   onRemove: () => void;
-  onMakeTask: () => void;
   onAddNote: (text: string) => Promise<boolean>;
   /** Loads the plans again, after a task or goal changed. */
   onRefresh: () => Promise<void>;
   onClose: () => void;
-  /** Opens a step here, e.g. from the timeline. */
-  onOpenStep?: (stepId: string) => void;
   /** Deletes the step's task and the step. */
   onDeleteTask?: () => Promise<boolean>;
 }) => {
@@ -554,15 +521,7 @@ export const StepPanel = ({
     setLinkQuery(null);
   };
 
-  if (!step)
-    return (
-      <Glance
-        plan={plan}
-        projects={projects}
-        people={people}
-        onOpenStep={onOpenStep}
-      />
-    );
+  if (!step) return null;
 
   const kind = stepKind(step);
   const linked = !!(step.taskId || step.goalId);
@@ -592,7 +551,10 @@ export const StepPanel = ({
   };
 
   return (
-    <div className="flex h-full flex-col gap-5 overflow-y-auto p-5">
+    <div
+      className="flex flex-col gap-4 rounded-xl border border-white/[0.08] bg-white/[0.025] p-4"
+      onClick={(e) => e.stopPropagation()}
+    >
       <div className="flex items-center gap-2">
         <Segmented<PlanStepKind>
           value={kind}
@@ -601,33 +563,10 @@ export const StepPanel = ({
             value: k,
             label: KIND_META[k].label,
           }))}
-          className={cn('flex-1', !canEdit && 'pointer-events-none opacity-70')}
+          className={cn(!canEdit && 'pointer-events-none opacity-70')}
         />
+        <div className="flex-1" />
         <IconAction icon="close" label="Close" onClick={onClose} />
-      </div>
-
-      {/* The step and its details, just below it */}
-      <div className="flex flex-col gap-1.5">
-        {linked ? (
-          <p className="text-base font-medium text-white">
-            {step.task?.title ?? step.goal?.title ?? step.text}
-          </p>
-        ) : (
-          <GrowingText
-            value={step.text}
-            onChange={(text) => onChange({ text })}
-            disabled={!canEdit}
-            placeholder={KIND_META[kind].hint}
-            className="text-base font-medium text-white placeholder:text-neutral-600"
-          />
-        )}
-        <GrowingText
-          value={step.notes ?? ''}
-          onChange={(notes) => onChange({ notes })}
-          disabled={!canEdit}
-          placeholder={canEdit ? 'Add details…' : 'No details'}
-          className="min-h-[40px] text-sm leading-relaxed text-neutral-300 placeholder:text-neutral-600"
-        />
       </div>
 
       {/* Task steps: the task itself, editable here */}
@@ -705,25 +644,16 @@ export const StepPanel = ({
             </>
           )}
           {kind === 'task' && canEdit && (
-            <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-3">
-              <p className="mb-2 text-xs text-neutral-400">
-                {!step.projectId
-                  ? 'Pick a project, then make it a task there with these people and this date.'
-                  : canMakeTask
-                    ? 'Make it a task in its project, with these people and this date. Ctrl+Enter in the step does the same.'
-                    : 'Someone on that project’s team can make it a task.'}
-              </p>
-              <AdminButton
-                size="sm"
-                tone="primary"
-                icon="add_task"
-                loading={makingTask}
-                disabled={!canMakeTask || !step.projectId || !step.text.trim()}
-                onClick={onMakeTask}
-              >
-                Create the task
-              </AdminButton>
-            </div>
+            <p className="flex items-start gap-1.5 text-xs text-neutral-500">
+              <Icon name="add_task" className="mt-px text-[14px]" />
+              {!step.projectId
+                ? 'Pick a project: the step becomes a task there, with these people and this date.'
+                : canMakeTask
+                  ? makingTask
+                    ? 'Making the task…'
+                    : 'It becomes a task in its project as soon as it has a title.'
+                  : 'Someone on that project’s team can make it a task.'}
+            </p>
           )}
         </>
       )}
@@ -772,7 +702,7 @@ export const StepPanel = ({
         </div>
       )}
 
-      <div className="mt-auto flex flex-wrap items-center gap-4 pt-2">
+      <div className="flex flex-wrap items-center gap-4 border-t border-white/[0.06] pt-3">
         {canEdit && linked && (
           <button
             type="button"

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { projectFamily } from '@/lib/workspace/plans';
-import { PLAN_STATUS } from '@/models/workspace';
+import { PLAN_STATUS, TASK_STATUS } from '@/models/workspace';
 import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
@@ -46,6 +46,8 @@ export const usePlans = (companyId: string | null | undefined) => {
 
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const pending = useRef(new Map<string, PlanView>());
+  /** Plans with a task being made: their saves wait, so the link is kept. */
+  const making = useRef(new Map<string, number>());
 
   const load = useCallback(async (id: string) => {
     setLoading(true);
@@ -70,6 +72,8 @@ export const usePlans = (companyId: string | null | undefined) => {
   const persist = useCallback(async (id: string) => {
     const plan = pending.current.get(id);
     if (!plan) return;
+    // A task is being made from a step: save once its link is back.
+    if (making.current.get(id)) return;
     pending.current.delete(id);
     setSaveState('saving');
     try {
@@ -195,40 +199,115 @@ export const usePlans = (companyId: string | null | undefined) => {
     }
   }, []);
 
-  /** Turns a step into a task in its project. */
+  /**
+   * Turns a step into a task in its project. Saves of the plan wait while
+   * it is made, so a save typed meanwhile does not drop the new link.
+   */
   const makeTask = useCallback(
-    async (planId: string, stepId: string) => {
+    async (planId: string, stepId: string, quiet = false) => {
+      await flush(planId);
+      making.current.set(planId, (making.current.get(planId) ?? 0) + 1);
       try {
-        await flush(planId);
         const res = await PortalSdk.postData(
           `/api/plans/${planId}/steps/${stepId}/task`,
           {},
         );
         const saved: PlanView = res?.data?.plan;
+        const made = saved?.steps.find((x) => x.id === stepId);
+        if (!made) throw new Error('The task was not made.');
+        const link = (p: PlanView): PlanView => ({
+          ...p,
+          steps: p.steps.map((s) =>
+            s.id !== stepId
+              ? s
+              : {
+                  ...s,
+                  kind: made.kind,
+                  taskId: made.taskId,
+                  task: made.task ?? null,
+                  projectId: made.projectId,
+                  done: made.done,
+                },
+          ),
+        });
+        const waiting = pending.current.get(planId);
+        if (waiting) pending.current.set(planId, link(waiting));
+        setData(
+          (d) =>
+            d && {
+              ...d,
+              plans: d.plans.map((p) => (p.id === planId ? link(p) : p)),
+            },
+        );
+        if (!quiet) toast.success('Added to the project’s tasks');
+        return true;
+      } catch (err) {
+        toast.error(errorText(err, 'Could not make the task.'));
+        return false;
+      } finally {
+        making.current.set(planId, (making.current.get(planId) ?? 1) - 1);
+        if (pending.current.has(planId)) {
+          clearTimeout(timers.current.get(planId));
+          timers.current.set(
+            planId,
+            setTimeout(() => persist(planId), SAVE_AFTER_MS),
+          );
+        }
+      }
+    },
+    [flush, persist],
+  );
+
+  /** Ticks a task step's task done, or not done, right from the step. */
+  const setTaskDone = useCallback(
+    async (planId: string, stepId: string, done: boolean) => {
+      const plan =
+        pending.current.get(planId) ?? data?.plans.find((p) => p.id === planId);
+      const step = plan?.steps.find((s) => s.id === stepId);
+      if (!step?.taskId) return false;
+      const before = { done: step.done, task: step.task };
+      const mark = (
+        p: PlanView,
+        fields: Partial<PlanView['steps'][number]>,
+      ) => ({
+        ...p,
+        steps: p.steps.map((s) => (s.id === stepId ? { ...s, ...fields } : s)),
+      });
+      const apply = (fields: Partial<PlanView['steps'][number]>) => {
+        const waiting = pending.current.get(planId);
+        if (waiting) pending.current.set(planId, mark(waiting, fields));
         setData(
           (d) =>
             d && {
               ...d,
               plans: d.plans.map((p) =>
-                p.id !== saved.id
-                  ? p
-                  : {
-                      ...p,
-                      steps: p.steps.map(
-                        (s) => saved.steps.find((x) => x.id === s.id) ?? s,
-                      ),
-                    },
+                p.id === planId ? mark(p, fields) : p,
               ),
             },
         );
-        toast.success('Added to the project’s tasks');
+      };
+      const status = done ? TASK_STATUS.DONE : TASK_STATUS.TODO;
+      const after = {
+        done,
+        task: step.task && {
+          ...step.task,
+          status,
+          completedAt: done ? new Date().toISOString() : null,
+        },
+      };
+      apply(after);
+      try {
+        await PortalSdk.patchData(`/api/tasks/${step.taskId}`, { status });
+        // A plan save that came back meanwhile had the old status.
+        apply(after);
         return true;
       } catch (err) {
-        toast.error(errorText(err));
+        apply(before);
+        toast.error(errorText(err, 'Could not change the task.'));
         return false;
       }
     },
-    [flush],
+    [data],
   );
 
   /** Sets who can open a plan: everyone in its company, or only some people. */
@@ -401,6 +480,7 @@ export const usePlans = (companyId: string | null | undefined) => {
     create,
     remove,
     makeTask,
+    setTaskDone,
     share,
     meId: user?.id ?? null,
     refreshSchedules,

@@ -32,11 +32,41 @@ import { ALL_COMPANIES, usePlans } from './usePlans';
 /*                                The plan list                               */
 /* -------------------------------------------------------------------------- */
 
-const GROUPS: { label: string; statuses: PLAN_STATUS[] }[] = [
-  { label: 'Active', statuses: [PLAN_STATUS.ACTIVE] },
-  { label: 'Ideas', statuses: [PLAN_STATUS.IDEA] },
-  { label: 'Finished', statuses: [PLAN_STATUS.DONE, PLAN_STATUS.DROPPED] },
+/** The list's groups, each one opening and closing; done and dropped start closed. */
+const GROUPS: { key: string; label: string; status: PLAN_STATUS }[] = [
+  { key: 'idea', label: 'Ideas', status: PLAN_STATUS.IDEA },
+  { key: 'active', label: 'Active', status: PLAN_STATUS.ACTIVE },
+  { key: 'done', label: 'Done', status: PLAN_STATUS.DONE },
+  { key: 'dropped', label: 'Dropped', status: PLAN_STATUS.DROPPED },
 ];
+const OPEN_AT_FIRST = ['idea', 'active'];
+const OPEN_KEY = 'plans-open-groups';
+
+/** Which groups are open, kept for next time in this browser. */
+const useOpenGroups = () => {
+  const [open, setOpen] = useState<string[]>(OPEN_AT_FIRST);
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(OPEN_KEY) ?? 'null');
+      if (Array.isArray(saved)) setOpen(saved);
+    } catch {
+      // Nothing kept: the first groups stay open.
+    }
+  }, []);
+  const toggle = (key: string) =>
+    setOpen((list) => {
+      const next = list.includes(key)
+        ? list.filter((k) => k !== key)
+        : [...list, key];
+      try {
+        localStorage.setItem(OPEN_KEY, JSON.stringify(next));
+      } catch {
+        // Not kept; it still works for now.
+      }
+      return next;
+    });
+  return { open, toggle };
+};
 
 type Kind = 'all' | 'grand' | 'project';
 const KINDS: { value: Kind; label: string }[] = [
@@ -59,7 +89,7 @@ const PlanList = ({
 }) => {
   const [search, setSearch] = useState('');
   const [kind, setKind] = useState<Kind>('all');
-  const [showFinished, setShowFinished] = useState(false);
+  const groups = useOpenGroups();
   const projectById = useMemo(
     () => new Map(data.projects.map((p) => [p.id, p])),
     [data.projects],
@@ -118,25 +148,32 @@ const PlanList = ({
       </div>
       <div className="flex-1 overflow-y-auto px-2 pb-6">
         {GROUPS.map((group) => {
-          const plans = shown.filter((p) =>
-            group.statuses.includes(p.status as PLAN_STATUS),
-          );
+          const plans = shown.filter((p) => p.status === group.status);
           if (!plans.length) return null;
-          const finished = group.label === 'Finished';
-          const open = !finished || showFinished || !!q;
+          // A search shows every match, closed groups too.
+          const open = !!q || groups.open.includes(group.key);
+          const hasSelected = plans.some((p) => p.id === selectedId);
           return (
-            <div key={group.label} className="mb-3">
+            <div key={group.key} className="mb-1">
               <button
                 type="button"
-                onClick={() => finished && setShowFinished((v) => !v)}
-                className="flex w-full items-center gap-1 px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-neutral-500"
+                aria-expanded={open}
+                onClick={() => !q && groups.toggle(group.key)}
+                className="group/head flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-neutral-500 hover:bg-white/[0.03] hover:text-neutral-300"
               >
+                <Icon
+                  name="chevron_right"
+                  className={cn(
+                    'text-[16px] transition-transform',
+                    open && 'rotate-90',
+                  )}
+                />
                 {group.label}
                 <span className="font-normal">{plans.length}</span>
-                {finished && !q && (
-                  <Icon
-                    name={open ? 'expand_less' : 'expand_more'}
-                    className="ml-auto text-[16px]"
+                {!open && hasSelected && (
+                  <span
+                    className="ml-auto size-1.5 rounded-full bg-sky-400"
+                    title="The open plan is in here"
                   />
                 )}
               </button>
@@ -155,7 +192,7 @@ const PlanList = ({
                       type="button"
                       onClick={() => onSelect(plan.id)}
                       className={cn(
-                        'flex w-full flex-col gap-1 rounded-lg px-3 py-2 text-left transition-colors',
+                        'flex w-full flex-col gap-1 rounded-lg py-2 pl-[30px] pr-3 text-left transition-colors',
                         plan.id === selectedId
                           ? 'bg-white/[0.08]'
                           : 'hover:bg-white/[0.04]',
@@ -272,10 +309,9 @@ export const PlansPage = () => {
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [makingTask, setMakingTask] = useState(false);
   const [freshId, setFreshId] = useState<string | null>(null);
   // On a phone one panel shows at a time.
-  const [view, setView] = useState<'list' | 'plan' | 'step'>('list');
+  const [view, setView] = useState<'list' | 'plan'>('list');
 
   const plans = usePlans(companyId);
   const { data, loading, saveState, change, flush } = plans;
@@ -310,7 +346,7 @@ export const PlansPage = () => {
     if (planId && planId !== id) flush(planId);
     setPlanId(id);
     setStepId(step);
-    setView(step && !wide ? 'step' : id ? 'plan' : 'list');
+    setView(id ? 'plan' : 'list');
     setAddress(id, step);
   };
 
@@ -371,14 +407,6 @@ export const PlansPage = () => {
       steps: p.steps.filter((s) => s.id !== step.id),
     }));
     setStepId(null);
-    setView('plan');
-  };
-
-  const makeTask = async () => {
-    if (!plan || !step) return;
-    setMakingTask(true);
-    await plans.makeTask(plan.id, step.id);
-    setMakingTask(false);
   };
 
   /** Deletes a step and the task it links to. */
@@ -391,7 +419,6 @@ export const PlansPage = () => {
 
   const selectStep = (id: string | null) => {
     setStepId(id);
-    if (id && !wide) setView('step');
     setAddress(planId, id);
   };
 
@@ -407,6 +434,25 @@ export const PlansPage = () => {
   );
 
   const choices = plan ? plans.choicesFor(plan) : null;
+
+  // The picked step in full, under it in the steps.
+  const details = plan && choices && step && (
+    <StepPanel
+      plan={plan}
+      step={step}
+      projects={choices.projects}
+      stepProjects={choices.stepProjects}
+      people={choices.people}
+      canEdit={canEditPlan}
+      canMakeTask={addsTasksIn(step.projectId)}
+      onChange={changeStep}
+      onRemove={removeStep}
+      onAddNote={(text) => plans.addNote(plan.id, step.id, text)}
+      onRefresh={() => plans.refresh(plan.id)}
+      onDeleteTask={() => deleteStepTask(step.id)}
+      onClose={() => selectStep(null)}
+    />
+  );
 
   const editor =
     plan && data && choices ? (
@@ -430,10 +476,12 @@ export const PlansPage = () => {
         onBack={wide ? undefined : () => setView('list')}
         fresh={plan.id === freshId}
         addsTasksIn={plans.addsTasksIn}
-        onMakeTask={(stepId) => plans.makeTask(plan.id, stepId)}
+        onMakeTask={(stepId, quiet) => plans.makeTask(plan.id, stepId, quiet)}
+        onTickTask={(stepId, done) => plans.setTaskDone(plan.id, stepId, done)}
         onShare={(change) => plans.share(plan.id, change)}
         meId={plans.meId}
         onDeleteTask={(stepId) => deleteStepTask(stepId)}
+        stepDetails={details}
       />
     ) : (
       <EmptyState
@@ -455,34 +503,6 @@ export const PlansPage = () => {
         className="h-full"
       />
     );
-
-  const side = plan && data && choices && (
-    <StepPanel
-      plan={plan}
-      step={step}
-      projects={choices.projects}
-      stepProjects={choices.stepProjects}
-      people={choices.people}
-      canEdit={canEditPlan}
-      canMakeTask={addsTasksIn(step?.projectId)}
-      makingTask={makingTask}
-      onChange={changeStep}
-      onRemove={removeStep}
-      onMakeTask={makeTask}
-      onAddNote={(text) =>
-        step ? plans.addNote(plan.id, step.id, text) : Promise.resolve(false)
-      }
-      onRefresh={() => plans.refresh(plan.id)}
-      onOpenStep={selectStep}
-      onDeleteTask={() =>
-        step ? deleteStepTask(step.id) : Promise.resolve(false)
-      }
-      onClose={() => {
-        selectStep(null);
-        if (!wide) setView('plan');
-      }}
-    />
-  );
 
   return (
     <div className="fixed inset-0 flex flex-col bg-neutral-950 pb-[72px] text-neutral-100 md:left-16 md:pb-0">
@@ -576,25 +596,15 @@ export const PlansPage = () => {
             {loading || loadingWorkspace ? <Spin className="size-5" /> : null}
           </div>
         ) : wide ? (
-          <PanelGroup direction="horizontal" autoSaveId="plans-panels">
+          <PanelGroup direction="horizontal" autoSaveId="plans-panels-2">
             <ResizablePanel defaultSize={22} minSize={15} maxSize={35}>
               {list}
             </ResizablePanel>
             <Handle />
-            <ResizablePanel defaultSize={50} minSize={30}>
+            <ResizablePanel defaultSize={78} minSize={50}>
               {editor}
             </ResizablePanel>
-            {side && (
-              <>
-                <Handle />
-                <ResizablePanel defaultSize={28} minSize={20} maxSize={45}>
-                  {side}
-                </ResizablePanel>
-              </>
-            )}
           </PanelGroup>
-        ) : view === 'step' && step ? (
-          side
         ) : view !== 'list' && plan ? (
           editor
         ) : data.plans.length ? (
