@@ -526,9 +526,10 @@ export const StepPanel = ({
   const kind = stepKind(step);
   const linked = !!(step.taskId || step.goalId);
   /** Back to a plain step; the task or goal stays where it is. */
+  // Text, so a task step does not make a new task by itself again.
   const unlink = () =>
     onChange({
-      kind: kind === 'goal' ? 'task' : kind,
+      kind: 'info',
       taskId: null,
       goalId: null,
       task: null,

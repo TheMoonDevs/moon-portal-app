@@ -478,6 +478,10 @@ export const PlansPage = () => {
         addsTasksIn={plans.addsTasksIn}
         onMakeTask={(stepId, quiet) => plans.makeTask(plan.id, stepId, quiet)}
         onTickTask={(stepId, done) => plans.setTaskDone(plan.id, stepId, done)}
+        onTaskChange={(stepId, fields) =>
+          plans.updateStepTask(plan.id, stepId, fields)
+        }
+        onAddNote={(stepId, text) => plans.addNote(plan.id, stepId, text)}
         onShare={(change) => plans.share(plan.id, change)}
         meId={plans.meId}
         onDeleteTask={(stepId) => deleteStepTask(stepId)}

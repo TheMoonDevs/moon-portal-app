@@ -28,6 +28,7 @@ import {
 } from './planBits';
 import { StepInfo } from './StepInfo';
 import { linkFields, LinkMenu, type StepLink, useStepLinks } from './StepLinks';
+import { StepMenu, type StepTaskFields } from './StepMenu';
 import type { Person, PlanView, ProjectChoice, StepView } from './types';
 import { isPast, stepKind } from './types';
 
@@ -543,9 +544,15 @@ export const StepsEditor = ({
   addsTasksIn,
   onMakeTask,
   onTickTask,
+  onTaskChange,
+  onAddNote,
   onDeleteTask,
   details,
 }: {
+  /** Changes a task step's task: status, due date, people. */
+  onTaskChange: (stepId: string, fields: StepTaskFields) => void;
+  /** Adds a note to a task step's task. */
+  onAddNote: (stepId: string, text: string) => Promise<boolean>;
   plan: PlanView;
   /** The projects its steps can name. */
   projects: ProjectChoice[];
@@ -1217,6 +1224,25 @@ export const StepsEditor = ({
                     projects={projects}
                     people={people}
                   />
+                  {canEdit && (
+                    <StepMenu
+                      plan={plan}
+                      step={step}
+                      projects={projects}
+                      people={people}
+                      isOpen={isOpen}
+                      onKind={(k) => setKind(step, k)}
+                      onChange={(fields) => setStep(step.id, fields)}
+                      onTaskChange={(fields) => onTaskChange(step.id, fields)}
+                      onAddNote={(text) => onAddNote(step.id, text)}
+                      onDetails={() => onSelectStep(isOpen ? null : step.id)}
+                      onDelete={() =>
+                        step.taskId
+                          ? setDeletingId(step.id)
+                          : remove(step.id, false)
+                      }
+                    />
+                  )}
                 </div>
 
                 {/* Details, under the title (Shift+Enter) */}
