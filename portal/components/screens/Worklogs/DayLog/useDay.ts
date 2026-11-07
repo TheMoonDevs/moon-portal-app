@@ -117,6 +117,10 @@ export type PlaceInput =
 let seq = 0;
 const draftId = () => `draft-${Date.now().toString(36)}${(seq++).toString(36)}`;
 
+/** Archived tasks are off the day; Your tasks keeps them to bring back. */
+const onDay = (t: Pick<DayTask, 'status'>) =>
+  t.status !== 'ARCHIVED' && t.status !== 'IGNORED';
+
 const errorOf = (e: any, fallback: string) =>
   (typeof e?.error === 'string' && e.error) || fallback;
 
@@ -149,7 +153,7 @@ export function useDay(date: string) {
       const data = res?.data ?? {};
       setTasks((current) => [
         // Words still being typed stay as typed.
-        ...((data.tasks ?? []) as DayTask[]).map((t) => {
+        ...((data.tasks ?? []) as DayTask[]).filter(onDay).map((t) => {
           const same = current.find((c) => c.id === t.id);
           const typing = same && timers.current.has(same.id);
           return {
@@ -364,15 +368,17 @@ export function useDay(date: string) {
                 ? (row?.status ?? 'TODO')
                 : 'IN_PROGRESS';
       setTasks((ts) =>
-        ts.map((t) =>
-          t.id === id || t.id === real
-            ? {
-                ...t,
-                status,
-                flag: to === 'blocked' || to === 'waiting' ? to : null,
-              }
-            : t,
-        ),
+        ts
+          .map((t) =>
+            t.id === id || t.id === real
+              ? {
+                  ...t,
+                  status,
+                  flag: to === 'blocked' || to === 'waiting' ? to : null,
+                }
+              : t,
+          )
+          .filter(onDay),
       );
       await track(async () => {
         try {
@@ -384,11 +390,13 @@ export function useDay(date: string) {
           });
           if (res?.data?.task)
             setTasks((ts) =>
-              ts.map((t) =>
-                t.id === id || t.id === real
-                  ? { ...res.data.task, title: t.title, rowKey: t.rowKey }
-                  : t,
-              ),
+              ts
+                .map((t) =>
+                  t.id === id || t.id === real
+                    ? { ...res.data.task, title: t.title, rowKey: t.rowKey }
+                    : t,
+                )
+                .filter(onDay),
             );
         } catch (e) {
           toast.error(errorOf(e, 'Could not change it.'));
