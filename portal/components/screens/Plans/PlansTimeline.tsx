@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 
 import { cn } from '@/lib/utils';
+import { stripMarkdown } from '@/lib/workspace/pageMarkdown';
 import { goalRule, isTarget, runsOn } from '@/lib/workspace/projects';
 import { PLAN_STATUS, type ProjectGoal } from '@/models/workspace';
 
@@ -78,7 +79,7 @@ const itemsOf = (
             type: 'task',
             plan,
             step,
-            title: step.task?.title ?? step.text,
+            title: step.task?.title ?? stripMarkdown(step.text),
             done: !!step.done,
           });
       } else if (kind === 'goal' && step.goalId) {
