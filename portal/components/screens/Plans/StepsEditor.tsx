@@ -1,7 +1,8 @@
 'use client';
 
 import type { User } from '@db/client';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 import { newStep } from '@/lib/workspace/plans';
@@ -33,10 +34,12 @@ import { isPast, stepKind } from './types';
 /*
  * A plan's steps, edited like a Notion page: each step is a line, "/" opens
  * the commands (what kind of step, or a task or goal to link), Enter starts
- * the next step, Ctrl+Enter makes the step's task and starts the next, and
- * Shift+Enter opens the step's details under its title. The step being
- * edited shows its project, date, people and type; Details opens it in full
- * on the right, and the (i) at the end of a step shows it to anyone.
+ * the next step, and Shift+Enter opens the step's details under its title.
+ * A task step becomes a real task in its project by itself once it has a
+ * title and a project and the cursor leaves it; its circle ticks the task
+ * done. The step being edited shows its project, date, people and type;
+ * Details opens it in full under the step, and the (i) at the end of a step
+ * shows it to anyone.
  * Steps move with the handle (drag, or its menu) or Alt+↑/↓.
  *
  * Steps take Markdown too: "[] " starts a task, "- " a text step, "# " a
@@ -296,6 +299,8 @@ const StepBar = ({
   canEdit,
   canMakeTask,
   makingTask,
+  makeFailed,
+  detailsOpen,
   onChange,
   onKind,
   onDetails,
@@ -307,6 +312,10 @@ const StepBar = ({
   canEdit: boolean;
   canMakeTask: boolean;
   makingTask: boolean;
+  /** Making its task by itself failed: offer to try again. */
+  makeFailed: boolean;
+  /** Its details are open under it. */
+  detailsOpen: boolean;
   onChange: (fields: Partial<EditorStep>) => void;
   onKind: (kind: PlanStepKind) => void;
   onDetails: () => void;
@@ -433,25 +442,51 @@ const StepBar = ({
         </span>
       )}
       {kind === 'task' && !step.task && canEdit && (
+        // The task is made by itself; this says what it waits for.
         <button
           type="button"
-          disabled={!canMakeTask || !step.projectId || !step.text.trim()}
+          disabled={!makeFailed || makingTask}
           onClick={onMakeTask}
           title={
-            !step.projectId
-              ? 'Pick a project first'
-              : canMakeTask
-                ? 'Make it a task in its project (Ctrl+Enter)'
-                : 'Only the people on that project can add its tasks'
+            makeFailed
+              ? 'Try making the task again'
+              : !step.projectId
+                ? 'Pick a project: the task is made there'
+                : !canMakeTask
+                  ? 'Only the people on that project can add its tasks'
+                  : 'The task is made once you leave the step'
           }
-          className={cn(chip, 'text-sky-300/80 disabled:opacity-40')}
+          className={cn(
+            chip,
+            'disabled:hover:bg-transparent',
+            makeFailed
+              ? 'text-rose-300/90 hover:text-rose-200'
+              : 'text-neutral-600 disabled:hover:text-neutral-600',
+          )}
         >
           {makingTask ? (
-            <Spin className="size-3" />
+            <>
+              <Spin className="size-3" /> Making the task
+            </>
+          ) : makeFailed ? (
+            <>
+              <Icon name="refresh" className="text-[13px]" /> Make the task
+            </>
+          ) : !step.projectId ? (
+            <>
+              <Icon name="info" className="text-[13px]" /> Pick a project for
+              its task
+            </>
+          ) : !canMakeTask ? (
+            <>
+              <Icon name="lock" className="text-[13px]" /> Not on that project’s
+              team
+            </>
           ) : (
-            <Icon name="add_task" className="text-[13px]" />
+            <>
+              <Icon name="add_task" className="text-[13px]" /> Becomes a task
+            </>
           )}
-          Create task
         </button>
       )}
       {kind === 'goal' && step.goal && (
@@ -479,10 +514,13 @@ const StepBar = ({
       <button
         type="button"
         onClick={onDetails}
-        className={cn(chip, 'ml-auto')}
-        title="Open the step on the right"
+        className={cn(chip, 'ml-auto', detailsOpen && 'text-neutral-200')}
+        title={detailsOpen ? 'Close the details' : 'Open the step in full'}
       >
-        <Icon name="view_sidebar" className="text-[13px]" />
+        <Icon
+          name={detailsOpen ? 'expand_less' : 'tune'}
+          className="text-[13px]"
+        />
         Details
       </button>
     </div>
@@ -504,23 +542,29 @@ export const StepsEditor = ({
   newStepProjectId,
   addsTasksIn,
   onMakeTask,
+  onTickTask,
   onDeleteTask,
+  details,
 }: {
   plan: PlanView;
   /** The projects its steps can name. */
   projects: ProjectChoice[];
   people: Person[];
   canEdit: boolean;
-  /** The step open in the sidebar. */
+  /** The step open in full, under its row. */
   selectedStepId: string | null;
-  /** Opens a step in the sidebar (null closes it). */
+  /** Opens a step in full (null closes it). */
   onSelectStep: (id: string | null) => void;
   onChange: (change: (plan: PlanView) => PlanView) => void;
   /** The project new steps are for, e.g. on that project's page. */
   newStepProjectId?: string;
   addsTasksIn: (projectId?: string | null) => boolean;
-  /** Makes the step's task; resolves when done. */
-  onMakeTask: (stepId: string) => Promise<boolean>;
+  /** Makes the step's task; resolves when done. `quiet`: no toast. */
+  onMakeTask: (stepId: string, quiet?: boolean) => Promise<boolean>;
+  /** Ticks a task step's task done or not. */
+  onTickTask: (stepId: string, done: boolean) => void;
+  /** The selected step in full, shown under its row. */
+  details?: ReactNode;
   /** Deletes a step's task and the step; resolves when done. */
   onDeleteTask: (stepId: string) => Promise<boolean>;
 }) => {
@@ -540,6 +584,8 @@ export const StepsEditor = ({
     hasMarkdown(text) && (!canEdit || (typingId !== box && focusId !== box));
   const [active, setActive] = useState(0);
   const [makingId, setMakingId] = useState<string | null>(null);
+  /** Steps whose task could not be made: not tried again by themselves. */
+  const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
   /** A step linked to a task, asked about before it goes. */
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const deleting = steps.find((s) => s.id === deletingId);
@@ -701,7 +747,7 @@ export const StepsEditor = ({
     }
     if (kind === 'goal' && !step.goalId) {
       fields.draftGoal = goal ?? 'scheduled';
-      // A new goal is set up in the sidebar.
+      // A new goal is set up in its details.
       onSelectStep(step.id);
     }
     setStep(step.id, fields);
@@ -784,12 +830,39 @@ export const StepsEditor = ({
     }
   };
 
-  const makeTask = async (step: EditorStep) => {
+  const makeTask = async (step: EditorStep, quiet = false) => {
     setMakingId(step.id);
-    const done = await onMakeTask(step.id);
+    const done = await onMakeTask(step.id, quiet);
     setMakingId(null);
+    setFailedIds((set) => {
+      const next = new Set(set);
+      if (done) next.delete(step.id);
+      else next.add(step.id);
+      return next;
+    });
     return done;
   };
+
+  // A task step becomes its task by itself: once it has a title and a
+  // project and is not being typed in. One at a time, so each link lands.
+  useEffect(() => {
+    if (!canEdit || makingId) return;
+    const ready = steps.find(
+      (s) =>
+        stepKind(s) === 'task' &&
+        !s.taskId &&
+        !s.goalId &&
+        !!s.projectId &&
+        !!s.text.trim() &&
+        !s.text.startsWith('/') &&
+        typingId !== s.id &&
+        slashId !== s.id &&
+        !failedIds.has(s.id) &&
+        addsTasksIn(s.projectId),
+    );
+    if (ready) makeTask(ready, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [steps, canEdit, makingId, typingId, slashId, failedIds]);
 
   const showDetails = (id: string) => {
     setOpenDetails((set) => new Set(set).add(id));
@@ -819,17 +892,7 @@ export const StepsEditor = ({
       showDetails(step.id);
       return true;
     }
-    if (e.ctrlKey || e.metaKey) {
-      // Ctrl+Enter makes the task out of a task step, then moves on.
-      if (
-        stepKind(step) === 'task' &&
-        !step.taskId &&
-        step.projectId &&
-        step.text.trim() &&
-        addsTasksIn(step.projectId)
-      )
-        makeTask(step);
-    }
+    // Enter (or Ctrl+Enter) moves on; leaving a task step makes its task.
     insert(step.id, 'below');
     return true;
   };
@@ -919,356 +982,382 @@ export const StepsEditor = ({
       {steps.map((step, index) => {
         const kind = stepKind(step);
         const linked = !!(step.task || step.goal);
-        const inSidebar = step.id === selectedStepId;
-        const editing = step.id === activeId || inSidebar;
+        const isOpen = step.id === selectedStepId;
+        const editing = step.id === activeId || isOpen;
         const detailsShown = !!step.notes || openDetails.has(step.id);
         return (
-          <div
-            key={step.id}
-            onClick={() => setActiveId(step.id)}
-            onDragOver={(e) => {
-              if (!dragId) return;
-              e.preventDefault();
-              const box = e.currentTarget.getBoundingClientRect();
-              const where =
-                e.clientY < box.top + box.height / 2 ? 'above' : 'below';
-              if (dropAt?.id !== step.id || dropAt.where !== where)
-                setDropAt({ id: step.id, where });
-            }}
-            onDragLeave={() => setDropAt((d) => (d?.id === step.id ? null : d))}
-            onDrop={(e) => {
-              e.preventDefault();
-              if (dragId && dropAt) moveTo(dragId, dropAt.id, dropAt.where);
-              setDragId(null);
-              setDropAt(null);
-            }}
-            className={cn(
-              'group relative flex items-start gap-1.5 rounded-lg py-1 pl-0.5 pr-2 transition-colors',
-              editing ? 'bg-white/[0.05]' : 'hover:bg-white/[0.025]',
-              dragId === step.id && 'opacity-40',
-            )}
-          >
-            {dropAt?.id === step.id && dragId && dragId !== step.id && (
-              <span
-                className={cn(
-                  'pointer-events-none absolute inset-x-2 h-0.5 rounded-full bg-sky-400',
-                  dropAt.where === 'above' ? '-top-px' : '-bottom-px',
-                )}
-              />
-            )}
-            {canEdit ? (
-              <div
-                draggable
-                onDragStart={(e) => {
-                  e.dataTransfer.effectAllowed = 'move';
-                  e.dataTransfer.setData('text/plain', step.id);
-                  setDragId(step.id);
-                }}
-                title="Drag to move, click for more"
-                className={cn(
-                  'mt-0.5 cursor-grab transition-opacity active:cursor-grabbing',
-                  editing
-                    ? 'opacity-100'
-                    : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100',
-                )}
-              >
-                <RowMenu
-                  canUp={index > 0}
-                  canDown={index < steps.length - 1}
-                  onInsert={(where) => insert(step.id, where)}
-                  onMove={(by) => move(step.id, by)}
-                  onDelete={() => remove(step.id, false)}
-                  deleteHint={
-                    step.taskId
-                      ? 'Linked to a task: delete it from Details'
-                      : undefined
-                  }
-                />
-              </div>
-            ) : (
-              <span className="w-6" />
-            )}
-
-            {/* What kind of step, at a glance */}
-            <div className="mt-[3px] flex w-5 shrink-0 justify-center">
-              {kind === 'info' ? (
-                <span className="mt-[7px] size-1.5 rounded-full bg-neutral-600" />
-              ) : kind === 'goal' ? (
-                <GoalStar met={!!step.goal?.met} />
-              ) : (
-                <button
-                  type="button"
-                  aria-label={step.done ? 'Mark not done' : 'Mark done'}
-                  disabled={!canEdit || !!step.task}
-                  title={step.task ? 'Done when its task is done' : undefined}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setStep(step.id, { done: !step.done });
-                  }}
+          <Fragment key={step.id}>
+            <div
+              onClick={() => setActiveId(step.id)}
+              onDragOver={(e) => {
+                if (!dragId) return;
+                e.preventDefault();
+                const box = e.currentTarget.getBoundingClientRect();
+                const where =
+                  e.clientY < box.top + box.height / 2 ? 'above' : 'below';
+                if (dropAt?.id !== step.id || dropAt.where !== where)
+                  setDropAt({ id: step.id, where });
+              }}
+              onDragLeave={() =>
+                setDropAt((d) => (d?.id === step.id ? null : d))
+              }
+              onDrop={(e) => {
+                e.preventDefault();
+                if (dragId && dropAt) moveTo(dragId, dropAt.id, dropAt.where);
+                setDragId(null);
+                setDropAt(null);
+              }}
+              className={cn(
+                'group relative flex items-start gap-1.5 rounded-lg py-1 pl-0.5 pr-2 transition-colors',
+                editing ? 'bg-white/[0.05]' : 'hover:bg-white/[0.025]',
+                dragId === step.id && 'opacity-40',
+              )}
+            >
+              {dropAt?.id === step.id && dragId && dragId !== step.id && (
+                <span
                   className={cn(
-                    'text-[18px]',
-                    step.done
-                      ? 'text-emerald-400'
-                      : step.task
-                        ? 'text-sky-400/70'
-                        : 'text-neutral-600 hover:text-neutral-400',
+                    'pointer-events-none absolute inset-x-2 h-0.5 rounded-full bg-sky-400',
+                    dropAt.where === 'above' ? '-top-px' : '-bottom-px',
+                  )}
+                />
+              )}
+              {canEdit ? (
+                <div
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', step.id);
+                    setDragId(step.id);
+                  }}
+                  title="Drag to move, click for more"
+                  className={cn(
+                    'mt-0.5 cursor-grab transition-opacity active:cursor-grabbing',
+                    editing
+                      ? 'opacity-100'
+                      : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100',
                   )}
                 >
-                  <Icon
-                    name={step.done ? 'check_circle' : 'radio_button_unchecked'}
-                    filled={step.done}
+                  <RowMenu
+                    canUp={index > 0}
+                    canDown={index < steps.length - 1}
+                    onInsert={(where) => insert(step.id, where)}
+                    onMove={(by) => move(step.id, by)}
+                    onDelete={() => remove(step.id, false)}
+                    deleteHint={
+                      step.taskId
+                        ? 'Linked to a task: delete it from Details'
+                        : undefined
+                    }
                   />
-                </button>
+                </div>
+              ) : (
+                <span className="w-6" />
               )}
-            </div>
 
-            <div className="relative min-w-0 flex-1">
-              <div className="flex items-start gap-1">
-                {linked ? (
-                  <p
-                    tabIndex={0}
-                    ref={(el) => {
-                      boxes.current.set(step.id, el);
-                    }}
-                    onFocus={() => setActiveId(step.id)}
-                    onKeyDown={(e) => {
-                      if (!canEdit) return;
-                      if (
-                        step.taskId &&
-                        (e.key === 'Backspace' || e.key === 'Delete')
-                      ) {
-                        // A task step asks first: the task may go too.
-                        e.preventDefault();
-                        setDeletingId(step.id);
-                        return;
-                      }
-                      if (
-                        !step.taskId &&
-                        (e.key === 'Backspace' || e.key === 'Delete')
-                      ) {
-                        e.preventDefault();
-                        remove(step.id);
-                        return;
-                      }
-                      stepKeys(e, step);
-                    }}
-                    className="min-w-0 flex-1 py-px text-sm leading-6 focus:outline-none"
-                  >
-                    <span
-                      className={cn(
-                        step.done && kind === 'task'
-                          ? 'text-neutral-500 line-through'
-                          : 'text-neutral-100',
-                      )}
-                    >
-                      <MarkdownText
-                        text={step.task?.title ?? step.goal?.title ?? step.text}
-                      />
-                    </span>
-                    {step.done && step.task?.completedAt && (
-                      <span
-                        className="ml-2 whitespace-nowrap text-[11px] text-emerald-400/80"
-                        title="When the task was done"
-                      >
-                        <Icon
-                          name="check"
-                          className="mr-0.5 align-[-2px] text-[13px]"
-                        />
-                        {doneAt(step.task.completedAt)}
-                      </span>
-                    )}
-                  </p>
+              {/* What kind of step, at a glance */}
+              <div className="mt-[3px] flex w-5 shrink-0 justify-center">
+                {kind === 'info' ? (
+                  <span className="mt-[7px] size-1.5 rounded-full bg-neutral-600" />
+                ) : kind === 'goal' ? (
+                  <GoalStar met={!!step.goal?.met} />
                 ) : (
-                  <div className="min-w-0 flex-1">
-                    {showsFormatted(step.id, step.text) ? (
-                      <div
-                        tabIndex={canEdit ? 0 : -1}
-                        onFocus={() => {
-                          setActiveId(step.id);
-                          setFocusId(step.id);
-                        }}
+                  <button
+                    type="button"
+                    aria-label={step.done ? 'Mark not done' : 'Mark done'}
+                    disabled={!canEdit}
+                    title={
+                      step.task
+                        ? step.done
+                          ? 'Done: tick to open the task again'
+                          : 'Tick its task done'
+                        : undefined
+                    }
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (step.taskId) onTickTask(step.id, !step.done);
+                      else setStep(step.id, { done: !step.done });
+                    }}
+                    className={cn(
+                      'text-[18px]',
+                      step.done
+                        ? 'text-emerald-400'
+                        : step.task
+                          ? 'text-sky-400/70'
+                          : 'text-neutral-600 hover:text-neutral-400',
+                    )}
+                  >
+                    <Icon
+                      name={
+                        step.done ? 'check_circle' : 'radio_button_unchecked'
+                      }
+                      filled={step.done}
+                    />
+                  </button>
+                )}
+              </div>
+
+              <div className="relative min-w-0 flex-1">
+                <div className="flex items-start gap-1">
+                  {linked ? (
+                    <p
+                      tabIndex={0}
+                      ref={(el) => {
+                        boxes.current.set(step.id, el);
+                      }}
+                      onFocus={() => setActiveId(step.id)}
+                      onKeyDown={(e) => {
+                        if (!canEdit) return;
+                        if (
+                          step.taskId &&
+                          (e.key === 'Backspace' || e.key === 'Delete')
+                        ) {
+                          // A task step asks first: the task may go too.
+                          e.preventDefault();
+                          setDeletingId(step.id);
+                          return;
+                        }
+                        if (
+                          !step.taskId &&
+                          (e.key === 'Backspace' || e.key === 'Delete')
+                        ) {
+                          e.preventDefault();
+                          remove(step.id);
+                          return;
+                        }
+                        stepKeys(e, step);
+                      }}
+                      className="min-w-0 flex-1 py-px text-sm leading-6 focus:outline-none"
+                    >
+                      <span
                         className={cn(
-                          'min-h-6 cursor-text whitespace-pre-wrap break-words py-px text-sm leading-6 focus:outline-none',
-                          headingClass(step.text),
-                          kind === 'info'
-                            ? 'text-neutral-300'
-                            : step.done
-                              ? 'text-neutral-500 line-through'
-                              : 'text-neutral-100',
+                          step.done && kind === 'task'
+                            ? 'text-neutral-500 line-through'
+                            : 'text-neutral-100',
                         )}
                       >
                         <MarkdownText
-                          text={headingOf(step.text)?.text ?? step.text}
+                          text={
+                            step.task?.title ?? step.goal?.title ?? step.text
+                          }
                         />
-                      </div>
-                    ) : (
-                      <GrowingText
-                        value={step.text}
-                        boxRef={(el) => boxes.current.set(step.id, el)}
-                        onChange={(text) => typeTitle(step, text)}
-                        onPaste={(e) => pasteSteps(e, step)}
-                        onFocus={() => {
-                          setActiveId(step.id);
-                          setTypingId(step.id);
-                        }}
-                        onBlur={() => {
-                          setSlashId((id) => (id === step.id ? null : id));
-                          setTypingId((id) => (id === step.id ? null : id));
-                        }}
-                        onKeyDown={(e) => onTitleKey(e, step, index)}
-                        disabled={!canEdit}
-                        placeholder={
-                          kind === 'goal'
-                            ? 'Name the goal, then set it up on the right'
-                            : 'Type / for commands'
-                        }
-                        className={cn(
-                          'py-px text-sm leading-6 placeholder:text-neutral-600',
-                          headingClass(step.text),
-                          kind === 'info'
-                            ? 'text-neutral-300'
-                            : step.done
-                              ? 'text-neutral-500 line-through'
-                              : 'text-neutral-100',
-                        )}
-                      />
-                    )}
-                  </div>
-                )}
-                <StepInfo
-                  plan={plan}
-                  step={step}
-                  projects={projects}
-                  people={people}
-                />
-              </div>
+                      </span>
+                      {step.done && step.task?.completedAt && (
+                        <span
+                          className="ml-2 whitespace-nowrap text-[11px] text-emerald-400/80"
+                          title="When the task was done"
+                        >
+                          <Icon
+                            name="check"
+                            className="mr-0.5 align-[-2px] text-[13px]"
+                          />
+                          {doneAt(step.task.completedAt)}
+                        </span>
+                      )}
+                    </p>
+                  ) : (
+                    <div className="min-w-0 flex-1">
+                      {showsFormatted(step.id, step.text) ? (
+                        <div
+                          tabIndex={canEdit ? 0 : -1}
+                          onFocus={() => {
+                            setActiveId(step.id);
+                            setFocusId(step.id);
+                          }}
+                          className={cn(
+                            'min-h-6 cursor-text whitespace-pre-wrap break-words py-px text-sm leading-6 focus:outline-none',
+                            headingClass(step.text),
+                            kind === 'info'
+                              ? 'text-neutral-300'
+                              : step.done
+                                ? 'text-neutral-500 line-through'
+                                : 'text-neutral-100',
+                          )}
+                        >
+                          <MarkdownText
+                            text={headingOf(step.text)?.text ?? step.text}
+                          />
+                        </div>
+                      ) : (
+                        <GrowingText
+                          value={step.text}
+                          boxRef={(el) => boxes.current.set(step.id, el)}
+                          onChange={(text) => typeTitle(step, text)}
+                          onPaste={(e) => pasteSteps(e, step)}
+                          onFocus={() => {
+                            setActiveId(step.id);
+                            setTypingId(step.id);
+                          }}
+                          onBlur={() => {
+                            setSlashId((id) => (id === step.id ? null : id));
+                            setTypingId((id) => (id === step.id ? null : id));
+                          }}
+                          onKeyDown={(e) => onTitleKey(e, step, index)}
+                          disabled={!canEdit}
+                          placeholder={
+                            kind === 'goal'
+                              ? 'Name the goal, then set it up in Details'
+                              : 'Type / for commands'
+                          }
+                          className={cn(
+                            'py-px text-sm leading-6 placeholder:text-neutral-600',
+                            headingClass(step.text),
+                            kind === 'info'
+                              ? 'text-neutral-300'
+                              : step.done
+                                ? 'text-neutral-500 line-through'
+                                : 'text-neutral-100',
+                          )}
+                        />
+                      )}
+                    </div>
+                  )}
+                  <StepInfo
+                    plan={plan}
+                    step={step}
+                    projects={projects}
+                    people={people}
+                  />
+                </div>
 
-              {/* Details, under the title (Shift+Enter) */}
-              {detailsShown &&
-                showsFormatted(`${step.id}:details`, step.notes ?? '') && (
-                  <div
-                    tabIndex={canEdit ? 0 : -1}
-                    onFocus={() => {
-                      setActiveId(step.id);
-                      setFocusId(`${step.id}:details`);
-                    }}
-                    className="mb-0.5 cursor-text whitespace-pre-wrap break-words border-l border-white/10 pl-2 text-xs leading-5 text-neutral-400 focus:outline-none"
-                  >
-                    <MarkdownLines text={step.notes ?? ''} />
+                {/* Details, under the title (Shift+Enter) */}
+                {detailsShown &&
+                  showsFormatted(`${step.id}:details`, step.notes ?? '') && (
+                    <div
+                      tabIndex={canEdit ? 0 : -1}
+                      onFocus={() => {
+                        setActiveId(step.id);
+                        setFocusId(`${step.id}:details`);
+                      }}
+                      className="mb-0.5 cursor-text whitespace-pre-wrap break-words border-l border-white/10 pl-2 text-xs leading-5 text-neutral-400 focus:outline-none"
+                    >
+                      <MarkdownLines text={step.notes ?? ''} />
+                    </div>
+                  )}
+                {detailsShown &&
+                  !showsFormatted(`${step.id}:details`, step.notes ?? '') && (
+                    <GrowingText
+                      value={step.notes ?? ''}
+                      boxRef={(el) =>
+                        boxes.current.set(`${step.id}:details`, el)
+                      }
+                      onChange={(notes) => setStep(step.id, { notes })}
+                      onFocus={() => {
+                        setActiveId(step.id);
+                        setTypingId(`${step.id}:details`);
+                      }}
+                      onBlur={() => {
+                        setTypingId((id) =>
+                          id === `${step.id}:details` ? null : id,
+                        );
+                        if (!step.notes?.trim()) hideDetails(step.id);
+                      }}
+                      onKeyDown={(e) => onDetailsKey(e, step, index)}
+                      disabled={!canEdit}
+                      placeholder="Details, links, anything that helps"
+                      className="mb-0.5 border-l border-white/10 pl-2 text-xs leading-5 text-neutral-400 placeholder:text-neutral-600"
+                    />
+                  )}
+
+                {slashId === step.id && (
+                  <div className="absolute inset-x-0 top-full z-30 mt-1">
+                    <div
+                      className="max-h-96 overflow-y-auto rounded-xl border border-white/10 bg-neutral-900 p-1.5 shadow-2xl"
+                      onMouseDown={(e) => e.preventDefault()}
+                    >
+                      <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
+                        Turn into
+                      </p>
+                      {commands
+                        .map((c, i) => ({ c, i }))
+                        .filter(({ c }) => c.type === 'kind')
+                        .map(({ c, i }) => {
+                          const meta = KIND_COMMANDS.find(
+                            (k) => `kind:${k.label}` === c.key,
+                          )!;
+                          return (
+                            <button
+                              key={c.key}
+                              type="button"
+                              onMouseEnter={() => setActive(i)}
+                              onClick={() => runCommand(step, c)}
+                              className={cn(
+                                'flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left',
+                                i === active
+                                  ? 'bg-white/[0.08]'
+                                  : 'hover:bg-white/[0.05]',
+                              )}
+                            >
+                              <span className="flex size-7 items-center justify-center rounded-md border border-white/10 bg-white/[0.03]">
+                                <Icon
+                                  name={meta.icon}
+                                  className="text-[16px] text-neutral-300"
+                                />
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="block text-sm text-neutral-100">
+                                  {meta.label}
+                                </span>
+                                <span className="block truncate text-[11px] text-neutral-500">
+                                  {meta.hint}
+                                </span>
+                              </span>
+                              {meta.md && (
+                                <kbd className="shrink-0 font-mono text-[11px] text-neutral-600">
+                                  {meta.md}
+                                </kbd>
+                              )}
+                            </button>
+                          );
+                        })}
+                      <LinkMenu
+                        items={links.items}
+                        loading={links.loading}
+                        active={
+                          active -
+                          commands.filter((c) => c.type === 'kind').length
+                        }
+                        projects={projects}
+                        onPick={(link) =>
+                          runCommand(step, {
+                            type: 'link',
+                            key: link.key,
+                            link,
+                          })
+                        }
+                        onHover={(i) =>
+                          setActive(
+                            i +
+                              commands.filter((c) => c.type === 'kind').length,
+                          )
+                        }
+                        className="mt-1 max-h-none border-0 bg-transparent p-0 shadow-none"
+                      />
+                    </div>
                   </div>
                 )}
-              {detailsShown &&
-                !showsFormatted(`${step.id}:details`, step.notes ?? '') && (
-                  <GrowingText
-                    value={step.notes ?? ''}
-                    boxRef={(el) => boxes.current.set(`${step.id}:details`, el)}
-                    onChange={(notes) => setStep(step.id, { notes })}
-                    onFocus={() => {
-                      setActiveId(step.id);
-                      setTypingId(`${step.id}:details`);
-                    }}
-                    onBlur={() => {
-                      setTypingId((id) =>
-                        id === `${step.id}:details` ? null : id,
-                      );
-                      if (!step.notes?.trim()) hideDetails(step.id);
-                    }}
-                    onKeyDown={(e) => onDetailsKey(e, step, index)}
-                    disabled={!canEdit}
-                    placeholder="Details, links, anything that helps"
-                    className="mb-0.5 border-l border-white/10 pl-2 text-xs leading-5 text-neutral-400 placeholder:text-neutral-600"
+
+                {editing && canEdit && (
+                  <StepBar
+                    step={step}
+                    projects={projects}
+                    people={people}
+                    canEdit={canEdit}
+                    canMakeTask={addsTasksIn(step.projectId)}
+                    makingTask={makingId === step.id}
+                    makeFailed={failedIds.has(step.id)}
+                    detailsOpen={isOpen}
+                    onChange={(fields) => setStep(step.id, fields)}
+                    onKind={(k) => setKind(step, k)}
+                    onDetails={() => onSelectStep(isOpen ? null : step.id)}
+                    onMakeTask={() => makeTask(step)}
                   />
                 )}
-
-              {slashId === step.id && (
-                <div className="absolute inset-x-0 top-full z-30 mt-1">
-                  <div
-                    className="max-h-96 overflow-y-auto rounded-xl border border-white/10 bg-neutral-900 p-1.5 shadow-2xl"
-                    onMouseDown={(e) => e.preventDefault()}
-                  >
-                    <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
-                      Turn into
-                    </p>
-                    {commands
-                      .map((c, i) => ({ c, i }))
-                      .filter(({ c }) => c.type === 'kind')
-                      .map(({ c, i }) => {
-                        const meta = KIND_COMMANDS.find(
-                          (k) => `kind:${k.label}` === c.key,
-                        )!;
-                        return (
-                          <button
-                            key={c.key}
-                            type="button"
-                            onMouseEnter={() => setActive(i)}
-                            onClick={() => runCommand(step, c)}
-                            className={cn(
-                              'flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left',
-                              i === active
-                                ? 'bg-white/[0.08]'
-                                : 'hover:bg-white/[0.05]',
-                            )}
-                          >
-                            <span className="flex size-7 items-center justify-center rounded-md border border-white/10 bg-white/[0.03]">
-                              <Icon
-                                name={meta.icon}
-                                className="text-[16px] text-neutral-300"
-                              />
-                            </span>
-                            <span className="min-w-0 flex-1">
-                              <span className="block text-sm text-neutral-100">
-                                {meta.label}
-                              </span>
-                              <span className="block truncate text-[11px] text-neutral-500">
-                                {meta.hint}
-                              </span>
-                            </span>
-                            {meta.md && (
-                              <kbd className="shrink-0 font-mono text-[11px] text-neutral-600">
-                                {meta.md}
-                              </kbd>
-                            )}
-                          </button>
-                        );
-                      })}
-                    <LinkMenu
-                      items={links.items}
-                      loading={links.loading}
-                      active={
-                        active -
-                        commands.filter((c) => c.type === 'kind').length
-                      }
-                      projects={projects}
-                      onPick={(link) =>
-                        runCommand(step, { type: 'link', key: link.key, link })
-                      }
-                      onHover={(i) =>
-                        setActive(
-                          i + commands.filter((c) => c.type === 'kind').length,
-                        )
-                      }
-                      className="mt-1 max-h-none border-0 bg-transparent p-0 shadow-none"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {editing && canEdit && (
-                <StepBar
-                  step={step}
-                  projects={projects}
-                  people={people}
-                  canEdit={canEdit}
-                  canMakeTask={addsTasksIn(step.projectId)}
-                  makingTask={makingId === step.id}
-                  onChange={(fields) => setStep(step.id, fields)}
-                  onKind={(k) => setKind(step, k)}
-                  onDetails={() => onSelectStep(inSidebar ? null : step.id)}
-                  onMakeTask={() => makeTask(step)}
-                />
-              )}
+              </div>
             </div>
-          </div>
+            {isOpen && details && (
+              <div className="mb-2 ml-7 mt-1">{details}</div>
+            )}
+          </Fragment>
         );
       })}
 
@@ -1299,8 +1388,8 @@ export const StepsEditor = ({
           <Icon name="add" className="shrink-0 text-[18px]" />
           <span className="shrink-0">Add a step</span>
           <span className="hidden min-w-0 truncate text-xs text-neutral-700 sm:inline">
-            · / for commands · Enter for the next · Shift+Enter for details ·
-            Ctrl+Enter makes the task
+            · / for commands · Enter for the next · Shift+Enter for details · a
+            task step with a project becomes its task
           </span>
         </button>
       )}
