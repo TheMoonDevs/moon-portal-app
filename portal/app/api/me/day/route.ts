@@ -93,6 +93,7 @@ export async function GET(request: Request) {
         logo: p.logo ?? null,
         companyId: p.companyId,
         companyName: p.companyName,
+        ...(p.isPersonal && { isPersonal: true }),
         goals: goalsOf(p.id),
       })),
       ...extra.map((p: { id: string }) => ({ ...p, goals: goalsOf(p.id) })),

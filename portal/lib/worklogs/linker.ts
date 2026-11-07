@@ -21,6 +21,8 @@ export type LinkCandidates = {
     companyName: string;
     /** The company's CORE project, open to all of its members. */
     isCore?: boolean;
+    /** The person's own PERSONAL project. */
+    isPersonal?: boolean;
     goals: string[];
     /** The goals a line's task can count towards. */
     goalOptions: {
@@ -38,6 +40,8 @@ export type LinkCandidates = {
     logo?: string | null;
     /** Its CORE project, where company work on none of the others goes. */
     coreProjectId?: string | null;
+    /** The person's own PERSONAL. */
+    isPersonal?: boolean;
   }[];
 };
 
@@ -140,6 +144,7 @@ export async function linkCandidates(
       ...(p.aliases?.length && { aliases: p.aliases }),
       companyName: companies.find((c) => c.id === p.companyId)?.name ?? '',
       ...(p.isCore && { isCore: true }),
+      ...(p.isPersonal && { isPersonal: true }),
       goals: (p.goals ?? []).map((g) => g.title),
       goalOptions: (p.goals ?? []).map((g) => ({
         id: g.id,
@@ -162,6 +167,7 @@ export async function linkCandidates(
       logo: c.logo ?? null,
       coreProjectId:
         projects.find((p) => p.isCore && p.companyId === c.id)?.id ?? null,
+      ...(c.isPersonal && { isPersonal: true }),
     })),
   };
 }
@@ -306,7 +312,7 @@ ${
   c.projects
     .map(
       (p) =>
-        `- ${p.id} | ${p.name}${aliasesOf(p).length ? ` (also called ${aliasesOf(p).join(', ')})` : ''}${p.isCore ? " (the company's general work)" : ''} | ${p.companyName}${p.goals.length ? ` | goals: ${p.goals.join('; ')}` : ''}`,
+        `- ${p.id} | ${p.name}${aliasesOf(p).length ? ` (also called ${aliasesOf(p).join(', ')})` : ''}${p.isPersonal ? " (the person's own private life, for no company: gym, exercise, health, reading, learning, self-help)" : p.isCore ? " (the company's general work)" : ''} | ${p.companyName}${p.goals.length ? ` | goals: ${p.goals.join('; ')}` : ''}`,
     )
     .join('\n') || '- none'
 }
@@ -316,7 +322,7 @@ ${c.tasks.map((t) => `- ${t.id} | ${t.projectId} | ${t.title}`).join('\n') || '-
 Work log lines:
 ${lines.map((l, i) => `${i}. ${l.text}`).join('\n')}
 
-For every line return its project id, the task id if the line is clearly about that task, and your confidence from 0 to 1. When the line is clearly work for one of the companies but on none of its projects (for example company admin, hiring, team meetings), return that company id with a null project id. Use nulls and a low confidence for personal notes or when you cannot tell.`;
+For every line return its project id, the task id if the line is clearly about that task, and your confidence from 0 to 1. When the line is clearly work for one of the companies but on none of its projects (for example company admin, hiring, team meetings), return that company id with a null project id. File clearly personal life lines (gym, a workout, a run, meditation, personal reading or study) under the Personal project; never company work. Use nulls and a low confidence when you cannot tell.`;
 
   try {
     const result = await model.generateContent(prompt);

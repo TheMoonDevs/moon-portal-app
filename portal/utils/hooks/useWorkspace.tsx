@@ -142,10 +142,13 @@ export const useWorkspace = () => {
     [portalPermissions],
   );
 
-  const managedCompanies = companies.filter((c) =>
+  // Their PERSONAL is theirs to use, not a company to run: it stays out of
+  // the admin console and hiring.
+  const work = companies.filter((c) => !c.company.isPersonal);
+  const managedCompanies = work.filter((c) =>
     MANAGE_PERMISSIONS.some((p) => hasPermission(c.permissions, p)),
   );
-  const hiringCompanies = companies.filter((c) =>
+  const hiringCompanies = work.filter((c) =>
     hasPermission(c.permissions, 'hiring:read'),
   );
   const managesPortal = PORTAL_ADMIN_PERMISSIONS.some((p) =>
@@ -155,6 +158,10 @@ export const useWorkspace = () => {
   return {
     loading,
     companies,
+    /** The companies they work for: every company but their PERSONAL. */
+    workCompanies: work,
+    /** Their own PERSONAL, once it has loaded. */
+    personal: companies.find((c) => c.company.isPersonal) ?? null,
     managedCompanies,
     /** Companies where the user can see hiring. */
     hiringCompanies,

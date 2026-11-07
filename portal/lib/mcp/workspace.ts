@@ -15,6 +15,10 @@ import { updateGoalProgress } from '@/lib/workspace/goalTally';
 import { completeGoalUntil, tickGoalDay } from '@/lib/workspace/goalTicks';
 import { moveProject } from '@/lib/workspace/moveProject';
 import {
+  isPersonalCompany,
+  PERSONAL_STAYS,
+} from '@/lib/workspace/personalSpace';
+import {
   canCreateDirectly,
   createProject,
   requestProject,
@@ -653,6 +657,11 @@ export const WORKSPACE_TOOLS: Tool[] = [
         throw new ToolError(`No company "${ref}" where you can add projects.`);
       if (company.id === project.companyId)
         throw new ToolError(`${project.name} is already in ${company.name}.`);
+      if (
+        (await isPersonalCompany(project.companyId)) ||
+        (await isPersonalCompany(company.id))
+      )
+        throw new ToolError(PERSONAL_STAYS);
       const { moved } = await moveProject(project, company.id);
       return {
         project: project.name,

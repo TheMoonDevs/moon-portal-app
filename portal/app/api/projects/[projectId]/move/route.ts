@@ -1,5 +1,9 @@
 import { moveProject } from '@/lib/workspace/moveProject';
 import {
+  isPersonalCompany,
+  PERSONAL_STAYS,
+} from '@/lib/workspace/personalSpace';
+import {
   fail,
   ok,
   requireCompanyPermission,
@@ -29,6 +33,11 @@ export async function POST(request: Request, { params }: Params) {
     return fail(400, 'The project is already in that company.');
   const target = await requireCompanyPermission(companyId, 'projects:create');
   if (target.response) return target.response;
+  if (
+    (await isPersonalCompany(project.companyId)) ||
+    (await isPersonalCompany(companyId))
+  )
+    return fail(400, PERSONAL_STAYS);
 
   const result = await moveProject(project, companyId);
   return ok(result);

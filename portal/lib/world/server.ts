@@ -239,8 +239,10 @@ const top = (
  */
 export async function buildWorld(viewer: SessionUser): Promise<World> {
   const workspace = await getWorkspaceForUser(viewer);
-  const mine = workspace.filter((w) => w.member);
-  const companies = (mine.length ? mine : workspace).map((w) => w.company);
+  // A PERSONAL is no town: nobody else lives there.
+  const work = workspace.filter((w) => !w.company.isPersonal);
+  const mine = work.filter((w) => w.member);
+  const companies = (mine.length ? mine : work).map((w) => w.company);
   const companyIds = companies.map((c) => c.id);
   const empty = { towns: [], projects: [], people: [], bots: [] };
   if (!companyIds.length) return { date: todayFor(null), ...empty };

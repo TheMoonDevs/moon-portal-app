@@ -168,10 +168,17 @@ export const CompanyMonth = ({
           </p>
         )}
         <div className="mt-auto flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-neutral-400">
-          <span className="flex items-center gap-1.5">
-            <Icon name="group" className="text-[15px] text-neutral-500" />
-            {memberCount} member{memberCount === 1 ? '' : 's'}
-          </span>
+          {company.isPersonal ? (
+            <span className="flex items-center gap-1.5">
+              <Icon name="lock" className="text-[15px] text-neutral-500" />
+              Only you
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5">
+              <Icon name="group" className="text-[15px] text-neutral-500" />
+              {memberCount} member{memberCount === 1 ? '' : 's'}
+            </span>
+          )}
           <span className="flex items-center gap-1.5">
             <Icon name="folder" className="text-[15px] text-neutral-500" />
             {companyProjects.length} project

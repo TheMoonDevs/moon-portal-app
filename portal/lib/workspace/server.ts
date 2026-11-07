@@ -12,12 +12,15 @@ import {
   isOldMemberRole,
   teamAllows,
 } from '@/lib/permissions/company';
+import { hasPermission } from '@/lib/permissions/matching';
 import {
   getSessionUser,
   permissionDeniedResponse,
   type SessionUser,
 } from '@/lib/permissions/server';
 import { sortByRecentPoints } from '@/lib/progress/myPoints';
+import { PERSONAL_PERMISSIONS, personalAllows } from '@/lib/worklogs/personal';
+import { ensurePersonalSpace } from '@/lib/workspace/personalSpace';
 import type {
   Company,
   CompanyMember,
@@ -136,6 +139,13 @@ export async function requireCompanyPermission(
   if (!company || !access?.member) {
     return { response: fail(404, 'Company not found.'), user, access: null };
   }
+  // A PERSONAL is its owner's alone: no people, roles or hiring in it.
+  if (company.isPersonal && !personalAllows(permission))
+    return {
+      response: fail(403, 'Personal is yours alone: that is not part of it.'),
+      user,
+      access,
+    };
   if (
     !isAllowedInCompany(user, access, permission) &&
     !teamAllows(user, project, permission)
@@ -174,6 +184,10 @@ export async function getWorkspaceForUser(
   user: SessionUser,
   { includeArchived = false, orderByPoints = true } = {},
 ): Promise<WorkspaceCompany[]> {
+  // Everyone has a PERSONAL, made the first time it is needed.
+  await ensurePersonalSpace(user.id).catch((error) =>
+    console.error('Could not make the PERSONAL space', error),
+  );
   const memberships: CompanyMember[] = await db.companyMember.findMany({
     where: { userId: user.id, status: MEMBER_STATUS.ACTIVE },
   });
@@ -195,9 +209,14 @@ export async function getWorkspaceForUser(
       })
     : [];
 
-  const ordered = orderByPoints
+  const sorted = orderByPoints
     ? await sortByRecentPoints(user.id, companies, (c) => c.id)
     : companies;
+  // Their PERSONAL comes after the companies they work for.
+  const ordered = [
+    ...sorted.filter((c) => !c.isPersonal),
+    ...sorted.filter((c) => c.isPersonal),
+  ];
 
   return ordered.map((company) => {
     const member = memberships.find((m) => m.companyId === company.id) ?? null;
@@ -206,10 +225,15 @@ export async function getWorkspaceForUser(
         (r) => r.companyId === company.id && member?.roleKeys?.includes(r.key),
       ),
     );
+    const permissions = getEffectiveCompanyPermissions(user, {
+      rolePermissions,
+    });
     return {
       company,
       member,
-      permissions: getEffectiveCompanyPermissions(user, { rolePermissions }),
+      permissions: company.isPersonal
+        ? PERSONAL_PERMISSIONS.filter((p) => hasPermission(permissions, p))
+        : permissions,
     };
   });
 }

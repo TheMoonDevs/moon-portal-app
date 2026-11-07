@@ -66,6 +66,8 @@ export type DayProject = {
   logo?: string | null;
   companyId: string;
   companyName?: string;
+  /** The person's own PERSONAL project. */
+  isPersonal?: boolean;
   /** Its goals, which its tasks can be linked to. */
   goals?: DayGoal[];
 };
@@ -100,6 +102,8 @@ export type DayCompany = {
   logo?: string | null;
   /** Its CORE project, which takes company work on no other project. */
   coreProjectId?: string | null;
+  /** The person's own PERSONAL. */
+  isPersonal?: boolean;
 };
 
 export type TaskMove = PointStatus | 'todo' | 'archived';

@@ -19,7 +19,9 @@ const MEDALS = ['🥇', '🥈', '🥉'];
 export const LeaderboardSection = () => {
   const { user } = useUser();
   // In the user's order: the companies they work in most first.
-  const { companies } = useWorkspace();
+  // A PERSONAL has nobody to rank against.
+  const { companies: all } = useWorkspace();
+  const companies = all.filter((c) => !c.company.isPersonal);
   // The tab the user clicked; until then the top company is shown.
   const [picked, setPicked] = useState<string | null>(null);
   const companyId =

@@ -277,6 +277,7 @@ const Sidebar = ({
   creatingPlan,
   onPlansOpen,
   onNewPlan,
+  personal,
 }: {
   data: ProjectData;
   pages: PagesData | null;
@@ -302,6 +303,8 @@ const Sidebar = ({
   creatingPlan: boolean;
   onPlansOpen: (open: boolean) => void;
   onNewPlan: () => void;
+  /** In the viewer's own PERSONAL. */
+  personal?: boolean;
 }) => {
   const { project, people } = data;
   const tree = data.tree ?? [];
@@ -344,6 +347,11 @@ const Sidebar = ({
                 <Icon name="subdirectory_arrow_right" className="text-[13px]" />
                 <span className="truncate">{parent.name}</span>
               </Link>
+            ) : personal ? (
+              <p className="flex items-center gap-1 truncate text-xs text-neutral-500">
+                <Icon name="lock" className="text-[12px]" />
+                Only you
+              </p>
             ) : core && core.id !== project.id ? (
               <Link
                 href={`${APP_ROUTES.projects}/${core.id}`}
@@ -368,10 +376,14 @@ const Sidebar = ({
             </button>
           )}
         </div>
-        {project.description && (
-          <p className="mt-3 line-clamp-3 text-xs leading-relaxed text-neutral-400">
-            {project.description}
-          </p>
+        {personal ? (
+          <PersonalHint />
+        ) : (
+          project.description && (
+            <p className="mt-3 line-clamp-3 text-xs leading-relaxed text-neutral-400">
+              {project.description}
+            </p>
+          )
         )}
         <div className="mt-3 flex items-center gap-2">
           <Pill tone={status.tone}>{status.label}</Pill>
@@ -398,7 +410,7 @@ const Sidebar = ({
 
       <nav className="custom-scrollbar flex-1 overflow-y-auto px-2 py-3">
         <LayoutGroup id="project-nav">
-          {VIEWS.map((v) =>
+          {viewsFor(personal).map((v) =>
             v.key === 'pages' ? (
               <div key={v.key}>
                 <NavItem
@@ -657,16 +669,35 @@ const Sidebar = ({
   );
 };
 
+/** A PERSONAL has nobody else to list under Members. */
+const viewsFor = (personal?: boolean) =>
+  personal ? VIEWS.filter((v) => v.key !== 'members') : VIEWS;
+
+/** What a PERSONAL is for, under its name. */
+const PersonalHint = () => (
+  <div className="mt-3 rounded-lg border border-teal-400/15 bg-teal-400/[0.06] p-2.5 text-xs leading-relaxed text-teal-100/80">
+    <p className="mb-1 flex items-center gap-1.5 font-semibold text-teal-200">
+      <Icon name="lock" className="text-[13px]" />
+      Just for you
+    </p>
+    Your own goals and habits go here: gym, exercise, reading, learning or any
+    other self-help. Set goals, make plans, write pages and log your work like
+    in any project. Nobody else can see it.
+  </div>
+);
+
 /** On phones the sections scroll sideways under the header. */
 const MobileNav = ({
   view,
   onSelect,
+  personal,
 }: {
   view: ViewKey;
   onSelect: (view: ViewKey) => void;
+  personal?: boolean;
 }) => (
   <div className="flex gap-1.5 overflow-x-auto border-b border-white/[0.07] px-3 py-2 md:hidden">
-    {VIEWS.map((v) => (
+    {viewsFor(personal).map((v) => (
       <button
         key={v.key}
         type="button"
@@ -807,6 +838,9 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
     () => companies.find((c) => c.company.id === companyId)?.company.name,
     [companies, companyId],
   );
+  // The viewer's own PERSONAL: no team, chat or sharing there.
+  const personal = !!companies.find((c) => c.company.id === companyId)?.company
+    .isPersonal;
 
   const savePage = useCallback((page: Page) => {
     setPages((p) => {
@@ -1104,6 +1138,7 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
         creatingPlan={creatingPlan}
         onPlansOpen={setPlansOpen}
         onNewPlan={newPlan}
+        personal={personal}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -1115,7 +1150,13 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
           >
             <Icon name="arrow_back" className="text-[18px]" />
           </Link>
-          <span className="hidden min-w-0 items-center gap-2 md:flex">
+          <span
+            className={cn(
+              'hidden min-w-0 items-center gap-2',
+              // A PERSONAL's own project needs no company before it.
+              !(personal && coreId === project.id) && 'md:flex',
+            )}
+          >
             {coreId && coreId !== project.id ? (
               <Link
                 href={`${APP_ROUTES.projects}/${coreId}`}
@@ -1180,7 +1221,7 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
           )}
           <div className="flex-1" />
           {isDoc && canEdit && <SaveBadge state={saveState} />}
-          {onTeam && (
+          {onTeam && !personal && (
             <Link
               href={`/messages?project=${encodeURIComponent(project.id)}`}
               title="Message everyone on this project in its group chat"
@@ -1193,7 +1234,7 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
             </Link>
           )}
           {openPlan && <SaveBadge state={plans.saveState} />}
-          {page && (
+          {page && !personal && (
             <ShareButton
               sharing={page.sharing}
               canShare={canEdit}
@@ -1223,9 +1264,19 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
             </button>
           )}
         </header>
-        <MobileNav view={view} onSelect={(v) => select(v)} />
+        <MobileNav
+          view={view}
+          onSelect={(v) => select(v)}
+          personal={personal}
+        />
 
         <main className="custom-scrollbar min-h-0 flex-1 overflow-y-auto">
+          {/* On phones the sidebar's hint shows on the opening view. */}
+          {personal && view === 'tasks' && (
+            <div className="px-4 md:hidden">
+              <PersonalHint />
+            </div>
+          )}
           <AnimatePresence mode="wait">
             <motion.div
               key={`${view}:${pageId ?? planId ?? ''}`}

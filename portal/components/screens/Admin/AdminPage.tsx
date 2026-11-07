@@ -63,13 +63,13 @@ export const AdminPage = () => {
           return !!tab.permission && canPortal(tab.permission);
         if (tab.permission) {
           const permission = tab.permission;
-          return workspace.companies.some((c) =>
+          return workspace.workCompanies.some((c) =>
             hasPermission(c.permissions, permission),
           );
         }
         return !hiringOnly;
       }),
-    [isAdmin, canPortal, workspace.companies, hiringOnly],
+    [isAdmin, canPortal, workspace.workCompanies, hiringOnly],
   );
 
   const [users, setUsers] = useState<User[]>([]);
@@ -102,7 +102,7 @@ export const AdminPage = () => {
   // the top company (companies come in the user's points order); a pick is
   // kept only for this browser tab, so an old pick doesn't stick forever.
   useEffect(() => {
-    const ids = workspace.companies.map((c) => c.company.id);
+    const ids = workspace.workCompanies.map((c) => c.company.id);
     if (companyId && ids.includes(companyId)) return;
     // A link can name the company (?companyId=), e.g. a new hire's onboarding.
     let saved: string | null = new URLSearchParams(window.location.search).get(
@@ -115,7 +115,7 @@ export const AdminPage = () => {
       /* storage unavailable */
     }
     setCompanyId(saved && ids.includes(saved) ? saved : (ids[0] ?? null));
-  }, [workspace.companies, companyId]);
+  }, [workspace.workCompanies, companyId]);
 
   const selectCompany = useCallback((id: string) => {
     setCompanyId(id);
@@ -467,7 +467,7 @@ export const AdminPage = () => {
               </p>
               <p className="text-[10px] uppercase tracking-wider text-neutral-500">
                 {isAdmin
-                  ? `${users.length} people · ${workspace.companies.length} companies`
+                  ? `${users.length} people · ${workspace.workCompanies.length} companies`
                   : companyCountLabel}
               </p>
             </div>

@@ -487,7 +487,7 @@ export const PlansPage = () => {
       <EmptyState
         icon="lightbulb"
         title={data?.plans.length ? 'Pick a plan' : 'No plans yet'}
-        description="A plan can start as just an idea. A grand plan can span many projects; link it to one project to make it that project's plan. Steps can be plain text, tasks (type / to link one) or goals."
+        description="A plan can start as just an idea. A grand plan can span many projects; link it to one project to make it that project's plan. Steps can be plain text, tasks (type / to link one) or goals. Plans of your own, like a workout or reading plan, go in Personal, where only you see them."
         action={
           plans.canCreate && (
             <AdminButton

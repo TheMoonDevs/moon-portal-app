@@ -11,6 +11,8 @@ export type OverviewCompany = {
   description?: string | null;
   /** Its active members. */
   memberIds?: string[];
+  /** The viewer's own PERSONAL. */
+  isPersonal?: boolean;
 };
 
 export type OverviewProject = ProjectRow & {

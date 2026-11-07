@@ -332,7 +332,7 @@ const SignInCard = () => {
 };
 
 const CompaniesCard = () => {
-  const { companies, loading, canOpenAdmin } = useWorkspace();
+  const { workCompanies: companies, loading, canOpenAdmin } = useWorkspace();
   return (
     <Card
       id="companies"

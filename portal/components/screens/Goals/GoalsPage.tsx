@@ -688,7 +688,7 @@ export const GoalsPage = () => {
             <EmptyState
               icon="flag"
               title="No goals yet"
-              description="Set goals on a project's Goals tab and they show up here, day by day."
+              description="Set goals on a project's Goals tab and they show up here, day by day. Your own, like gym, exercise or reading, go in Personal, where only you see them."
             />
           ) : (
             <div className="flex gap-4 md:min-h-0 md:flex-1">
