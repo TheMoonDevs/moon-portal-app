@@ -676,7 +676,7 @@ export function goalRule(goal: GoalShape, target: number): GoalRule {
       };
 }
 
-/** "1 task each Mon and Fri", "3 tasks every Monday, due Sunday". */
+/** "1 task on each of Mon and Fri", "3 tasks every Monday, due by Sunday". */
 export function describeGoalSchedule(goal: GoalShape & { target: number }) {
   const rule = goalRule(goal, goal.target);
   const tasks = `${rule.count} task${rule.count === 1 ? '' : 's'}`;
@@ -695,9 +695,12 @@ export function describeGoalSchedule(goal: GoalShape & { target: number }) {
   if (rule.dueInDays === 13)
     return `${tasks} every other Monday, due by the Sunday after next`;
   const names = listed(rule.weekdays.map((d) => WEEKDAYS[d]));
+  // "1 task on each of Mon, Wed and Fri": the target is spread over the
+  // days, not made on every one of them.
+  const each = rule.weekdays.length > 1 ? `on each of ${names}` : `on ${names}`;
   return rule.every === 'fortnight'
-    ? `${tasks} for each ${names}, every other week`
-    : `${tasks} for each ${names}`;
+    ? `${tasks} ${each}, every other week`
+    : `${tasks} ${each}`;
 }
 
 /** How often a goal repeats: "per day", "twice a week", "3 times a week". */

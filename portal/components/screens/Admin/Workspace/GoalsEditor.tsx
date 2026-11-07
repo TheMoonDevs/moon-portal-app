@@ -259,6 +259,40 @@ const SlotsPicker = ({
 };
 
 /**
+ * How the period's target splits over the picked days, in words: "3 shorts
+ * a week over 3 days: 1 on each day, not 3". When it does not split evenly,
+ * says how many that makes, since each day gets the same number.
+ */
+const SpreadNote = ({ goal, total }: { goal: GoalDraft; total: number }) => {
+  const days =
+    goal.period === 'week' || goal.period === 'fortnight'
+      ? (goal.days ?? []).length
+      : goal.period === 'month' || goal.period === 'quarter'
+        ? (goal.slots ?? []).length
+        : 0;
+  if (days < 2 || total < 1) return null;
+  const each = Math.ceil(total / days);
+  const what = goal.title.trim() || 'tasks';
+  const per = PERIOD_LABELS[goal.period];
+  if (each * days === total)
+    return (
+      <p className="text-[11px] text-neutral-400">
+        {total} {what} {per} over {days} days:{' '}
+        <span className="font-medium text-neutral-200">{each} on each day</span>
+        {each !== total && `, not ${total} on each`}.
+      </p>
+    );
+  return (
+    <p className="flex items-start gap-1.5 text-[11px] text-amber-300/90">
+      <Icon name="warning" className="mt-px text-[13px]" />
+      {total} doesn’t split evenly over {days} days, so each day gets {each} (
+      {each * days} {per}). Set the target to a multiple of {days}, or pick
+      other days.
+    </p>
+  );
+};
+
+/**
  * One goal: what kind, the target, and for a repeating one when its tasks
  * are made and for whom.
  */
@@ -367,7 +401,7 @@ export const GoalFields = ({
           {makesTasks &&
             (goal.period === 'week' || goal.period === 'fortnight') && (
               <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-500">
-                For
+                Spread over
                 <DayPicker
                   value={goal.days ?? []}
                   onChange={(days) => onChange({ days })}
@@ -397,6 +431,7 @@ export const GoalFields = ({
                 />
               </div>
             )}
+          {makesTasks && <SpreadNote goal={goal} total={total} />}
           <p className="flex items-center gap-1.5 text-[11px] text-neutral-500">
             <Icon name="event_repeat" className="text-[13px]" />
             {makesTasks
