@@ -87,6 +87,8 @@ export type GoalsCalendarData = {
   goals: CalendarGoal[];
   tasks: CalendarTask[];
   tallies: CalendarTally[];
+  /** Tasks finished per project and day (completedAt), goal or not. */
+  done?: { projectId: string; day: string; count: number }[];
   users: {
     id: string;
     name?: string | null;

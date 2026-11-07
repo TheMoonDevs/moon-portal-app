@@ -1,17 +1,15 @@
 'use client';
 
-import Link from 'next/link';
 import type { CSSProperties } from 'react';
 
 import { cn } from '@/lib/utils';
 import { GOAL_STATUS } from '@/lib/workspace/goalCalendar';
 import { isTarget, PERIOD_NOUN } from '@/lib/workspace/projects';
-import { APP_ROUTES } from '@/utils/constants/appInfo';
 
 import { Icon } from '../Admin/shared/AdminUI';
 import { CompanyMark } from '../Admin/Workspace/shared';
 import { Tip, TipRow, TipTitle } from '../Projects/Tip';
-import { byProject, type GoalRow } from './model';
+import { byProject, type DoneCounts, doneOver, type GoalRow } from './model';
 import { Bar, card, EffortTag, fmtDay, fmtNum, STATE_META } from './ui';
 
 const CELL = 22;
@@ -73,21 +71,29 @@ const GoalHead = ({ row }: { row: GoalRow }) => {
 /**
  * Every goal as a row of days, grouped by company and project: one square a
  * day, coloured by how it went, with the goal's periods underneath (green
- * met, red missed). The left column says where each goal stands now.
+ * met, red missed). The left column says where each goal stands now; a
+ * project's name opens it in the sidebar, with the tasks it finished.
+ * On wide screens it fills the screen and scrolls inside itself.
  */
 export const GoalsTimeline = ({
   rows,
   days,
+  done,
   today,
   selected,
+  selectedProject,
   onSelect,
+  onSelectProject,
 }: {
   rows: GoalRow[];
   /** The days of the month shown. */
   days: string[];
+  done: DoneCounts;
   today: string;
   selected: string | null;
+  selectedProject: string | null;
   onSelect: (day: string) => void;
+  onSelectProject: (projectId: string) => void;
 }) => {
   const groups = byProject(rows);
   const grid: CSSProperties = {
@@ -96,8 +102,8 @@ export const GoalsTimeline = ({
   const at = (day: string) => days.indexOf(day);
 
   return (
-    <div className={cn(card, 'overflow-hidden')}>
-      <div className="custom-scrollbar overflow-x-auto">
+    <div className={cn(card, 'flex flex-col overflow-hidden md:h-full')}>
+      <div className="custom-scrollbar overflow-x-auto md:min-h-0 md:flex-1 md:overflow-auto">
         <div className="min-w-max">
           {/* Day numbers */}
           <div className="sticky top-0 z-10 flex border-b border-white/[0.06] bg-neutral-950/90 backdrop-blur auto-light:border-black/[0.06] auto-light:bg-white/90">
@@ -136,23 +142,42 @@ export const GoalsTimeline = ({
               key={project.id}
               className="border-b border-white/[0.05] last:border-0 auto-light:border-black/[0.05]"
             >
-              <div className="sticky left-0 flex w-[230px] items-center gap-2 px-3 pb-1 pt-3 md:w-[290px]">
+              <div className="sticky left-0 flex w-[300px] items-center gap-2 px-3 pb-1 pt-3 md:w-[520px]">
                 <CompanyMark
                   name={project.name}
                   color={project.color}
                   logo={project.logo}
                   size={18}
                 />
-                <Link
-                  href={`${APP_ROUTES.projects}/${project.id}?view=goals`}
-                  className="truncate text-xs font-semibold text-neutral-300 hover:text-white hover:underline auto-light:text-neutral-700 auto-light:hover:text-neutral-950"
+                <button
+                  type="button"
+                  onClick={() => onSelectProject(project.id)}
+                  aria-pressed={selectedProject === project.id}
+                  className={cn(
+                    'truncate text-xs font-semibold hover:text-white hover:underline auto-light:hover:text-neutral-950',
+                    selectedProject === project.id
+                      ? 'text-white underline auto-light:text-neutral-950'
+                      : 'text-neutral-300 auto-light:text-neutral-700',
+                  )}
                 >
                   {project.name}
-                </Link>
+                </button>
                 <span className="truncate text-[11px] text-neutral-600 auto-light:text-neutral-400">
                   {list[0].company?.name}
                 </span>
-                <EffortTag effort={list[0].effort} className="ml-auto" />
+                {(() => {
+                  const n = doneOver(done, project.id, days);
+                  return n > 0 ? (
+                    <span
+                      title={`${n} task${n === 1 ? '' : 's'} finished this month`}
+                      className="flex shrink-0 items-center gap-0.5 rounded-full bg-emerald-400/10 px-1.5 text-[10px] font-medium tabular-nums text-emerald-300 auto-light:bg-emerald-50 auto-light:text-emerald-700"
+                    >
+                      <Icon name="check" className="text-[11px]" />
+                      {n}
+                    </span>
+                  ) : null;
+                })()}
+                <EffortTag effort={list[0].effort} />
               </div>
               {list.map((row) => (
                 <div

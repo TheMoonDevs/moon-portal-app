@@ -37,7 +37,8 @@ const dayOf = (value: unknown) =>
  * for the goals calendar: each goal with its progress now, and the tasks
  * and hand-added progress of `from` to `to` (YYYY-MM-DD, this month when
  * left out), plus enough on either side to count the periods they touch.
- * Projects come with their effort, so the page can filter by it.
+ * Projects come with their effort, so the page can filter by it, and
+ * `done` counts the tasks finished in each project on each day of the range.
  */
 export async function GET(request: Request) {
   const { response, user } = await requireUser();
@@ -72,6 +73,7 @@ export async function GET(request: Request) {
     goals: [],
     tasks: [],
     tallies: [],
+    done: [],
     users: [],
   };
   if (!companies.length) return ok(empty);
@@ -185,6 +187,24 @@ export async function GET(request: Request) {
       amount: t.amount,
     }));
 
+  // Every task finished in these projects from `from` to `to`, counted per
+  // project and day, goal or not: the work done beside the goals.
+  const finished: Task[] = await db.task.findMany({
+    where: { projectId: { in: ids }, status: TASK_STATUS.DONE },
+    select: { projectId: true, completedAt: true },
+  });
+  const doneCount = new Map<string, number>();
+  for (const t of finished) {
+    const day = dayOf(t.completedAt);
+    if (!day || day < from || day > to) continue;
+    const key = `${t.projectId}|${day}`;
+    doneCount.set(key, (doneCount.get(key) ?? 0) + 1);
+  }
+  const done = Array.from(doneCount, ([key, count]) => {
+    const [projectId, day] = key.split('|');
+    return { projectId, day, count };
+  });
+
   const userIds = new Set<string>();
   projects.forEach((p) =>
     [...(p.leadIds ?? []), ...(p.memberIds ?? [])].forEach((id) =>
@@ -219,6 +239,7 @@ export async function GET(request: Request) {
     goals,
     tasks: shownTasks,
     tallies: shownTallies,
+    done,
     users: await getPublicUsers(Array.from(userIds)),
   });
 }

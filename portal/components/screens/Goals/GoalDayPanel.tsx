@@ -1,19 +1,22 @@
 'use client';
 
-import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 import { cn } from '@/lib/utils';
 import type { CalendarTask } from '@/lib/workspace/goalCalendar';
 import { isTarget, PERIOD_NOUN } from '@/lib/workspace/projects';
-import { APP_ROUTES } from '@/utils/constants/appInfo';
 
 import { Icon, UserAvatar } from '../Admin/shared/AdminUI';
 import { CompanyMark } from '../Admin/Workspace/shared';
 import { entriesOn } from './GoalsMonth';
-import { byProject, type GoalRow } from './model';
-import { Bar, card, EffortTag, fmtDay, fmtNum, STATE_META } from './ui';
+import { type DoneCounts, doneOn, type GoalRow } from './model';
+import { Bar, EffortTag, fmtDay, fmtNum, STATE_META } from './ui';
 
-type Person = { id: string; name?: string | null; avatar?: string | null };
+export type Person = {
+  id: string;
+  name?: string | null;
+  avatar?: string | null;
+};
 
 const TASK_ICON: Record<string, { icon: string; className: string }> = {
   DONE: { icon: 'check_circle', className: 'text-emerald-400' },
@@ -23,7 +26,7 @@ const TASK_ICON: Record<string, { icon: string; className: string }> = {
   IGNORED: { icon: 'redo', className: 'text-rose-400' },
 };
 
-const TaskLine = ({
+export const TaskLine = ({
   task,
   people,
 }: {
@@ -73,173 +76,263 @@ const TaskLine = ({
   );
 };
 
+/** The sidebar's head: a kicker, a title, a line under it and a close. */
+export const PanelHead = ({
+  kicker,
+  title,
+  sub,
+  onClose,
+  children,
+}: {
+  kicker: string;
+  title: ReactNode;
+  sub?: ReactNode;
+  onClose: () => void;
+  children?: ReactNode;
+}) => (
+  <header className="sticky top-0 z-10 flex items-start gap-3 border-b border-white/[0.06] bg-neutral-950/95 p-4 backdrop-blur auto-light:border-black/[0.06] auto-light:bg-white/95">
+    <div className="min-w-0 flex-1">
+      <p className="text-[11px] font-medium uppercase tracking-wider text-neutral-500">
+        {kicker}
+      </p>
+      <h2 className="truncate text-lg font-semibold text-white auto-light:text-neutral-950">
+        {title}
+      </h2>
+      {sub && (
+        <p className="mt-0.5 text-xs text-neutral-400 auto-light:text-neutral-500">
+          {sub}
+        </p>
+      )}
+      {children}
+    </div>
+    <button
+      type="button"
+      aria-label="Close"
+      onClick={onClose}
+      className="flex size-8 shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/[0.06] hover:text-white auto-light:text-neutral-500 auto-light:hover:bg-black/[0.05] auto-light:hover:text-neutral-950"
+    >
+      <Icon name="close" className="text-[18px]" />
+    </button>
+  </header>
+);
+
+/** One goal on the day: how it went, its tasks and its period. */
+const DayGoal = ({
+  row,
+  day,
+  people,
+}: {
+  row: GoalRow;
+  day: string;
+  people: Map<string, Person>;
+}) => {
+  const cell = row.days.get(day)!;
+  const meta = STATE_META[cell.state as keyof typeof STATE_META];
+  const target = isTarget(row.goal);
+  const period = row.periods.find((p) => p.from <= day && p.to >= day);
+  return (
+    <li className="rounded-xl bg-white/[0.025] p-2.5 auto-light:bg-black/[0.025]">
+      <div className="flex items-center gap-2">
+        <span
+          className={cn(
+            'inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold',
+            meta.pill,
+          )}
+        >
+          <Icon name={meta.icon} className="text-[11px]" />
+          {meta.label}
+        </span>
+        <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-neutral-100 auto-light:text-neutral-900">
+          {row.label}
+        </span>
+        {cell.due > 0 && (
+          <span className="shrink-0 text-[11px] tabular-nums text-neutral-500">
+            {Math.min(cell.done, cell.due)}/{cell.due} due
+          </span>
+        )}
+        {cell.added > 0 && (
+          <span className="shrink-0 text-[11px] tabular-nums text-violet-300 auto-light:text-violet-700">
+            +{fmtNum(cell.added)} by hand
+          </span>
+        )}
+      </div>
+      {cell.tasks.length > 0 && (
+        <ul className="mt-1.5">
+          {cell.tasks.map((t) => (
+            <TaskLine key={t.id} task={t} people={people} />
+          ))}
+        </ul>
+      )}
+      <div className="mt-2 flex items-center gap-2">
+        {target ? (
+          <>
+            <Bar
+              percent={row.goal.progress.percent}
+              color={row.color}
+              className="flex-1"
+            />
+            <span className="shrink-0 text-[11px] tabular-nums text-neutral-500">
+              {fmtNum(row.goal.progress.done)}/
+              {fmtNum(row.goal.progress.target)} in total
+            </span>
+          </>
+        ) : period ? (
+          <>
+            <Bar
+              percent={(period.done / period.target) * 100}
+              color={
+                period.met
+                  ? '#34d399'
+                  : period.met === false
+                    ? '#fb7185'
+                    : row.color
+              }
+              className="flex-1"
+            />
+            <span className="shrink-0 text-[11px] tabular-nums text-neutral-500">
+              {period.done}/{period.target} that {PERIOD_NOUN[row.goal.period]}
+              {period.met === true
+                ? ' · met'
+                : period.met === false
+                  ? ' · missed'
+                  : ''}
+            </span>
+          </>
+        ) : null}
+      </div>
+    </li>
+  );
+};
+
 /**
- * One day of the goals calendar: every goal due or worked on that day,
- * grouped by project, with how it went, its tasks and who did them, and
- * how the goal's period around that day stands.
+ * One day of the goals calendar, for the sidebar: split by company, then
+ * project, each project with the tasks it finished that day and its goals
+ * due or worked on, with how they went, their tasks and who did them, and
+ * how the period around the day stands. A project's name opens it.
  */
 export const GoalDayPanel = ({
   day,
   rows,
+  done,
   today,
   people,
   onClose,
+  onOpenProject,
 }: {
   day: string;
   rows: GoalRow[];
+  done: DoneCounts;
   today: string;
   people: Map<string, Person>;
-  onClose?: () => void;
+  onClose: () => void;
+  onOpenProject: (projectId: string) => void;
 }) => {
   const entries = entriesOn(rows, day);
-  const groups = byProject(entries.map((e) => e.row));
-  const cellOf = (r: GoalRow) => entries.find((e) => e.row.key === r.key)!.cell;
   const due = entries.filter((e) => e.cell.due > 0);
-  const done = due.filter((e) => e.cell.state === 'done').length;
+  const doneDue = due.filter((e) => e.cell.state === 'done').length;
   const relative =
     day === today ? 'Today' : day < today ? 'Past day' : 'Coming up';
 
-  return (
-    <section className={cn(card, 'flex flex-col')}>
-      <header className="flex items-start gap-3 border-b border-white/[0.06] p-4 auto-light:border-black/[0.06]">
-        <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-neutral-500">
-            {relative}
-          </p>
-          <h2 className="text-lg font-semibold text-white auto-light:text-neutral-950">
-            {fmtDay(day, { weekday: 'long', month: 'long' })}
-          </h2>
-          <p className="mt-0.5 text-xs text-neutral-400 auto-light:text-neutral-500">
-            {entries.length
-              ? `${entries.length} goal${entries.length === 1 ? '' : 's'}${
-                  due.length && day <= today
-                    ? ` · ${done} of ${due.length} due done`
-                    : due.length
-                      ? ` · ${due.length} due`
-                      : ''
-                }`
-              : 'No goal is due or was worked on.'}
-          </p>
-        </div>
-        {onClose && (
-          <button
-            type="button"
-            aria-label="Close day"
-            onClick={onClose}
-            className="flex size-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/[0.06] hover:text-white auto-light:text-neutral-500 auto-light:hover:bg-black/[0.05]"
-          >
-            <Icon name="close" className="text-[18px]" />
-          </button>
-        )}
-      </header>
+  // Projects in row order with a goal that day or tasks finished on it.
+  const projects: {
+    row: GoalRow;
+    goals: GoalRow[];
+    done: number;
+  }[] = [];
+  for (const row of rows) {
+    let p = projects.find((x) => x.row.project.id === row.project.id);
+    if (!p) {
+      p = { row, goals: [], done: doneOn(done, row.project.id, day) };
+      projects.push(p);
+    }
+    if (entries.some((e) => e.row.key === row.key)) p.goals.push(row);
+  }
+  const shown = projects.filter((p) => p.goals.length || p.done);
+  const companies = Array.from(
+    new Set(shown.map((p) => p.row.company?.id ?? '')),
+  ).map((id) => ({
+    company: shown.find((p) => (p.row.company?.id ?? '') === id)!.row.company,
+    projects: shown.filter((p) => (p.row.company?.id ?? '') === id),
+  }));
+  const finished = shown.reduce((n, p) => n + p.done, 0);
 
-      <div className="flex flex-col divide-y divide-white/[0.05] auto-light:divide-black/[0.05]">
-        {groups.map(({ project, rows: list }) => (
-          <div key={project.id} className="px-4 py-3">
-            <Link
-              href={`${APP_ROUTES.projects}/${project.id}?view=goals`}
-              className="mb-2 flex items-center gap-2"
-            >
-              <CompanyMark
-                name={project.name}
-                color={project.color}
-                logo={project.logo}
-                size={20}
-              />
-              <span className="truncate text-sm font-semibold text-neutral-100 hover:underline auto-light:text-neutral-900">
-                {project.name}
-              </span>
-              <EffortTag effort={list[0].effort} className="ml-auto" />
-            </Link>
-            <ul className="flex flex-col gap-2.5">
-              {list.map((row) => {
-                const cell = cellOf(row);
-                const meta = STATE_META[cell.state as keyof typeof STATE_META];
-                const target = isTarget(row.goal);
-                const period = row.periods.find(
-                  (p) => p.from <= day && p.to >= day,
-                );
-                return (
-                  <li
-                    key={row.key}
-                    className="rounded-xl bg-white/[0.025] p-2.5 auto-light:bg-black/[0.025]"
+  return (
+    <div className="flex flex-col">
+      <PanelHead
+        kicker={relative}
+        title={fmtDay(day, { weekday: 'long', month: 'long' })}
+        onClose={onClose}
+        sub={
+          [
+            entries.length &&
+              `${entries.length} goal${entries.length === 1 ? '' : 's'}`,
+            due.length &&
+              (day <= today
+                ? `${doneDue} of ${due.length} due done`
+                : `${due.length} due`),
+            finished && `${finished} task${finished === 1 ? '' : 's'} finished`,
+          ]
+            .filter(Boolean)
+            .join(' · ') || 'No goal is due or was worked on.'
+        }
+      />
+      <div className="flex flex-col gap-4 p-4">
+        {companies.map(({ company, projects: list }) => (
+          <section key={company?.id ?? 'none'}>
+            {company && (
+              <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
+                <CompanyMark
+                  name={company.name}
+                  color={company.color}
+                  logo={company.logo}
+                  size={16}
+                />
+                {company.name}
+              </p>
+            )}
+            <div className="flex flex-col gap-3">
+              {list.map(({ row, goals, done: n }) => (
+                <div key={row.project.id}>
+                  <button
+                    type="button"
+                    onClick={() => onOpenProject(row.project.id)}
+                    className="group mb-1.5 flex w-full items-center gap-2 text-left"
                   >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={cn(
-                          'inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold',
-                          meta.pill,
-                        )}
-                      >
-                        <Icon name={meta.icon} className="text-[11px]" />
-                        {meta.label}
+                    <CompanyMark
+                      name={row.project.name}
+                      color={row.project.color}
+                      logo={row.project.logo}
+                      size={20}
+                    />
+                    <span className="min-w-0 truncate text-sm font-semibold text-neutral-100 group-hover:underline auto-light:text-neutral-900">
+                      {row.project.name}
+                    </span>
+                    {n > 0 && (
+                      <span className="flex shrink-0 items-center gap-0.5 rounded-full bg-emerald-400/10 px-1.5 text-[10px] font-medium tabular-nums text-emerald-300 auto-light:bg-emerald-50 auto-light:text-emerald-700">
+                        <Icon name="check" className="text-[11px]" />
+                        {n} done
                       </span>
-                      <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-neutral-100 auto-light:text-neutral-900">
-                        {row.label}
-                      </span>
-                      {cell.due > 0 && (
-                        <span className="shrink-0 text-[11px] tabular-nums text-neutral-500">
-                          {Math.min(cell.done, cell.due)}/{cell.due} due
-                        </span>
-                      )}
-                      {cell.added > 0 && (
-                        <span className="shrink-0 text-[11px] tabular-nums text-violet-300 auto-light:text-violet-700">
-                          +{fmtNum(cell.added)} by hand
-                        </span>
-                      )}
-                    </div>
-                    {cell.tasks.length > 0 && (
-                      <ul className="mt-1.5">
-                        {cell.tasks.map((t) => (
-                          <TaskLine key={t.id} task={t} people={people} />
-                        ))}
-                      </ul>
                     )}
-                    <div className="mt-2 flex items-center gap-2">
-                      {target ? (
-                        <>
-                          <Bar
-                            percent={row.goal.progress.percent}
-                            color={row.color}
-                            className="flex-1"
-                          />
-                          <span className="shrink-0 text-[11px] tabular-nums text-neutral-500">
-                            {fmtNum(row.goal.progress.done)}/
-                            {fmtNum(row.goal.progress.target)} in total
-                          </span>
-                        </>
-                      ) : period ? (
-                        <>
-                          <Bar
-                            percent={(period.done / period.target) * 100}
-                            color={
-                              period.met
-                                ? '#34d399'
-                                : period.met === false
-                                  ? '#fb7185'
-                                  : row.color
-                            }
-                            className="flex-1"
-                          />
-                          <span className="shrink-0 text-[11px] tabular-nums text-neutral-500">
-                            {period.done}/{period.target} that{' '}
-                            {PERIOD_NOUN[row.goal.period]}
-                            {period.met === true
-                              ? ' · met'
-                              : period.met === false
-                                ? ' · missed'
-                                : ''}
-                          </span>
-                        </>
-                      ) : null}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
+                    <EffortTag effort={row.effort} className="ml-auto" />
+                  </button>
+                  {goals.length > 0 && (
+                    <ul className="flex flex-col gap-2">
+                      {goals.map((g) => (
+                        <DayGoal
+                          key={g.key}
+                          row={g}
+                          day={day}
+                          people={people}
+                        />
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
         ))}
       </div>
-    </section>
+    </div>
   );
 };

@@ -22,7 +22,8 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { EmptyState, Icon } from '../Admin/shared/AdminUI';
 import { TipProvider } from '../Projects/Tip';
-import { GoalDayPanel } from './GoalDayPanel';
+import { GoalDayPanel, PanelHead } from './GoalDayPanel';
+import { GoalProjectPanel } from './GoalProjectPanel';
 import { type Filters, GoalsFilters, NO_FILTERS } from './GoalsFilters';
 import { GoalsMonth } from './GoalsMonth';
 import { GoalsTimeline } from './GoalsTimeline';
@@ -30,6 +31,7 @@ import { GoalsWeek } from './GoalsWeek';
 import {
   applyFilters,
   buildRows,
+  doneCounts,
   filtersFromParams,
   filtersToParams,
   type GoalRow,
@@ -38,6 +40,13 @@ import {
 import { Bar, card, EFFORTS, STATE_META } from './ui';
 
 type View = 'calendar' | 'week' | 'timeline';
+
+/** What the sidebar shows. */
+type Panel =
+  | { kind: 'day'; day: string }
+  | { kind: 'project'; projectId: string }
+  | { kind: 'effort' }
+  | null;
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -83,29 +92,73 @@ const Stat = ({
   value,
   sub,
   tone,
+  onClick,
+  active,
+  wide,
 }: {
   label: string;
   value: string | number;
   sub?: string;
   tone?: string;
-}) => (
-  <div className={cn(card, 'min-w-[132px] flex-1 px-4 py-3')}>
-    <p className="text-[11px] font-medium uppercase tracking-wider text-neutral-500">
-      {label}
-    </p>
-    <p
+  onClick?: () => void;
+  active?: boolean;
+  wide?: boolean;
+}) => {
+  const body = (
+    <>
+      <p className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-neutral-500">
+        {label}
+        {onClick && (
+          <Icon name="chevron_right" className="ml-auto text-[14px]" />
+        )}
+      </p>
+      <p
+        className={cn(
+          'whitespace-nowrap text-xl font-semibold tabular-nums tracking-tight text-white auto-light:text-neutral-950',
+          tone,
+        )}
+      >
+        {value}
+      </p>
+      {sub && <p className="truncate text-[11px] text-neutral-500">{sub}</p>}
+    </>
+  );
+  const cls = cn(
+    card,
+    'min-w-[128px] flex-1 px-3.5 py-2 text-left',
+    wide && 'min-w-[180px] flex-[1.5]',
+  );
+  return onClick ? (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
       className={cn(
-        'mt-0.5 text-2xl font-semibold tabular-nums tracking-tight text-white auto-light:text-neutral-950',
-        tone,
+        cls,
+        'transition-colors hover:bg-white/[0.05] auto-light:hover:bg-black/[0.02]',
+        active && 'border-white/25 auto-light:border-black/25',
       )}
     >
-      {value}
-    </p>
-    {sub && <p className="truncate text-[11px] text-neutral-500">{sub}</p>}
-  </div>
-);
+      {body}
+    </button>
+  ) : (
+    <div className={cls}>{body}</div>
+  );
+};
 
-/** How each effort level did over the month: days done out of days due. */
+/** How one effort level did over some days: days done out of days due. */
+const effortRate = (rows: GoalRow[], days: string[], today: string) => {
+  const t = rangeTotals(
+    rows.flatMap((r) => days.map((d) => r.days.get(d)).filter((c) => !!c)),
+    today,
+  );
+  return {
+    totals: t,
+    pct: t.daysOver ? Math.round((t.daysDone / t.daysOver) * 100) : null,
+  };
+};
+
+/** Each effort level over the days shown, for the sidebar. */
 const ByEffort = ({
   rows,
   days,
@@ -115,61 +168,49 @@ const ByEffort = ({
   days: string[];
   today: string;
 }) => (
-  <section className={cn(card, 'p-4')}>
-    <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-neutral-500">
-      <Icon name="bolt" className="text-[14px]" />
-      By effort, this month
-    </h3>
-    <div className="mt-3 flex flex-col gap-3">
-      {EFFORTS.map((e) => {
-        const mine = rows.filter((r) => r.effort === e.key);
-        if (!mine.length) return null;
-        const t = rangeTotals(
-          mine.flatMap((r) =>
-            days.map((d) => r.days.get(d)).filter((c) => !!c),
-          ),
-          today,
-        );
-        const pct = t.daysOver
-          ? Math.round((t.daysDone / t.daysOver) * 100)
-          : null;
-        return (
-          <div key={e.key}>
-            <div className="mb-1 flex items-center gap-2 text-xs">
-              <Icon name={e.icon} className="text-[14px] text-neutral-400" />
-              <span className="font-medium text-neutral-200 auto-light:text-neutral-800">
-                {e.label}
-              </span>
-              <span className="text-neutral-500">
-                {mine.length} goal{mine.length === 1 ? '' : 's'}
-              </span>
-              <span className="ml-auto tabular-nums text-neutral-400 auto-light:text-neutral-600">
-                {pct == null ? '–' : `${pct}%`}
-              </span>
-            </div>
-            <Bar
-              percent={pct ?? 0}
-              color={
-                pct == null
-                  ? '#525252'
-                  : pct >= 80
-                    ? '#34d399'
-                    : pct >= 50
-                      ? '#fcd34d'
-                      : '#fb7185'
-              }
-            />
-            <p className="mt-1 text-[11px] text-neutral-500">
-              {t.daysOver
-                ? `${t.daysDone} of ${t.daysOver} days due were done`
-                : 'No days due yet'}
-              {t.missed ? ` · ${t.missed} missed` : ''}
-            </p>
+  <div className="flex flex-col gap-4 p-4">
+    {EFFORTS.map((e) => {
+      const mine = rows.filter((r) => r.effort === e.key);
+      if (!mine.length) return null;
+      const { totals: t, pct } = effortRate(mine, days, today);
+      const projects = new Set(mine.map((r) => r.project.id)).size;
+      return (
+        <div key={e.key}>
+          <div className="mb-1 flex items-center gap-2 text-xs">
+            <Icon name={e.icon} className="text-[14px] text-neutral-400" />
+            <span className="font-medium text-neutral-200 auto-light:text-neutral-800">
+              {e.label}
+            </span>
+            <span className="text-neutral-500">
+              {mine.length} goal{mine.length === 1 ? '' : 's'} · {projects}{' '}
+              project{projects === 1 ? '' : 's'}
+            </span>
+            <span className="ml-auto tabular-nums text-neutral-400 auto-light:text-neutral-600">
+              {pct == null ? '–' : `${pct}%`}
+            </span>
           </div>
-        );
-      })}
-    </div>
-  </section>
+          <Bar
+            percent={pct ?? 0}
+            color={
+              pct == null
+                ? '#525252'
+                : pct >= 80
+                  ? '#34d399'
+                  : pct >= 50
+                    ? '#fcd34d'
+                    : '#fb7185'
+            }
+          />
+          <p className="mt-1 text-[11px] text-neutral-500">
+            {t.daysOver
+              ? `${t.daysDone} of ${t.daysOver} days due were done`
+              : 'No days due yet'}
+            {t.missed ? ` · ${t.missed} missed` : ''}
+          </p>
+        </div>
+      );
+    })}
+  </div>
 );
 
 const Legend = () => (
@@ -190,10 +231,12 @@ const Legend = () => (
 /**
  * Every goal across the companies and projects the person can see, on a
  * calendar. A month grid shows each day's goals coloured by how they went;
- * the timeline puts each goal on its own row of days with its periods
- * underneath. Filters narrow it by company, effort level (the project's),
- * project, status, kind, how often and who it is for, and stay in the URL.
- * Picking a day opens what was due and done on it.
+ * the week lists each day's goals by company and project, with the tasks
+ * each project finished; the timeline puts each goal on its own row of
+ * days with its periods underneath. Filters narrow it by company, effort
+ * level (the project's), project, status, kind, how often and who it is
+ * for, and stay in the URL. On wide screens the page fits the screen, and
+ * picking a day or a project opens it in a sidebar on the right.
  */
 export const GoalsPage = () => {
   const { user } = useUser();
@@ -201,7 +244,21 @@ export const GoalsPage = () => {
   const [view, setView] = useState<View>('calendar');
   const [weekStart, setWeekStart] = useState(() => mondayOf(toDay()));
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [panel, setPanel] = useState<Panel>(null);
+  const selected = panel?.kind === 'day' ? panel.day : null;
+  const selectedProject = panel?.kind === 'project' ? panel.projectId : null;
+  const openDay = (day: string) =>
+    setPanel(day === selected ? null : { kind: 'day', day });
+  const openProject = (projectId: string) =>
+    setPanel(
+      projectId === selectedProject ? null : { kind: 'project', projectId },
+    );
+  const closePanel = () => setPanel(null);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setPanel(null);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
   const [data, setData] = useState<GoalsCalendarData | null>(null);
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
@@ -283,6 +340,7 @@ export const GoalsPage = () => {
     [data, gridDays, gridFrom, gridTo],
   );
   const shown = useMemo(() => applyFilters(rows, filters), [rows, filters]);
+  const done = useMemo(() => doneCounts(data), [data]);
 
   // Effort counts ignore the effort filter itself.
   const effortCounts = useMemo(() => {
@@ -321,21 +379,39 @@ export const GoalsPage = () => {
       .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
   }, [data, rows]);
 
+  const isWeek = view === 'week';
+  // The days the stats and sidebar speak of: the week, else the month.
+  const rangeDays = isWeek ? weekDays : monthDays;
+  const rangeWord = isWeek ? 'this week' : 'this month';
   const stats = useMemo(() => {
     const count = (s: string) => shown.filter((r) => r.status === s).length;
     const repeating = shown.filter((r) => r.goal.kind !== 'target');
     const t = rangeTotals(
       shown.flatMap((r) =>
-        monthDays.map((d) => r.days.get(d)).filter((c) => !!c),
+        rangeDays.map((d) => r.days.get(d)).filter((c) => !!c),
       ),
       today,
     );
+    const first = rangeDays[0];
+    const last = rangeDays[rangeDays.length - 1];
     const periodsOver = repeating.flatMap((r) =>
-      r.periods.filter(
-        (p) =>
-          p.met !== null && p.to >= monthRange.from && p.to <= monthRange.to,
-      ),
+      r.periods.filter((p) => p.met !== null && p.to >= first && p.to <= last),
     );
+    const projectIds = Array.from(new Set(shown.map((r) => r.project.id)));
+    const finished = projectIds.reduce(
+      (n, id) =>
+        n + rangeDays.reduce((m, d) => m + (done.get(`${id}|${d}`) ?? 0), 0),
+      0,
+    );
+    const effort = EFFORTS.map((e) => {
+      const mine = shown.filter((r) => r.effort === e.key);
+      return {
+        key: e.key,
+        short: e.label[0],
+        count: mine.length,
+        pct: effortRate(mine, rangeDays, today).pct,
+      };
+    }).filter((e) => e.count && e.key !== 'NONE');
     return {
       total: shown.length,
       repeating: repeating.length,
@@ -349,20 +425,25 @@ export const GoalsPage = () => {
       totals: t,
       periodsMet: periodsOver.filter((p) => p.met).length,
       periodsOver: periodsOver.length,
+      finished,
+      projects: projectIds.length,
+      effort,
     };
-  }, [shown, monthDays, today, monthRange]);
+  }, [shown, rangeDays, today, done]);
 
   const isThisMonth = month === today.slice(0, 7);
   const isThisWeek = weekStart === mondayOf(today);
+  // A day left behind closes; a project stays open as the days move.
+  const dropDay = () => setPanel((p) => (p?.kind === 'day' ? null : p));
   const goTo = (m: string) => {
     setMonth(m);
-    setSelected(null);
+    dropDay();
   };
   /** Shows the week from `monday`; its month's data covers it. */
   const goToWeek = (monday: string) => {
     setWeekStart(monday);
     setMonth(monthOfWeek(monday));
-    setSelected(null);
+    dropDay();
   };
   const changeView = (next: View) => {
     if (next === 'week' && view !== 'week') {
@@ -377,17 +458,51 @@ export const GoalsPage = () => {
     }
     setView(next);
   };
-  const isWeek = view === 'week';
   const step = (n: number) =>
     isWeek ? goToWeek(addDays(weekStart, 7 * n)) : goTo(shiftMonth(month, n));
 
+  const rangeTitle = isWeek ? weekTitle(weekStart) : monthTitle(month);
+  const panelBody =
+    panel?.kind === 'day' ? (
+      <GoalDayPanel
+        day={panel.day}
+        rows={shown}
+        done={done}
+        today={today}
+        people={people}
+        onClose={closePanel}
+        onOpenProject={openProject}
+      />
+    ) : panel?.kind === 'project' ? (
+      <GoalProjectPanel
+        projectId={panel.projectId}
+        rows={rows}
+        days={rangeDays}
+        rangeLabel={rangeTitle}
+        done={done}
+        today={today}
+        onClose={closePanel}
+        onOpenDay={openDay}
+      />
+    ) : panel?.kind === 'effort' ? (
+      <>
+        <PanelHead
+          kicker={rangeTitle}
+          title="By effort"
+          sub="Days due that were done, by the effort level of their project."
+          onClose={closePanel}
+        />
+        <ByEffort rows={shown} days={rangeDays} today={today} />
+      </>
+    ) : null;
+
   return (
     <TipProvider delayDuration={120}>
-      <div className="auto-theme min-h-dvh bg-neutral-950 pb-28 text-neutral-100 auto-light:bg-neutral-50 auto-light:text-neutral-900 md:pb-12">
-        <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-4 px-4 pt-6 md:px-8 md:pt-10">
+      <div className="auto-theme flex min-h-dvh flex-col bg-neutral-950 pb-28 text-neutral-100 auto-light:bg-neutral-50 auto-light:text-neutral-900 md:h-dvh md:min-h-0 md:overflow-hidden md:pb-0">
+        <div className="mx-auto flex w-full max-w-[1680px] flex-col gap-3 px-4 pt-6 md:min-h-0 md:flex-1 md:px-6 md:pb-4 md:pt-5">
           {/* Title, month and view */}
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="mr-auto flex items-center gap-2 text-3xl font-bold tracking-tight text-white auto-light:text-neutral-950">
+          <div className="flex shrink-0 flex-wrap items-center gap-3">
+            <h1 className="mr-auto flex items-center gap-2 text-2xl font-bold tracking-tight text-white auto-light:text-neutral-950 md:text-[26px]">
               Goals
               <ThemeToggle />
             </h1>
@@ -401,7 +516,7 @@ export const GoalsPage = () => {
                 <Icon name="chevron_left" className="text-[20px]" />
               </button>
               <p className="min-w-[150px] text-center text-sm font-semibold text-white auto-light:text-neutral-950">
-                {isWeek ? weekTitle(weekStart) : monthTitle(month)}
+                {rangeTitle}
               </p>
               <button
                 type="button"
@@ -455,20 +570,22 @@ export const GoalsPage = () => {
           </div>
 
           {data && (
-            <GoalsFilters
-              filters={filters}
-              onChange={setFilters}
-              companies={companies}
-              projects={projectsWithGoals}
-              people={goalPeople}
-              meId={user?.id}
-              counts={effortCounts}
-            />
+            <div className="shrink-0">
+              <GoalsFilters
+                filters={filters}
+                onChange={setFilters}
+                companies={companies}
+                projects={projectsWithGoals}
+                people={goalPeople}
+                meId={user?.id}
+                counts={effortCounts}
+              />
+            </div>
           )}
 
-          {/* Where things stand */}
+          {/* Where things stand, over the days shown */}
           {data && rows.length > 0 && (
-            <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0">
+            <div className="no-scrollbar -mx-4 flex shrink-0 gap-2 overflow-x-auto px-4 md:mx-0 md:px-0">
               <Stat
                 label="Goals"
                 value={stats.total}
@@ -476,6 +593,7 @@ export const GoalsPage = () => {
               />
               <Stat
                 label="This period"
+                wide
                 value={`${stats.met + stats.onTrack}/${stats.repeating}`}
                 sub={`${stats.met} met · ${stats.onTrack} on track · ${stats.behind} behind`}
                 tone={
@@ -489,17 +607,27 @@ export const GoalsPage = () => {
                 value={stats.rate == null ? '–' : `${stats.rate}%`}
                 sub={
                   stats.totals.daysOver
-                    ? `${stats.totals.daysDone} of ${stats.totals.daysOver} due days this month`
-                    : 'Nothing due yet this month'
+                    ? `${stats.totals.daysDone} of ${stats.totals.daysOver} days due`
+                    : 'nothing due yet'
                 }
               />
               <Stat
                 label="Missed"
                 value={stats.totals.missed}
-                sub={`days this month${stats.totals.open ? ` · ${stats.totals.open} still to come` : ''}`}
+                sub={`days${stats.totals.open ? ` · ${stats.totals.open} to come` : ` ${rangeWord}`}`}
                 tone={
                   stats.totals.missed
                     ? 'text-rose-300 auto-light:text-rose-600'
+                    : undefined
+                }
+              />
+              <Stat
+                label="Tasks done"
+                value={stats.finished}
+                sub={`${rangeWord} · ${stats.projects} project${stats.projects === 1 ? '' : 's'}`}
+                tone={
+                  stats.finished
+                    ? 'text-emerald-300 auto-light:text-emerald-700'
                     : undefined
                 }
               />
@@ -510,7 +638,7 @@ export const GoalsPage = () => {
                     ? `${stats.periodsMet}/${stats.periodsOver}`
                     : '–'
                 }
-                sub="weeks, months… ended this month"
+                sub={`ended ${rangeWord}`}
               />
               {stats.targets > 0 && (
                 <Stat
@@ -519,11 +647,34 @@ export const GoalsPage = () => {
                   sub={`reached · ${stats.climbing} climbing`}
                 />
               )}
+              {stats.effort.length > 0 && (
+                <Stat
+                  label="By effort"
+                  value={stats.effort
+                    .map(
+                      (e) => `${e.short} ${e.pct == null ? '–' : `${e.pct}%`}`,
+                    )
+                    .join(' · ')}
+                  sub="of days due, by level"
+                  tone="text-base md:text-[15px] leading-7"
+                  onClick={() =>
+                    setPanel((p) =>
+                      p?.kind === 'effort' ? null : { kind: 'effort' },
+                    )
+                  }
+                  active={panel?.kind === 'effort'}
+                />
+              )}
             </div>
           )}
 
           {!data && !failed ? (
-            <div className={cn(card, 'h-[520px] animate-pulse')} />
+            <div
+              className={cn(
+                card,
+                'h-[520px] animate-pulse md:h-auto md:flex-1',
+              )}
+            />
           ) : failed ? (
             <EmptyState
               icon="cloud_off"
@@ -537,76 +688,72 @@ export const GoalsPage = () => {
               description="Set goals on a project's Goals tab and they show up here, day by day."
             />
           ) : (
-            <div
-              className={cn(
-                'grid items-start gap-4',
-                // The timeline needs the width; the day goes under it.
-                view === 'calendar' && 'lg:grid-cols-[minmax(0,1fr)_360px]',
-              )}
-            >
-              <div className="flex min-w-0 flex-col gap-3">
-                {!shown.length ? (
-                  <div className={card}>
-                    <EmptyState
-                      icon="filter_alt_off"
-                      title="No goals match these filters"
-                      description="Clear a filter or two to see more."
+            <div className="flex gap-4 md:min-h-0 md:flex-1">
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
+                <div className="md:min-h-0 md:flex-1">
+                  {!shown.length ? (
+                    <div className={cn(card, 'md:h-full')}>
+                      <EmptyState
+                        icon="filter_alt_off"
+                        title="No goals match these filters"
+                        description="Clear a filter or two to see more."
+                      />
+                    </div>
+                  ) : view === 'week' ? (
+                    <GoalsWeek
+                      days={weekDays}
+                      rows={shown}
+                      done={done}
+                      today={today}
+                      selectedDay={selected}
+                      selectedProject={selectedProject}
+                      onSelectDay={openDay}
+                      onSelectProject={openProject}
                     />
-                  </div>
-                ) : view === 'week' ? (
-                  <GoalsWeek
-                    days={weekDays}
-                    rows={shown}
-                    today={today}
-                    selected={selected}
-                    onSelect={(d) => setSelected(d === selected ? null : d)}
-                  />
-                ) : view === 'calendar' ? (
-                  <GoalsMonth
-                    weeks={weeks}
-                    month={month}
-                    rows={shown}
-                    today={today}
-                    selected={selected}
-                    onSelect={(d) => setSelected(d === selected ? null : d)}
-                  />
-                ) : (
-                  <GoalsTimeline
-                    rows={shown}
-                    days={monthDays}
-                    today={today}
-                    selected={selected}
-                    onSelect={(d) => setSelected(d === selected ? null : d)}
-                  />
-                )}
-                <Legend />
+                  ) : view === 'calendar' ? (
+                    <GoalsMonth
+                      weeks={weeks}
+                      month={month}
+                      rows={shown}
+                      done={done}
+                      today={today}
+                      selected={selected}
+                      onSelect={openDay}
+                    />
+                  ) : (
+                    <GoalsTimeline
+                      rows={shown}
+                      days={monthDays}
+                      done={done}
+                      today={today}
+                      selected={selected}
+                      selectedProject={selectedProject}
+                      onSelect={openDay}
+                      onSelectProject={openProject}
+                    />
+                  )}
+                </div>
+                <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
+                  <Legend />
+                  {!panel && (
+                    <p className="hidden text-[11px] text-neutral-500 md:block">
+                      Click a day or a project to open it here.
+                    </p>
+                  )}
+                </div>
               </div>
-              <aside
-                className={cn(
-                  'grid min-w-0 items-start gap-3',
-                  view === 'calendar'
-                    ? 'lg:sticky lg:top-4 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto lg:pb-2'
-                    : selected
-                      ? 'lg:grid-cols-[minmax(0,1fr)_360px]'
-                      : 'lg:grid-cols-[360px_minmax(0,1fr)]',
-                )}
-              >
-                {selected && (
-                  <GoalDayPanel
-                    day={selected}
-                    rows={shown}
-                    today={today}
-                    people={people}
-                    onClose={() => setSelected(null)}
-                  />
-                )}
-                <ByEffort rows={shown} days={monthDays} today={today} />
-                {!selected && (
-                  <p className="px-1 text-xs text-neutral-500">
-                    Pick a day to see what was due and done on it.
-                  </p>
-                )}
-              </aside>
+
+              {panelBody && (
+                <aside
+                  className={cn(
+                    // A sheet over the page on phones, a column on wide screens.
+                    'custom-scrollbar fixed inset-0 z-30 overflow-y-auto bg-neutral-950 auto-light:bg-white',
+                    'md:static md:z-auto md:w-[340px] md:shrink-0 md:rounded-2xl md:border md:border-white/[0.07] md:bg-white/[0.02] md:auto-light:border-black/[0.08] md:auto-light:bg-white 2xl:w-[400px]',
+                  )}
+                >
+                  {panelBody}
+                </aside>
+              )}
             </div>
           )}
         </div>

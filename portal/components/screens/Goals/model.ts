@@ -182,3 +182,18 @@ export function filtersFromParams(params: URLSearchParams): Filters {
     cadences: list('cadences') as Filters['cadences'],
   };
 }
+
+/* ------------------------------- tasks done ------------------------------- */
+
+/** Tasks finished per project and day, keyed "projectId|YYYY-MM-DD". */
+export type DoneCounts = Map<string, number>;
+
+export const doneCounts = (data: GoalsCalendarData | null): DoneCounts =>
+  new Map((data?.done ?? []).map((d) => [`${d.projectId}|${d.day}`, d.count]));
+
+export const doneOn = (done: DoneCounts, projectId: string, day: string) =>
+  done.get(`${projectId}|${day}`) ?? 0;
+
+/** Tasks a project finished over some days. */
+export const doneOver = (done: DoneCounts, projectId: string, days: string[]) =>
+  days.reduce((n, d) => n + doneOn(done, projectId, d), 0);
