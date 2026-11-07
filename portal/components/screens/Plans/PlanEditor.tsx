@@ -26,6 +26,7 @@ import {
 import { findProject, GrowingText, ProjectOptions } from './planBits';
 import { PlansTimeline } from './PlansTimeline';
 import { PlanGlance } from './StepDetails';
+import type { StepTaskFields } from './StepMenu';
 import { StepsEditor } from './StepsEditor';
 import type { Person, PlanView, ProjectChoice } from './types';
 import { isPast } from './types';
@@ -54,6 +55,8 @@ export const PlanEditor = ({
   addsTasksIn,
   onMakeTask,
   onTickTask,
+  onTaskChange,
+  onAddNote,
   onDeleteTask,
   onShare,
   meId,
@@ -61,6 +64,10 @@ export const PlanEditor = ({
 }: {
   /** Ticks a task step's task done or not. */
   onTickTask: (stepId: string, done: boolean) => void;
+  /** Changes a task step's task from the step's menu. */
+  onTaskChange: (stepId: string, fields: StepTaskFields) => void;
+  /** Adds a note to a task step's task. */
+  onAddNote: (stepId: string, text: string) => Promise<boolean>;
   /** The picked step in full, shown right under it. */
   stepDetails?: ReactNode;
   /** Sets who can open the plan; left out, no Share button. */
@@ -308,6 +315,8 @@ export const PlanEditor = ({
             addsTasksIn={addsTasksIn}
             onMakeTask={onMakeTask}
             onTickTask={onTickTask}
+            onTaskChange={onTaskChange}
+            onAddNote={onAddNote}
             onDeleteTask={onDeleteTask}
             details={stepDetails}
           />

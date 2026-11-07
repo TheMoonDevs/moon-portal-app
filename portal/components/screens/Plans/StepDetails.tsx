@@ -473,7 +473,10 @@ export const StepPanel = ({
   onRefresh,
   onClose,
   onDeleteTask,
+  asSidebar = false,
 }: {
+  /** Fills the right side of the page, rather than a card under the step. */
+  asSidebar?: boolean;
   plan: PlanView;
   step: EditorStep | null;
   projects: ProjectChoice[];
@@ -526,9 +529,10 @@ export const StepPanel = ({
   const kind = stepKind(step);
   const linked = !!(step.taskId || step.goalId);
   /** Back to a plain step; the task or goal stays where it is. */
+  // Text, so a task step does not make a new task by itself again.
   const unlink = () =>
     onChange({
-      kind: kind === 'goal' ? 'task' : kind,
+      kind: 'info',
       taskId: null,
       goalId: null,
       task: null,
@@ -552,7 +556,12 @@ export const StepPanel = ({
 
   return (
     <div
-      className="flex flex-col gap-4 rounded-xl border border-white/[0.08] bg-white/[0.025] p-4"
+      className={cn(
+        'flex flex-col gap-4',
+        asSidebar
+          ? 'h-full overflow-y-auto p-5'
+          : 'rounded-xl border border-white/[0.08] bg-white/[0.025] p-4',
+      )}
       onClick={(e) => e.stopPropagation()}
     >
       <div className="flex items-center gap-2">
@@ -568,6 +577,13 @@ export const StepPanel = ({
         <div className="flex-1" />
         <IconAction icon="close" label="Close" onClick={onClose} />
       </div>
+      {asSidebar && (
+        <p className="text-base font-medium leading-snug text-white">
+          {stripMarkdown(
+            step.task?.title ?? step.goal?.title ?? step.text,
+          ).trim() || 'Untitled step'}
+        </p>
+      )}
 
       {/* Task steps: the task itself, editable here */}
       {kind === 'task' && step.task && (

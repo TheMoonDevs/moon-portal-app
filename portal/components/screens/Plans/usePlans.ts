@@ -258,47 +258,61 @@ export const usePlans = (companyId: string | null | undefined) => {
     [flush, persist],
   );
 
-  /** Ticks a task step's task done, or not done, right from the step. */
-  const setTaskDone = useCallback(
-    async (planId: string, stepId: string, done: boolean) => {
+  /**
+   * Changes a task step's task right from the step: its status, due date or
+   * people. Shows at once, and goes back if the task could not be saved.
+   */
+  const updateStepTask = useCallback(
+    async (
+      planId: string,
+      stepId: string,
+      fields: {
+        status?: string;
+        dueDate?: string | null;
+        assigneeIds?: string[];
+      },
+    ) => {
       const plan =
         pending.current.get(planId) ?? data?.plans.find((p) => p.id === planId);
       const step = plan?.steps.find((s) => s.id === stepId);
       if (!step?.taskId) return false;
       const before = { done: step.done, task: step.task };
-      const mark = (
-        p: PlanView,
-        fields: Partial<PlanView['steps'][number]>,
-      ) => ({
+      const mark = (p: PlanView, next: Partial<PlanView['steps'][number]>) => ({
         ...p,
-        steps: p.steps.map((s) => (s.id === stepId ? { ...s, ...fields } : s)),
+        steps: p.steps.map((s) => (s.id === stepId ? { ...s, ...next } : s)),
       });
-      const apply = (fields: Partial<PlanView['steps'][number]>) => {
+      const apply = (next: Partial<PlanView['steps'][number]>) => {
         const waiting = pending.current.get(planId);
-        if (waiting) pending.current.set(planId, mark(waiting, fields));
+        if (waiting) pending.current.set(planId, mark(waiting, next));
         setData(
           (d) =>
             d && {
               ...d,
-              plans: d.plans.map((p) =>
-                p.id === planId ? mark(p, fields) : p,
-              ),
+              plans: d.plans.map((p) => (p.id === planId ? mark(p, next) : p)),
             },
         );
       };
-      const status = done ? TASK_STATUS.DONE : TASK_STATUS.TODO;
+      const done =
+        fields.status !== undefined
+          ? fields.status === TASK_STATUS.DONE
+          : step.done;
       const after = {
         done,
         task: step.task && {
           ...step.task,
-          status,
-          completedAt: done ? new Date().toISOString() : null,
+          ...fields,
+          ...(fields.status !== undefined && {
+            completedAt:
+              fields.status === TASK_STATUS.DONE
+                ? (step.task.completedAt ?? new Date().toISOString())
+                : null,
+          }),
         },
       };
       apply(after);
       try {
-        await PortalSdk.patchData(`/api/tasks/${step.taskId}`, { status });
-        // A plan save that came back meanwhile had the old status.
+        await PortalSdk.patchData(`/api/tasks/${step.taskId}`, fields);
+        // A plan save that came back meanwhile had the old task.
         apply(after);
         return true;
       } catch (err) {
@@ -308,6 +322,15 @@ export const usePlans = (companyId: string | null | undefined) => {
       }
     },
     [data],
+  );
+
+  /** Ticks a task step's task done, or not done, right from the step. */
+  const setTaskDone = useCallback(
+    (planId: string, stepId: string, done: boolean) =>
+      updateStepTask(planId, stepId, {
+        status: done ? TASK_STATUS.DONE : TASK_STATUS.TODO,
+      }),
+    [updateStepTask],
   );
 
   /** Sets who can open a plan: everyone in its company, or only some people. */
@@ -481,6 +504,7 @@ export const usePlans = (companyId: string | null | undefined) => {
     remove,
     makeTask,
     setTaskDone,
+    updateStepTask,
     share,
     meId: user?.id ?? null,
     refreshSchedules,
