@@ -15,9 +15,11 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
 import { CompanyMark } from '../Admin/Workspace/shared';
 
 /** Most tabs shown before the rest go in the "+N" menu. */
-const MAX_TABS = 3;
+const MAX_TABS = 8;
 /** Room kept for the "+N" button when some tabs don't fit. */
 const MORE_WIDTH = 56;
+/** The menu button's arrow, beside a picked company's name. */
+const MENU_ARROW = 20;
 /** Gap between tabs (gap-1). */
 const GAP = 4;
 
@@ -76,9 +78,10 @@ const tabClass = (active: boolean) =>
   );
 
 /**
- * A row of company tabs: as many of the first three as fit the width,
- * then a "+N" menu for the rest. A company picked from the menu shows on
- * the menu button. The row never scrolls.
+ * A row of company tabs: the picked company shows its logo and name, the
+ * others only their logo (the name is on hover). As many as fit the width
+ * are shown, then a "+N" menu for the rest. A company picked from the menu
+ * shows on the menu button. The row never scrolls.
  */
 export const CompanyTabs = ({
   companies,
@@ -98,17 +101,25 @@ export const CompanyTabs = ({
     const measure = measureRef.current;
     if (!row || !measure) return;
     const update = () => {
-      const widths = Array.from(measure.children).map(
-        (el) => (el as HTMLElement).offsetWidth,
-      );
+      const els = Array.from(measure.children) as HTMLElement[];
+      // The last child is a logo-only tab; the rest are full tabs.
+      const logoOnly = els[els.length - 1]?.offsetWidth ?? 0;
+      const full = els.slice(0, -1).map((el) => el.offsetWidth);
       const room = row.clientWidth;
-      const cap = Math.min(MAX_TABS, widths.length);
+      const cap = Math.min(MAX_TABS, companies.length);
+      const picked = companies.findIndex((c) => c.company.id === selectedId);
       let n = 0;
       let used = 0;
       for (; n < cap; n++) {
-        const next = used + (n ? GAP : 0) + widths[n];
-        const restLeft = n + 1 < widths.length;
-        if (next + (restLeft ? GAP + MORE_WIDTH : 0) > room) break;
+        const width = n === picked ? full[n] : logoOnly;
+        const next = used + (n ? GAP : 0) + width;
+        const restLeft = n + 1 < companies.length;
+        // A company picked from the menu shows its name on the menu button.
+        const moreWidth =
+          picked > n
+            ? Math.max(MORE_WIDTH, full[picked] + MENU_ARROW)
+            : MORE_WIDTH;
+        if (next + (restLeft ? GAP + moreWidth : 0) > room) break;
         used = next;
       }
       setFit(Math.max(1, n));
@@ -117,7 +128,7 @@ export const CompanyTabs = ({
     const ro = new ResizeObserver(update);
     ro.observe(row);
     return () => ro.disconnect();
-  }, [companies]);
+  }, [companies, selectedId]);
 
   const visible = companies.slice(0, fit);
   const more = companies.slice(fit);
@@ -134,27 +145,34 @@ export const CompanyTabs = ({
         aria-hidden
         className="pointer-events-none invisible absolute left-0 top-0 flex gap-1"
       >
-        {companies.slice(0, MAX_TABS).map(({ company }) => (
+        {companies.map(({ company }) => (
           <span key={company.id} className={tabClass(false)}>
             <Mark company={company} />
             {company.name}
           </span>
         ))}
+        {companies[0] && (
+          <span className={tabClass(false)}>
+            <Mark company={companies[0].company} />
+          </span>
+        )}
       </div>
-      {visible.map(({ company }) => (
-        <button
-          key={company.id}
-          onClick={() => onSelect(company.id)}
-          title={company.name}
-          className={cn(
-            tabClass(company.id === selectedId),
-            visible.length === 1 && 'min-w-0 shrink',
-          )}
-        >
-          <Mark company={company} />
-          <span className="truncate">{company.name}</span>
-        </button>
-      ))}
+      {visible.map(({ company }) => {
+        const active = company.id === selectedId;
+        return (
+          <button
+            key={company.id}
+            onClick={() => onSelect(company.id)}
+            title={company.name}
+            aria-label={company.name}
+            aria-pressed={active}
+            className={cn(tabClass(active), active && 'min-w-0 shrink')}
+          >
+            <Mark company={company} />
+            {active && <span className="truncate">{company.name}</span>}
+          </button>
+        );
+      })}
       {more.length > 0 && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

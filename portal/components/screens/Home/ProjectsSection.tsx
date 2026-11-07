@@ -22,7 +22,9 @@ import { CompanyTabs, useMyPoints } from './CompanyTabs';
 export const ProjectsSection = () => {
   const { user } = useUser();
   // In the user's order: the companies they work in most first.
-  const { companies } = useWorkspace();
+  // Their PERSONAL is not a company tab: its project is pinned under
+  // every tab instead.
+  const { workCompanies: companies, personal } = useWorkspace();
   const projectPoints = useMyPoints()?.projects;
   const [projects, setProjects] = useState<ProjectRow[] | null>(null);
   // The tab the user clicked; until then the top company is shown.
@@ -52,6 +54,14 @@ export const ProjectsSection = () => {
     (picked && tabs.some((t) => t.company.id === picked)
       ? picked
       : tabs[0]?.company.id) ?? null;
+
+  const personalProject = useMemo(
+    () =>
+      personal
+        ? (projects ?? []).find((p) => p.companyId === personal.company.id)
+        : undefined,
+    [projects, personal],
+  );
 
   const rows = useMemo(
     () =>
@@ -97,68 +107,82 @@ export const ProjectsSection = () => {
           </div>
         ) : (
           <>
-            {companies.find((c) => c.company.id === companyId)?.company
-              .isPersonal && <PersonalHint />}
             <ul className="quiet-scrollbar max-h-[60vh] divide-y divide-neutral-100 overflow-y-auto">
-              {rows.map((project) => {
-                const goal = project.goals?.[0];
-                const progress = goal
-                  ? project.goalProgress?.find((g) => g.goalId === goal.id)
-                  : null;
-                const open = project.progress
-                  ? project.progress.total - project.progress.done
-                  : 0;
-                return (
-                  <li key={project.id}>
-                    <Link
-                      href={`${APP_ROUTES.projects}/${project.id}`}
-                      className="group flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-neutral-50"
-                    >
-                      <CompanyMark
-                        name={project.name}
-                        color={project.color}
-                        logo={project.logo}
-                        size={32}
-                      />
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-center gap-1.5">
-                          <span className="truncate text-sm font-medium text-neutral-900">
-                            {project.name}
+              {[...rows, ...(personalProject ? [personalProject] : [])].map(
+                (project) => {
+                  const isPersonal = project.id === personalProject?.id;
+                  const goal = project.goals?.[0];
+                  const progress = goal
+                    ? project.goalProgress?.find((g) => g.goalId === goal.id)
+                    : null;
+                  const open = project.progress
+                    ? project.progress.total - project.progress.done
+                    : 0;
+                  return (
+                    <li key={project.id}>
+                      <Link
+                        href={`${APP_ROUTES.projects}/${project.id}`}
+                        className={cn(
+                          'group flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-neutral-50',
+                          isPersonal && 'bg-teal-50/40',
+                        )}
+                      >
+                        <CompanyMark
+                          name={project.name}
+                          color={project.color}
+                          logo={project.logo}
+                          size={32}
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center gap-1.5">
+                            <span className="truncate text-sm font-medium text-neutral-900">
+                              {project.name}
+                            </span>
+                            {isPersonal ? (
+                              <span
+                                title="Only you see Personal: your own goals and plans, like gym, reading or learning"
+                                className="inline-flex shrink-0 items-center gap-0.5 rounded bg-teal-50 px-1 text-[10px] font-semibold text-teal-700"
+                              >
+                                <Icon name="lock" className="text-[11px]" />
+                                Only you
+                              </span>
+                            ) : (
+                              isMine(project) && (
+                                <span className="shrink-0 rounded bg-amber-100 px-1 text-[10px] font-semibold text-amber-700">
+                                  You
+                                </span>
+                              )
+                            )}
                           </span>
-                          {isMine(project) && (
-                            <span className="shrink-0 rounded bg-amber-100 px-1 text-[10px] font-semibold text-amber-700">
-                              You
+                          {goal && progress ? (
+                            <span className="mt-1 flex items-center gap-2">
+                              <span className="h-1 flex-1 overflow-hidden rounded-full bg-neutral-100">
+                                <span
+                                  className="block h-full rounded-full"
+                                  style={{
+                                    width: `${progress.percent}%`,
+                                    backgroundColor: project.color || '#22c55e',
+                                  }}
+                                />
+                              </span>
+                              <span className="shrink-0 text-[11px] text-neutral-500">
+                                {progress.done}/{goal.target} {goal.title}
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="block text-xs text-neutral-500">
+                              {open} open {open === 1 ? 'task' : 'tasks'}
                             </span>
                           )}
                         </span>
-                        {goal && progress ? (
-                          <span className="mt-1 flex items-center gap-2">
-                            <span className="h-1 flex-1 overflow-hidden rounded-full bg-neutral-100">
-                              <span
-                                className="block h-full rounded-full"
-                                style={{
-                                  width: `${progress.percent}%`,
-                                  backgroundColor: project.color || '#22c55e',
-                                }}
-                              />
-                            </span>
-                            <span className="shrink-0 text-[11px] text-neutral-500">
-                              {progress.done}/{goal.target} {goal.title}
-                            </span>
-                          </span>
-                        ) : (
-                          <span className="block text-xs text-neutral-500">
-                            {open} open {open === 1 ? 'task' : 'tasks'}
-                          </span>
-                        )}
-                      </span>
-                      <span className="material-symbols-outlined -mr-1 !text-lg text-neutral-300 transition-colors group-hover:text-neutral-600">
-                        chevron_right
-                      </span>
-                    </Link>
-                  </li>
-                );
-              })}
+                        <span className="material-symbols-outlined -mr-1 !text-lg text-neutral-300 transition-colors group-hover:text-neutral-600">
+                          chevron_right
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                },
+              )}
             </ul>
           </>
         )}
@@ -166,14 +190,3 @@ export const ProjectsSection = () => {
     </div>
   );
 };
-
-/** What their PERSONAL is for, on its tab. */
-const PersonalHint = () => (
-  <p className="flex items-start gap-2 border-b border-neutral-100 bg-teal-50/60 px-3 py-2.5 text-xs text-teal-900">
-    <Icon name="lock" className="mt-px text-[14px] text-teal-700" />
-    <span>
-      Only you see Personal. Set your own goals and plans here: gym, exercise,
-      reading, learning or any other self-help.
-    </span>
-  </p>
-);
