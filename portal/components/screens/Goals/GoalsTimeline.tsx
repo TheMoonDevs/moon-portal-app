@@ -7,10 +7,17 @@ import { GOAL_STATUS } from '@/lib/workspace/goalCalendar';
 import { isTarget, PERIOD_NOUN } from '@/lib/workspace/projects';
 
 import { Icon } from '../Admin/shared/AdminUI';
-import { CompanyMark } from '../Admin/Workspace/shared';
 import { Tip, TipRow, TipTitle } from '../Projects/Tip';
 import { byProject, type DoneCounts, doneOver, type GoalRow } from './model';
-import { Bar, card, EffortTag, fmtDay, fmtNum, STATE_META } from './ui';
+import {
+  Bar,
+  card,
+  EffortTag,
+  fmtDay,
+  fmtNum,
+  ProjectLogo,
+  STATE_META,
+} from './ui';
 
 const CELL = 22;
 
@@ -143,12 +150,7 @@ export const GoalsTimeline = ({
               className="border-b border-white/[0.05] last:border-0 auto-light:border-black/[0.05]"
             >
               <div className="sticky left-0 flex w-[300px] items-center gap-2 px-3 pb-1 pt-3 md:w-[520px]">
-                <CompanyMark
-                  name={project.name}
-                  color={project.color}
-                  logo={project.logo}
-                  size={18}
-                />
+                <ProjectLogo project={project} size={20} />
                 <button
                   type="button"
                   onClick={() => onSelectProject(project.id)}
@@ -162,7 +164,7 @@ export const GoalsTimeline = ({
                 >
                   {project.name}
                 </button>
-                <span className="truncate text-[11px] text-neutral-600 auto-light:text-neutral-400">
+                <span className="truncate text-[10px] uppercase tracking-[0.16em] text-neutral-500">
                   {list[0].company?.name}
                 </span>
                 {(() => {

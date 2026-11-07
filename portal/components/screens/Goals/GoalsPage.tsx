@@ -37,7 +37,7 @@ import {
   type GoalRow,
   sortRows,
 } from './model';
-import { Bar, card, EFFORTS, STATE_META } from './ui';
+import { Bar, card, EFFORTS, rateColor, Ring, STATE_META } from './ui';
 
 type View = 'calendar' | 'week' | 'timeline';
 
@@ -87,64 +87,36 @@ const weekTitle = (monday: string) => {
 /** The month a week belongs to: the one its Thursday is in. */
 const monthOfWeek = (monday: string) => addDays(monday, 3).slice(0, 7);
 
-const Stat = ({
-  label,
+/** A secondary number in the summary: big value, quiet label. */
+const Metric = ({
   value,
-  sub,
+  label,
   tone,
-  onClick,
-  active,
-  wide,
+  title,
 }: {
-  label: string;
   value: string | number;
-  sub?: string;
+  label: string;
   tone?: string;
-  onClick?: () => void;
-  active?: boolean;
-  wide?: boolean;
-}) => {
-  const body = (
-    <>
-      <p className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-neutral-500">
-        {label}
-        {onClick && (
-          <Icon name="chevron_right" className="ml-auto text-[14px]" />
-        )}
-      </p>
-      <p
-        className={cn(
-          'whitespace-nowrap text-xl font-semibold tabular-nums tracking-tight text-white auto-light:text-neutral-950',
-          tone,
-        )}
-      >
-        {value}
-      </p>
-      {sub && <p className="truncate text-[11px] text-neutral-500">{sub}</p>}
-    </>
-  );
-  const cls = cn(
-    card,
-    'min-w-[128px] flex-1 px-3.5 py-2 text-left',
-    wide && 'min-w-[180px] flex-[1.5]',
-  );
-  return onClick ? (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
+  title?: string;
+}) => (
+  <div title={title} className="flex shrink-0 flex-col justify-center gap-0.5">
+    <span
       className={cn(
-        cls,
-        'transition-colors hover:bg-white/[0.05] auto-light:hover:bg-black/[0.02]',
-        active && 'border-white/25 auto-light:border-black/25',
+        'whitespace-nowrap text-lg font-semibold tabular-nums leading-tight tracking-tight text-neutral-100 auto-light:text-neutral-900',
+        tone,
       )}
     >
-      {body}
-    </button>
-  ) : (
-    <div className={cls}>{body}</div>
-  );
-};
+      {value}
+    </span>
+    <span className="whitespace-nowrap text-[11px] text-neutral-500">
+      {label}
+    </span>
+  </div>
+);
+
+const Divider = () => (
+  <span className="hidden w-px shrink-0 self-stretch bg-white/[0.06] auto-light:bg-black/[0.07] md:block" />
+);
 
 /** How one effort level did over some days: days done out of days due. */
 const effortRate = (rows: GoalRow[], days: string[], today: string) => {
@@ -168,7 +140,7 @@ const ByEffort = ({
   days: string[];
   today: string;
 }) => (
-  <div className="flex flex-col gap-4 p-4">
+  <div className="flex flex-col gap-5 px-5 pb-6 pt-5">
     {EFFORTS.map((e) => {
       const mine = rows.filter((r) => r.effort === e.key);
       if (!mine.length) return null;
@@ -407,7 +379,7 @@ export const GoalsPage = () => {
       const mine = shown.filter((r) => r.effort === e.key);
       return {
         key: e.key,
-        short: e.label[0],
+        label: e.label,
         count: mine.length,
         pct: effortRate(mine, rangeDays, today).pct,
       };
@@ -499,46 +471,52 @@ export const GoalsPage = () => {
   return (
     <TipProvider delayDuration={120}>
       <div className="auto-theme flex min-h-dvh flex-col bg-neutral-950 pb-28 text-neutral-100 auto-light:bg-neutral-50 auto-light:text-neutral-900 md:h-dvh md:min-h-0 md:overflow-hidden md:pb-0">
-        <div className="mx-auto flex w-full max-w-[1680px] flex-col gap-3 px-4 pt-6 md:min-h-0 md:flex-1 md:px-6 md:pb-4 md:pt-5">
-          {/* Title, month and view */}
-          <div className="flex shrink-0 flex-wrap items-center gap-3">
-            <h1 className="mr-auto flex items-center gap-2 text-2xl font-bold tracking-tight text-white auto-light:text-neutral-950 md:text-[26px]">
-              Goals
-              <ThemeToggle />
-            </h1>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                aria-label={isWeek ? 'Previous week' : 'Previous month'}
-                onClick={() => step(-1)}
-                className="flex size-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/[0.06] hover:text-white auto-light:text-neutral-500 auto-light:hover:bg-black/[0.05] auto-light:hover:text-neutral-950"
-              >
-                <Icon name="chevron_left" className="text-[20px]" />
-              </button>
-              <p className="min-w-[150px] text-center text-sm font-semibold text-white auto-light:text-neutral-950">
-                {rangeTitle}
-              </p>
-              <button
-                type="button"
-                aria-label={isWeek ? 'Next week' : 'Next month'}
-                onClick={() => step(1)}
-                className="flex size-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-white/[0.06] hover:text-white auto-light:text-neutral-500 auto-light:hover:bg-black/[0.05] auto-light:hover:text-neutral-950"
-              >
-                <Icon name="chevron_right" className="text-[20px]" />
-              </button>
-              {(isWeek ? !isThisWeek : !isThisMonth) && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    isWeek ? goToWeek(mondayOf(today)) : goTo(today.slice(0, 7))
-                  }
-                  className="ml-1 h-8 rounded-lg px-2.5 text-xs font-medium text-neutral-300 ring-1 ring-inset ring-white/10 hover:bg-white/[0.06] auto-light:text-neutral-700 auto-light:ring-black/10 auto-light:hover:bg-black/[0.04]"
-                >
-                  Today
-                </button>
-              )}
+        <div className="mx-auto flex w-full max-w-[1680px] flex-col gap-4 px-4 pt-6 md:min-h-0 md:flex-1 md:gap-4 md:px-8 md:pb-5 md:pt-6">
+          {/* The period shown, how to move through it, and the view */}
+          <div className="flex shrink-0 flex-wrap items-end gap-x-4 gap-y-3">
+            <div className="mr-auto flex flex-col gap-1">
+              <span className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.2em] text-neutral-500">
+                Goals
+                <ThemeToggle />
+              </span>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-semibold tracking-tight text-white auto-light:text-neutral-950 md:text-[28px]">
+                  {rangeTitle}
+                </h1>
+                <div className="flex items-center">
+                  <button
+                    type="button"
+                    aria-label={isWeek ? 'Previous week' : 'Previous month'}
+                    onClick={() => step(-1)}
+                    className="flex size-8 items-center justify-center rounded-full text-neutral-400 hover:bg-white/[0.06] hover:text-white auto-light:text-neutral-500 auto-light:hover:bg-black/[0.05] auto-light:hover:text-neutral-950"
+                  >
+                    <Icon name="chevron_left" className="text-[20px]" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={isWeek ? 'Next week' : 'Next month'}
+                    onClick={() => step(1)}
+                    className="flex size-8 items-center justify-center rounded-full text-neutral-400 hover:bg-white/[0.06] hover:text-white auto-light:text-neutral-500 auto-light:hover:bg-black/[0.05] auto-light:hover:text-neutral-950"
+                  >
+                    <Icon name="chevron_right" className="text-[20px]" />
+                  </button>
+                </div>
+                {(isWeek ? !isThisWeek : !isThisMonth) && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      isWeek
+                        ? goToWeek(mondayOf(today))
+                        : goTo(today.slice(0, 7))
+                    }
+                    className="h-7 rounded-full px-3 text-xs font-medium text-neutral-300 ring-1 ring-inset ring-white/10 hover:bg-white/[0.06] auto-light:text-neutral-700 auto-light:ring-black/10 auto-light:hover:bg-black/[0.04]"
+                  >
+                    Today
+                  </button>
+                )}
+              </div>
             </div>
-            <div className="flex rounded-xl bg-white/[0.04] p-0.5 auto-light:bg-black/[0.05]">
+            <div className="flex h-9 items-center gap-0.5 rounded-full bg-white/[0.04] p-1 ring-1 ring-inset ring-white/[0.06] auto-light:bg-black/[0.035] auto-light:ring-black/[0.05]">
               {(
                 [
                   {
@@ -556,10 +534,10 @@ export const GoalsPage = () => {
                   onClick={() => changeView(v.key)}
                   aria-pressed={view === v.key}
                   className={cn(
-                    'flex h-8 items-center gap-1.5 rounded-[10px] px-3 text-xs font-medium transition-colors',
+                    'flex h-7 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors',
                     view === v.key
-                      ? 'bg-white text-neutral-950 shadow auto-light:bg-white auto-light:text-neutral-950'
-                      : 'text-neutral-400 hover:text-white auto-light:text-neutral-500 auto-light:hover:text-neutral-950',
+                      ? 'bg-white text-neutral-950 shadow-sm auto-light:bg-neutral-900 auto-light:text-white'
+                      : 'text-neutral-400 hover:text-white auto-light:text-neutral-600 auto-light:hover:text-neutral-950',
                   )}
                 >
                   <Icon name={v.icon} className="text-[16px]" />
@@ -583,87 +561,112 @@ export const GoalsPage = () => {
             </div>
           )}
 
-          {/* Where things stand, over the days shown */}
+          {/* Where things stand over the days shown: one number leads. */}
           {data && rows.length > 0 && (
-            <div className="no-scrollbar -mx-4 flex shrink-0 gap-2 overflow-x-auto px-4 md:mx-0 md:px-0">
-              <Stat
-                label="Goals"
-                value={stats.total}
-                sub={`${stats.repeating} repeating · ${stats.targets} target`}
-              />
-              <Stat
-                label="This period"
-                wide
+            <div
+              className={cn(
+                card,
+                'flex shrink-0 flex-wrap items-stretch gap-x-6 gap-y-4 px-5 py-4 md:flex-nowrap md:overflow-x-auto',
+              )}
+            >
+              <div className="flex w-full shrink-0 items-center gap-3.5 md:w-auto">
+                <Ring
+                  percent={stats.rate}
+                  size={48}
+                  stroke={5}
+                  color={rateColor(stats.rate)}
+                />
+                <div className="flex flex-col">
+                  <span className="flex items-baseline gap-2">
+                    <span className="text-[30px] font-semibold tabular-nums leading-none tracking-tight text-white auto-light:text-neutral-950">
+                      {stats.rate == null ? '–' : `${stats.rate}%`}
+                    </span>
+                    <span className="text-sm text-neutral-300 auto-light:text-neutral-700">
+                      of goal days done {rangeWord}
+                    </span>
+                  </span>
+                  <span className="mt-1 text-xs text-neutral-500">
+                    {stats.totals.daysOver
+                      ? `${stats.totals.daysDone} of ${stats.totals.daysOver} days due`
+                      : 'Nothing due yet'}
+                    {stats.totals.missed > 0 && (
+                      <span className="text-rose-300 auto-light:text-rose-600">
+                        {' '}
+                        · {stats.totals.missed} missed
+                      </span>
+                    )}
+                    {stats.totals.open > 0 && ` · ${stats.totals.open} to come`}
+                  </span>
+                </div>
+              </div>
+              <Divider />
+              <Metric
                 value={`${stats.met + stats.onTrack}/${stats.repeating}`}
-                sub={`${stats.met} met · ${stats.onTrack} on track · ${stats.behind} behind`}
+                label="on track this period"
+                title={`${stats.met} met · ${stats.onTrack} on track · ${stats.behind} behind`}
                 tone={
                   stats.behind
                     ? undefined
                     : 'text-emerald-300 auto-light:text-emerald-700'
                 }
               />
-              <Stat
-                label="Days done"
-                value={stats.rate == null ? '–' : `${stats.rate}%`}
-                sub={
-                  stats.totals.daysOver
-                    ? `${stats.totals.daysDone} of ${stats.totals.daysOver} days due`
-                    : 'nothing due yet'
-                }
-              />
-              <Stat
-                label="Missed"
-                value={stats.totals.missed}
-                sub={`days${stats.totals.open ? ` · ${stats.totals.open} to come` : ` ${rangeWord}`}`}
-                tone={
-                  stats.totals.missed
-                    ? 'text-rose-300 auto-light:text-rose-600'
-                    : undefined
-                }
-              />
-              <Stat
-                label="Tasks done"
+              <Metric
                 value={stats.finished}
-                sub={`${rangeWord} · ${stats.projects} project${stats.projects === 1 ? '' : 's'}`}
-                tone={
-                  stats.finished
-                    ? 'text-emerald-300 auto-light:text-emerald-700'
-                    : undefined
-                }
+                label={`tasks done · ${stats.projects} projects`}
               />
-              <Stat
-                label="Periods met"
+              <Metric
                 value={
                   stats.periodsOver
                     ? `${stats.periodsMet}/${stats.periodsOver}`
                     : '–'
                 }
-                sub={`ended ${rangeWord}`}
+                label="periods met"
               />
               {stats.targets > 0 && (
-                <Stat
-                  label="Targets"
+                <Metric
                   value={`${stats.reached}/${stats.targets}`}
-                  sub={`reached · ${stats.climbing} climbing`}
+                  label="targets reached"
                 />
               )}
               {stats.effort.length > 0 && (
-                <Stat
-                  label="By effort"
-                  value={stats.effort
-                    .map(
-                      (e) => `${e.short} ${e.pct == null ? '–' : `${e.pct}%`}`,
-                    )
-                    .join(' · ')}
-                  sub="of days due, by level"
-                  tone="text-base md:text-[15px] leading-7"
-                  onClick={() =>
-                    setPanel((p) =>
-                      p?.kind === 'effort' ? null : { kind: 'effort' },
-                    )
-                  }
-                  active={panel?.kind === 'effort'}
-                />
+                <>
+                  <Divider />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPanel((p) =>
+                        p?.kind === 'effort' ? null : { kind: 'effort' },
+                      )
+                    }
+                    aria-pressed={panel?.kind === 'effort'}
+                    className={cn(
+                      '-mx-3 -my-2 flex shrink-0 flex-col justify-center gap-1.5 rounded-xl px-3 py-2 text-left transition-colors hover:bg-white/[0.04] auto-light:hover:bg-black/[0.03] md:mx-0 md:ml-auto',
+                      panel?.kind === 'effort' &&
+                        'bg-white/[0.05] auto-light:bg-black/[0.04]',
+                    )}
+                  >
+                    <span className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-[0.16em] text-neutral-500">
+                      By effort
+                      <Icon name="chevron_right" className="text-[14px]" />
+                    </span>
+                    {stats.effort.map((e) => (
+                      <span
+                        key={e.key}
+                        className="flex items-center gap-2 text-[11px] tabular-nums text-neutral-400 auto-light:text-neutral-600"
+                      >
+                        <span className="w-12">{e.label}</span>
+                        <Bar
+                          percent={e.pct ?? 0}
+                          color={rateColor(e.pct)}
+                          className="h-1 w-20"
+                        />
+                        <span className="w-8 text-right">
+                          {e.pct == null ? '–' : `${e.pct}%`}
+                        </span>
+                      </span>
+                    ))}
+                  </button>
+                </>
               )}
             </div>
           )}
@@ -748,7 +751,7 @@ export const GoalsPage = () => {
                   className={cn(
                     // A sheet over the page on phones, a column on wide screens.
                     'custom-scrollbar fixed inset-0 z-30 overflow-y-auto bg-neutral-950 auto-light:bg-white',
-                    'md:static md:z-auto md:w-[340px] md:shrink-0 md:rounded-2xl md:border md:border-white/[0.07] md:bg-white/[0.02] md:auto-light:border-black/[0.08] md:auto-light:bg-white 2xl:w-[400px]',
+                    'md:static md:z-auto md:w-[320px] md:shrink-0 md:rounded-2xl md:border md:border-white/[0.07] md:bg-white/[0.02] md:auto-light:border-black/[0.08] md:auto-light:bg-white xl:w-[340px] 2xl:w-[400px]',
                   )}
                 >
                   {panelBody}

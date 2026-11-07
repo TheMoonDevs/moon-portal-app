@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils';
 import type { CalendarCompany, GoalDay } from '@/lib/workspace/goalCalendar';
 
 import { Icon } from '../Admin/shared/AdminUI';
-import { CompanyMark } from '../Admin/Workspace/shared';
 import { Tip } from '../Projects/Tip';
 import { type DoneCounts, doneOn, type GoalRow } from './model';
 import { card, STATE_META } from './ui';
@@ -243,37 +242,21 @@ export const GoalsMonth = ({
                     </span>
                   )}
                 </span>
-                {split ? (
-                  <>
-                    <span className="flex flex-wrap gap-1 md:hidden">
-                      <Dots entries={entries} max={DOTS} />
+                {/* A run of dots per company, the companies apart. */}
+                <span className="flex flex-col gap-1.5">
+                  {(split
+                    ? byCompany(entries)
+                    : [{ company: undefined, entries }]
+                  ).map((g, gi) => (
+                    <span
+                      key={g.company?.id ?? gi}
+                      title={g.company?.name}
+                      className="flex flex-wrap gap-1 md:gap-[5px]"
+                    >
+                      <Dots entries={g.entries} max={split ? DOTS - 2 : DOTS} />
                     </span>
-                    <span className="hidden min-h-0 flex-col gap-1 md:flex">
-                      {byCompany(entries).map((g) => (
-                        <span
-                          key={g.company?.id ?? 'none'}
-                          className="flex items-center gap-1.5"
-                        >
-                          {g.company && (
-                            <CompanyMark
-                              name={g.company.name}
-                              color={g.company.color}
-                              logo={g.company.logo}
-                              size={12}
-                            />
-                          )}
-                          <span className="flex flex-wrap gap-1">
-                            <Dots entries={g.entries} max={DOTS - 3} />
-                          </span>
-                        </span>
-                      ))}
-                    </span>
-                  </>
-                ) : (
-                  <span className="flex flex-wrap gap-1 md:gap-1.5">
-                    <Dots entries={entries} max={DOTS} />
-                  </span>
-                )}
+                  ))}
+                </span>
                 {finished > 0 && (
                   <span className="mt-auto hidden items-center gap-0.5 text-[10px] font-medium tabular-nums text-emerald-300/80 auto-light:text-emerald-700 md:flex">
                     <Icon name="check" className="text-[11px]" />

@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import type { DayState, EffortKey } from '@/lib/workspace/goalCalendar';
 
-import { Icon } from '../Admin/shared/AdminUI';
+import { Icon, UserAvatar } from '../Admin/shared/AdminUI';
 
 /* Colours and words shared by the goals calendar. The page is an
  * auto-theme screen: dark by default, `auto-light:` for light mode. */
@@ -177,3 +177,108 @@ export const fmtDay = (day: string, opts: Intl.DateTimeFormatOptions = {}) =>
   });
 
 export const fmtNum = (n: number) => n.toLocaleString('en-US');
+
+/** A project's logo, else its first letter on its colour. */
+export const ProjectLogo = ({
+  project,
+  size = 20,
+  className,
+}: {
+  project: { name: string; color?: string | null; logo?: string | null };
+  size?: number;
+  className?: string;
+}) => {
+  const radius = Math.round(size * 0.3);
+  return project.logo ? (
+    <UserAvatar
+      src={project.logo}
+      name={project.name}
+      size={size}
+      className={cn('border-0', className)}
+    />
+  ) : (
+    <span
+      aria-hidden
+      style={{
+        width: size,
+        height: size,
+        borderRadius: radius,
+        backgroundColor: project.color || '#525252',
+        fontSize: Math.max(9, size * 0.48),
+      }}
+      className={cn(
+        'flex shrink-0 items-center justify-center font-semibold leading-none text-white',
+        className,
+      )}
+    >
+      {(project.name || '?').slice(0, 1).toUpperCase()}
+    </span>
+  );
+};
+
+/** A company's name as a quiet, letter-spaced divider between sections. */
+export const CompanyDivider = ({
+  name,
+  className,
+}: {
+  name: string;
+  className?: string;
+}) => (
+  <div className={cn('flex items-center gap-2.5', className)}>
+    <span className="shrink-0 text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-500">
+      {name}
+    </span>
+    <span className="h-px flex-1 bg-white/[0.06] auto-light:bg-black/[0.07]" />
+  </div>
+);
+
+/** A small ring that fills to `percent`. */
+export const Ring = ({
+  percent,
+  size = 44,
+  stroke = 4,
+  color = '#34d399',
+}: {
+  percent: number | null;
+  size?: number;
+  stroke?: number;
+  color?: string;
+}) => {
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const p = Math.max(0, Math.min(100, percent ?? 0));
+  return (
+    <svg width={size} height={size} className="shrink-0 -rotate-90">
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        strokeWidth={stroke}
+        className="stroke-white/[0.08] auto-light:stroke-black/[0.08]"
+      />
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        stroke={color}
+        strokeWidth={stroke}
+        strokeLinecap="round"
+        strokeDasharray={c}
+        strokeDashoffset={c * (1 - p / 100)}
+        className="transition-[stroke-dashoffset] duration-700"
+      />
+    </svg>
+  );
+};
+
+/** Green when most of it is done, amber halfway, rose below. */
+export const rateColor = (pct: number | null) =>
+  pct == null
+    ? '#737373'
+    : pct >= 80
+      ? '#34d399'
+      : pct >= 50
+        ? '#fcd34d'
+        : '#fb7185';

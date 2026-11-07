@@ -14,8 +14,7 @@ import {
 import type { GoalPeriod } from '@/models/workspace';
 
 import { Icon, UserAvatar } from '../Admin/shared/AdminUI';
-import { CompanyMark } from '../Admin/Workspace/shared';
-import { Chip, EFFORTS } from './ui';
+import { EFFORTS } from './ui';
 
 export type GoalKindKey = 'scheduled' | 'target';
 
@@ -137,7 +136,7 @@ const MenuChip = ({
           'flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors',
           count
             ? 'bg-white/[0.12] text-white ring-1 ring-inset ring-white/25 auto-light:bg-black/[0.07] auto-light:text-neutral-950 auto-light:ring-black/20'
-            : 'bg-white/[0.04] text-neutral-400 hover:bg-white/[0.08] hover:text-neutral-100 auto-light:bg-black/[0.04] auto-light:text-neutral-600 auto-light:hover:bg-black/[0.08]',
+            : 'text-neutral-400 ring-1 ring-inset ring-white/[0.07] hover:bg-white/[0.05] hover:text-neutral-100 auto-light:text-neutral-600 auto-light:ring-black/[0.08] auto-light:hover:bg-black/[0.04]',
         )}
       >
         <Icon name={icon} className="text-[15px]" />
@@ -163,6 +162,56 @@ const MenuChip = ({
       </Popover.Content>
     </Popover.Portal>
   </Popover.Root>
+);
+
+/** A row of buttons in one pill, with an optional quiet label. */
+const Segmented = ({
+  label,
+  children,
+}: {
+  label?: string;
+  children: ReactNode;
+}) => (
+  <div className="flex h-8 shrink-0 items-center gap-0.5 rounded-full bg-white/[0.04] p-0.5 ring-1 ring-inset ring-white/[0.06] auto-light:bg-black/[0.035] auto-light:ring-black/[0.05]">
+    {label && (
+      <span className="px-2 text-[10px] font-medium uppercase tracking-[0.16em] text-neutral-500">
+        {label}
+      </span>
+    )}
+    {children}
+  </div>
+);
+
+const SegButton = ({
+  active,
+  onClick,
+  children,
+  title,
+  muted,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+  title?: string;
+  muted?: boolean;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    aria-pressed={active}
+    title={title}
+    className={cn(
+      'flex h-7 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors',
+      active
+        ? 'bg-white text-neutral-950 shadow-sm auto-light:bg-neutral-900 auto-light:text-white'
+        : cn(
+            'text-neutral-400 hover:text-neutral-100 auto-light:text-neutral-600 auto-light:hover:text-neutral-950',
+            muted && 'opacity-50',
+          ),
+    )}
+  >
+    {children}
+  </button>
 );
 
 /**
@@ -201,78 +250,67 @@ export const GoalsFilters = ({
   const person = people.find((p) => p.id === filters.personId);
 
   return (
-    <div className="flex flex-col gap-2.5">
-      <div className="no-scrollbar -mx-4 flex items-center gap-1.5 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0">
-        <label className="flex h-8 w-44 shrink-0 items-center gap-1.5 rounded-full bg-white/[0.04] px-3 text-xs text-neutral-400 focus-within:ring-1 focus-within:ring-white/25 auto-light:bg-black/[0.04] auto-light:text-neutral-500 auto-light:focus-within:ring-black/20">
-          <Icon name="search" className="text-[15px]" />
-          <input
-            value={filters.q}
-            onChange={(e) => set({ q: e.target.value })}
-            placeholder="Find a goal"
-            className="min-w-0 flex-1 bg-transparent text-neutral-100 outline-none placeholder:text-neutral-500 auto-light:text-neutral-900"
-          />
-          {filters.q && (
-            <button
-              type="button"
-              aria-label="Clear search"
-              onClick={() => set({ q: '' })}
-            >
-              <Icon name="close" className="text-[14px]" />
-            </button>
-          )}
-        </label>
-        {companies.length > 1 && (
-          <>
-            <span className="mx-1 h-4 w-px shrink-0 bg-white/10 auto-light:bg-black/10" />
-            <Chip
-              active={!filters.companyId}
-              onClick={() => set({ companyId: null, projectIds: [] })}
-            >
-              All companies
-            </Chip>
-            {companies.map((c) => (
-              <Chip
-                key={c.id}
-                active={filters.companyId === c.id}
-                onClick={() =>
-                  set({
-                    companyId: filters.companyId === c.id ? null : c.id,
-                    projectIds: [],
-                  })
-                }
-              >
-                <CompanyMark
-                  name={c.name}
-                  color={c.color}
-                  logo={c.logo}
-                  size={16}
-                />
-                {c.name}
-              </Chip>
-            ))}
-          </>
+    <div className="no-scrollbar -mx-4 flex items-center gap-2 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:gap-x-3 md:gap-y-2 md:overflow-visible md:px-0">
+      <label className="flex h-8 w-44 shrink-0 items-center gap-1.5 rounded-full bg-white/[0.04] px-3 text-xs text-neutral-400 ring-1 ring-inset ring-white/[0.06] focus-within:ring-white/25 auto-light:bg-white auto-light:text-neutral-500 auto-light:ring-black/[0.08] auto-light:focus-within:ring-black/25">
+        <Icon name="search" className="text-[15px]" />
+        <input
+          value={filters.q}
+          onChange={(e) => set({ q: e.target.value })}
+          placeholder="Find a goal"
+          className="min-w-0 flex-1 bg-transparent text-neutral-100 outline-none placeholder:text-neutral-500 auto-light:text-neutral-900"
+        />
+        {filters.q && (
+          <button
+            type="button"
+            aria-label="Clear search"
+            onClick={() => set({ q: '' })}
+          >
+            <Icon name="close" className="text-[14px]" />
+          </button>
         )}
-      </div>
+      </label>
 
-      <div className="no-scrollbar -mx-4 flex items-center gap-1.5 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0">
-        <span className="mr-0.5 flex shrink-0 items-center gap-1 text-[11px] font-medium uppercase tracking-wider text-neutral-500">
-          <Icon name="bolt" className="text-[14px]" />
-          Effort
-        </span>
+      {companies.length > 1 && (
+        <Segmented>
+          <SegButton
+            active={!filters.companyId}
+            onClick={() => set({ companyId: null, projectIds: [] })}
+          >
+            All
+          </SegButton>
+          {companies.map((c) => (
+            <SegButton
+              key={c.id}
+              active={filters.companyId === c.id}
+              onClick={() =>
+                set({
+                  companyId: filters.companyId === c.id ? null : c.id,
+                  projectIds: [],
+                })
+              }
+            >
+              {c.name}
+            </SegButton>
+          ))}
+        </Segmented>
+      )}
+
+      <Segmented label="Effort">
         {EFFORTS.map((e) => (
-          <Chip
+          <SegButton
             key={e.key}
             active={filters.efforts.includes(e.key)}
             onClick={() => set({ efforts: toggle(filters.efforts, e.key) })}
             title={`Goals of ${e.label.toLowerCase()} effort projects`}
+            muted={!counts[e.key]}
           >
-            <Icon name={e.icon} className="text-[14px]" />
             {e.label}
-            <span className="tabular-nums opacity-60">{counts[e.key]}</span>
-          </Chip>
+            <span className="tabular-nums opacity-50">{counts[e.key]}</span>
+          </SegButton>
         ))}
-        <span className="mx-1 h-4 w-px shrink-0 bg-white/10 auto-light:bg-black/10" />
+      </Segmented>
 
+      <div className="flex shrink-0 items-center gap-1.5">
         <MenuChip
           label="Project"
           icon="folder"

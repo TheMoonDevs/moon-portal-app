@@ -11,7 +11,7 @@ import { Icon } from '../Admin/shared/AdminUI';
 import { PanelHead } from './GoalDayPanel';
 import { wholeText } from './GoalsWeek';
 import { type DoneCounts, doneOn, type GoalRow } from './model';
-import { Bar, EffortTag, fmtDay, fmtNum, STATE_META } from './ui';
+import { Bar, EffortTag, fmtDay, fmtNum, ProjectLogo, STATE_META } from './ui';
 
 const PERIOD_NOW: Record<string, string> = {
   day: 'today',
@@ -130,6 +130,7 @@ export const GoalProjectPanel = ({
       <PanelHead
         kicker={company?.name ?? 'Project'}
         title={project.name}
+        lead={<ProjectLogo project={project} size={44} className="mt-0.5" />}
         onClose={onClose}
       >
         <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -144,16 +145,14 @@ export const GoalProjectPanel = ({
         </div>
       </PanelHead>
 
-      <div className="flex flex-col gap-5 p-4">
+      <div className="flex flex-col gap-7 px-5 pb-6 pt-5">
         <section>
-          <div className="mb-2 flex items-baseline justify-between gap-2">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
-              Tasks done · {rangeLabel}
-            </h3>
-            <span className="text-lg font-semibold tabular-nums text-white auto-light:text-neutral-950">
-              {total}
-            </span>
-          </div>
+          <h3 className="text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-500">
+            Tasks done · {rangeLabel}
+          </h3>
+          <p className="mb-3 mt-1 text-[30px] font-semibold tabular-nums leading-none tracking-tight text-white auto-light:text-neutral-950">
+            {total}
+          </p>
           <DoneBars
             days={days}
             counts={counts}
@@ -171,10 +170,10 @@ export const GoalProjectPanel = ({
         </section>
 
         <section>
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">
+          <h3 className="mb-3 text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-500">
             Goals
           </h3>
-          <ul className="flex flex-col gap-2">
+          <ul className="flex flex-col gap-2.5">
             {mine.map((r) => {
               const p = r.goal.progress;
               const target = isTarget(r.goal);
@@ -188,7 +187,7 @@ export const GoalProjectPanel = ({
               return (
                 <li
                   key={r.key}
-                  className="rounded-xl bg-white/[0.025] p-3 auto-light:bg-black/[0.025]"
+                  className="rounded-xl bg-white/[0.03] px-3.5 py-3 auto-light:bg-black/[0.025]"
                 >
                   <div className="flex items-center gap-2">
                     <span

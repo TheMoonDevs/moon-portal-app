@@ -7,10 +7,17 @@ import type { CalendarTask } from '@/lib/workspace/goalCalendar';
 import { isTarget, PERIOD_NOUN } from '@/lib/workspace/projects';
 
 import { Icon, UserAvatar } from '../Admin/shared/AdminUI';
-import { CompanyMark } from '../Admin/Workspace/shared';
 import { entriesOn } from './GoalsMonth';
 import { type DoneCounts, doneOn, type GoalRow } from './model';
-import { Bar, EffortTag, fmtDay, fmtNum, STATE_META } from './ui';
+import {
+  Bar,
+  CompanyDivider,
+  EffortTag,
+  fmtDay,
+  fmtNum,
+  ProjectLogo,
+  STATE_META,
+} from './ui';
 
 export type Person = {
   id: string;
@@ -81,25 +88,29 @@ export const PanelHead = ({
   kicker,
   title,
   sub,
+  lead,
   onClose,
   children,
 }: {
   kicker: string;
   title: ReactNode;
   sub?: ReactNode;
+  /** Shown before the title, e.g. a project's logo. */
+  lead?: ReactNode;
   onClose: () => void;
   children?: ReactNode;
 }) => (
-  <header className="sticky top-0 z-10 flex items-start gap-3 border-b border-white/[0.06] bg-neutral-950/95 p-4 backdrop-blur auto-light:border-black/[0.06] auto-light:bg-white/95">
+  <header className="sticky top-0 z-10 flex items-start gap-3 border-b border-white/[0.06] bg-neutral-950/90 px-5 pb-4 pt-5 backdrop-blur auto-light:border-black/[0.06] auto-light:bg-white/90">
+    {lead}
     <div className="min-w-0 flex-1">
-      <p className="text-[11px] font-medium uppercase tracking-wider text-neutral-500">
+      <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-500">
         {kicker}
       </p>
-      <h2 className="truncate text-lg font-semibold text-white auto-light:text-neutral-950">
+      <h2 className="mt-1 truncate text-xl font-semibold tracking-tight text-white auto-light:text-neutral-950">
         {title}
       </h2>
       {sub && (
-        <p className="mt-0.5 text-xs text-neutral-400 auto-light:text-neutral-500">
+        <p className="mt-1 text-xs text-neutral-400 auto-light:text-neutral-500">
           {sub}
         </p>
       )}
@@ -131,7 +142,7 @@ const DayGoal = ({
   const target = isTarget(row.goal);
   const period = row.periods.find((p) => p.from <= day && p.to >= day);
   return (
-    <li className="rounded-xl bg-white/[0.025] p-2.5 auto-light:bg-black/[0.025]">
+    <li className="ml-[34px] rounded-xl bg-white/[0.03] px-3 py-2.5 auto-light:bg-black/[0.025]">
       <div className="flex items-center gap-2">
         <span
           className={cn(
@@ -276,60 +287,38 @@ export const GoalDayPanel = ({
             .join(' · ') || 'No goal is due or was worked on.'
         }
       />
-      <div className="flex flex-col gap-4 p-4">
+      <div className="flex flex-col gap-7 px-5 pb-6 pt-5">
         {companies.map(({ company, projects: list }) => (
-          <section key={company?.id ?? 'none'}>
-            {company && (
-              <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
-                <CompanyMark
-                  name={company.name}
-                  color={company.color}
-                  logo={company.logo}
-                  size={16}
-                />
-                {company.name}
-              </p>
-            )}
-            <div className="flex flex-col gap-3">
-              {list.map(({ row, goals, done: n }) => (
-                <div key={row.project.id}>
-                  <button
-                    type="button"
-                    onClick={() => onOpenProject(row.project.id)}
-                    className="group mb-1.5 flex w-full items-center gap-2 text-left"
-                  >
-                    <CompanyMark
-                      name={row.project.name}
-                      color={row.project.color}
-                      logo={row.project.logo}
-                      size={20}
-                    />
-                    <span className="min-w-0 truncate text-sm font-semibold text-neutral-100 group-hover:underline auto-light:text-neutral-900">
-                      {row.project.name}
+          <section key={company?.id ?? 'none'} className="flex flex-col gap-4">
+            {company && <CompanyDivider name={company.name} />}
+            {list.map(({ row, goals, done: n }) => (
+              <div key={row.project.id} className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => onOpenProject(row.project.id)}
+                  className="group flex w-full items-center gap-2.5 text-left"
+                >
+                  <ProjectLogo project={row.project} size={24} />
+                  <span className="min-w-0 truncate text-sm font-medium text-neutral-100 group-hover:underline group-hover:underline-offset-2 auto-light:text-neutral-900">
+                    {row.project.name}
+                  </span>
+                  {n > 0 && (
+                    <span className="flex shrink-0 items-center gap-0.5 text-[11px] font-medium tabular-nums text-emerald-400 auto-light:text-emerald-600">
+                      <Icon name="check" className="text-[13px]" />
+                      {n} done
                     </span>
-                    {n > 0 && (
-                      <span className="flex shrink-0 items-center gap-0.5 rounded-full bg-emerald-400/10 px-1.5 text-[10px] font-medium tabular-nums text-emerald-300 auto-light:bg-emerald-50 auto-light:text-emerald-700">
-                        <Icon name="check" className="text-[11px]" />
-                        {n} done
-                      </span>
-                    )}
-                    <EffortTag effort={row.effort} className="ml-auto" />
-                  </button>
-                  {goals.length > 0 && (
-                    <ul className="flex flex-col gap-2">
-                      {goals.map((g) => (
-                        <DayGoal
-                          key={g.key}
-                          row={g}
-                          day={day}
-                          people={people}
-                        />
-                      ))}
-                    </ul>
                   )}
-                </div>
-              ))}
-            </div>
+                  <EffortTag effort={row.effort} className="ml-auto" />
+                </button>
+                {goals.length > 0 && (
+                  <ul className="flex flex-col gap-2">
+                    {goals.map((g) => (
+                      <DayGoal key={g.key} row={g} day={day} people={people} />
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))}
           </section>
         ))}
       </div>
