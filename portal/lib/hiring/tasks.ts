@@ -64,6 +64,18 @@ export function sanitizeTask(input: unknown): JobTask | null {
   return task;
 }
 
+/**
+ * The last moment of a date's day in UTC. A task is due "by" a day: emails,
+ * the task page and the board show only the date (see formatTaskDue), so it
+ * stays open until that day ends rather than at the hour it was sent or
+ * extended.
+ */
+export function endOfUtcDay(date: Date): Date {
+  const end = new Date(date.getTime());
+  end.setUTCHours(23, 59, 59, 0);
+  return end;
+}
+
 /** When the task is due, counted from when its link was first emailed. */
 export function taskDueAt(
   task: Pick<JobTask, 'dueDays'> | null | undefined,
@@ -72,8 +84,8 @@ export function taskDueAt(
   if (!task?.dueDays || !sentAt) return null;
   const due = new Date(sentAt);
   if (Number.isNaN(due.getTime())) return null;
-  due.setDate(due.getDate() + task.dueDays);
-  return due;
+  due.setUTCDate(due.getUTCDate() + task.dueDays);
+  return endOfUtcDay(due);
 }
 
 /**
@@ -86,7 +98,9 @@ export function applicationDueAt(
 ): Date | null {
   if (application.taskDueOverride) {
     const due = new Date(application.taskDueOverride);
-    if (!Number.isNaN(due.getTime())) return due;
+    // Older extensions were saved at the hour they were made; they still
+    // count until the end of the day the candidate was told.
+    if (!Number.isNaN(due.getTime())) return endOfUtcDay(due);
   }
   return taskDueAt(task, application.taskSentAt);
 }
@@ -96,8 +110,8 @@ export const MAX_EXTENSION_DAYS = 90;
 
 /**
  * A new due date from `{ dueAt }` (a date or ISO time) or `{ days }` (added to
- * the current due date, or to now when it has none or has passed). A bare
- * date means the end of that day in UTC, so the candidate gets the whole day.
+ * the current due date, or to now when it has none or has passed). Either way
+ * it means the end of that day in UTC, so the candidate gets the whole day.
  */
 export function extendedDueAt(
   current: Date | null,
@@ -110,6 +124,7 @@ export function extendedDueAt(
     due = new Date(
       /^\d{4}-\d{2}-\d{2}$/.test(raw) ? `${raw}T23:59:59.000Z` : raw,
     );
+    if (!Number.isNaN(due.getTime())) due = endOfUtcDay(due);
     if (Number.isNaN(due.getTime()))
       return { dueAt: null, error: 'The new due date doesn’t look right.' };
   } else if (input.days !== undefined && input.days !== null) {
@@ -117,13 +132,16 @@ export function extendedDueAt(
     if (!Number.isFinite(days) || days < 1)
       return { dueAt: null, error: 'Extend by at least one day.' };
     const from = current && current > now ? current : now;
-    due = new Date(from.getTime() + Math.round(days) * 86400000);
+    due = endOfUtcDay(new Date(from.getTime() + Math.round(days) * 86400000));
   } else {
     return { dueAt: null, error: 'Give a new due date or a number of days.' };
   }
   if (due <= now)
     return { dueAt: null, error: 'The new due date has to be in the future.' };
-  if (due.getTime() - now.getTime() > MAX_EXTENSION_DAYS * 86400000)
+  if (
+    due >
+    endOfUtcDay(new Date(now.getTime() + MAX_EXTENSION_DAYS * 86400000))
+  )
     return {
       dueAt: null,
       error: `Keep it within ${MAX_EXTENSION_DAYS} days from today.`,
