@@ -7,7 +7,7 @@ import type { CalendarCompany, GoalDay } from '@/lib/workspace/goalCalendar';
 
 import { Icon } from '../Admin/shared/AdminUI';
 import { Tip } from '../Projects/Tip';
-import { type DoneCounts, doneOn, type GoalRow } from './model';
+import { doneOn, type GoalRow, type WorkIndex } from './model';
 import { card, STATE_META } from './ui';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -156,7 +156,7 @@ export const GoalsMonth = ({
   /** YYYY-MM of the month shown. */
   month: string;
   rows: GoalRow[];
-  done: DoneCounts;
+  done: WorkIndex;
   today: string;
   selected: string | null;
   onSelect: (day: string) => void;

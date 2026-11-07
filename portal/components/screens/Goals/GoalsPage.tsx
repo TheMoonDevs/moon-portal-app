@@ -1,6 +1,8 @@
 'use client';
 
+import type { User } from '@db/client';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast, Toaster } from 'sonner';
 
 import { ThemeToggle } from '@/components/global/ThemeToggle';
 import { cn } from '@/lib/utils';
@@ -21,8 +23,15 @@ import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { EmptyState, Icon } from '../Admin/shared/AdminUI';
+import { errorText } from '../Admin/Workspace/shared';
 import { TipProvider } from '../Projects/Tip';
 import { GoalDayPanel, PanelHead } from './GoalDayPanel';
+import {
+  editOf,
+  type GoalEdit,
+  GoalEditDialog,
+  newEdit,
+} from './GoalEditDialog';
 import { GoalProjectPanel } from './GoalProjectPanel';
 import { type Filters, GoalsFilters, NO_FILTERS } from './GoalsFilters';
 import { GoalsMonth } from './GoalsMonth';
@@ -31,11 +40,12 @@ import { GoalsWeek } from './GoalsWeek';
 import {
   applyFilters,
   buildRows,
-  doneCounts,
+  doneOver,
   filtersFromParams,
   filtersToParams,
   type GoalRow,
   sortRows,
+  workIndex,
 } from './model';
 import { Bar, card, EFFORTS, rateColor, Ring, STATE_META } from './ui';
 
@@ -213,7 +223,8 @@ const Legend = () => (
 export const GoalsPage = () => {
   const { user } = useUser();
   const [month, setMonth] = useState(() => toDay().slice(0, 7));
-  const [view, setView] = useState<View>('calendar');
+  // The week is where people plan, so it is what opens.
+  const [view, setView] = useState<View>('week');
   const [weekStart, setWeekStart] = useState(() => mondayOf(toDay()));
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [panel, setPanel] = useState<Panel>(null);
@@ -227,7 +238,9 @@ export const GoalsPage = () => {
     );
   const closePanel = () => setPanel(null);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setPanel(null);
+    // Escape closes the sidebar, unless a dialog over it took the key.
+    const onKey = (e: KeyboardEvent) =>
+      e.key === 'Escape' && !e.defaultPrevented && setPanel(null);
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
@@ -242,9 +255,9 @@ export const GoalsPage = () => {
     const m = params.get('month');
     if (m && /^\d{4}-\d{2}$/.test(m)) setMonth(m);
     const v = params.get('view');
-    if (v === 'timeline' || v === 'week') setView(v);
+    if (v === 'timeline' || v === 'week' || v === 'calendar') setView(v);
     const w = params.get('week');
-    if (v === 'week' && w && DAY.test(w)) {
+    if ((!v || v === 'week') && w && DAY.test(w)) {
       setWeekStart(mondayOf(w));
       setMonth(monthOfWeek(mondayOf(w)));
     }
@@ -256,7 +269,7 @@ export const GoalsPage = () => {
     if (view === 'week') {
       if (weekStart !== mondayOf(toDay())) params.set('week', weekStart);
     } else if (month !== toDay().slice(0, 7)) params.set('month', month);
-    if (view !== 'calendar') params.set('view', view);
+    if (view !== 'week') params.set('view', view);
     const qs = params.toString();
     window.history.replaceState(
       null,
@@ -295,6 +308,11 @@ export const GoalsPage = () => {
       })
       .catch(() => setFailed(!hit));
   }, [gridFrom, gridTo]);
+  /** After a change: what was kept is out of date, for every range. */
+  const reload = () => {
+    cache.clear();
+    load();
+  };
   useEffect(() => {
     if (ready) load();
   }, [load, ready]);
@@ -312,7 +330,7 @@ export const GoalsPage = () => {
     [data, gridDays, gridFrom, gridTo],
   );
   const shown = useMemo(() => applyFilters(rows, filters), [rows, filters]);
-  const done = useMemo(() => doneCounts(data), [data]);
+  const done = useMemo(() => workIndex(data), [data]);
 
   // Effort counts ignore the effort filter itself.
   const effortCounts = useMemo(() => {
@@ -344,6 +362,47 @@ export const GoalsPage = () => {
     () => new Map((data?.users ?? []).map((u) => [u.id, u])),
     [data],
   );
+  // A goal being edited or added here, with the project page's editor.
+  const [edit, setEdit] = useState<GoalEdit | null>(null);
+  const openGoal = (row: GoalRow) =>
+    row.project.canEdit
+      ? setEdit(editOf(row.goal, row.project.name))
+      : openProject(row.project.id);
+  const newGoal = (projectId: string) => {
+    const project = data?.projects.find((p) => p.id === projectId);
+    if (project?.canEdit) setEdit(newEdit(project.id, project.name));
+  };
+  const addProgress = async (row: GoalRow, add: number) => {
+    try {
+      await PortalSdk.postData(
+        `/api/projects/${row.project.id}/goals/progress`,
+        {
+          goalId: row.goal.id,
+          add,
+        },
+      );
+      toast.success(
+        `Added ${add.toLocaleString('en-US')} to ${row.goal.title}`,
+      );
+      reload();
+    } catch (err) {
+      toast.error(errorText(err));
+    }
+  };
+  // Who a goal can be for: its project's team first, then everyone else seen.
+  const editUsers = useMemo(() => {
+    if (!edit) return [];
+    const project = data?.projects.find((p) => p.id === edit.projectId);
+    const team = new Set([
+      ...(project?.leadIds ?? []),
+      ...(project?.memberIds ?? []),
+    ]);
+    const all = data?.users ?? [];
+    return [
+      ...all.filter((u) => team.has(u.id)),
+      ...all.filter((u) => !team.has(u.id)),
+    ] as unknown as User[];
+  }, [edit, data]);
   const goalPeople = useMemo(() => {
     const ids = new Set(rows.flatMap((r) => r.people));
     return (data?.users ?? [])
@@ -371,8 +430,7 @@ export const GoalsPage = () => {
     );
     const projectIds = Array.from(new Set(shown.map((r) => r.project.id)));
     const finished = projectIds.reduce(
-      (n, id) =>
-        n + rangeDays.reduce((m, d) => m + (done.get(`${id}|${d}`) ?? 0), 0),
+      (n, id) => n + doneOver(done, id, rangeDays),
       0,
     );
     const effort = EFFORTS.map((e) => {
@@ -444,6 +502,7 @@ export const GoalsPage = () => {
         people={people}
         onClose={closePanel}
         onOpenProject={openProject}
+        onEditGoal={openGoal}
       />
     ) : panel?.kind === 'project' ? (
       <GoalProjectPanel
@@ -455,6 +514,9 @@ export const GoalsPage = () => {
         today={today}
         onClose={closePanel}
         onOpenDay={openDay}
+        onEditGoal={openGoal}
+        onNewGoal={() => newGoal(panel.projectId)}
+        onAddProgress={addProgress}
       />
     ) : panel?.kind === 'effort' ? (
       <>
@@ -706,12 +768,14 @@ export const GoalsPage = () => {
                     <GoalsWeek
                       days={weekDays}
                       rows={shown}
-                      done={done}
+                      work={done}
                       today={today}
+                      people={people}
                       selectedDay={selected}
                       selectedProject={selectedProject}
                       onSelectDay={openDay}
                       onSelectProject={openProject}
+                      onGoal={openGoal}
                     />
                   ) : view === 'calendar' ? (
                     <GoalsMonth
@@ -761,6 +825,16 @@ export const GoalsPage = () => {
           )}
         </div>
       </div>
+      {edit && (
+        <GoalEditDialog
+          key={`${edit.projectId}:${edit.draft.id ?? 'new'}`}
+          edit={edit}
+          users={editUsers}
+          onClose={() => setEdit(null)}
+          onSaved={reload}
+        />
+      )}
+      <Toaster theme="dark" position="bottom-right" richColors />
     </TipProvider>
   );
 };

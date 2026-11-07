@@ -8,7 +8,7 @@ import { isTarget, PERIOD_NOUN } from '@/lib/workspace/projects';
 
 import { Icon } from '../Admin/shared/AdminUI';
 import { Tip, TipRow, TipTitle } from '../Projects/Tip';
-import { byProject, type DoneCounts, doneOver, type GoalRow } from './model';
+import { byProject, doneOver, type GoalRow, type WorkIndex } from './model';
 import {
   Bar,
   card,
@@ -95,7 +95,7 @@ export const GoalsTimeline = ({
   rows: GoalRow[];
   /** The days of the month shown. */
   days: string[];
-  done: DoneCounts;
+  done: WorkIndex;
   today: string;
   selected: string | null;
   selectedProject: string | null;

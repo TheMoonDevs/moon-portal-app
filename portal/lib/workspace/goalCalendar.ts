@@ -69,6 +69,24 @@ export type CalendarProject = {
   isCore?: boolean | null;
   leadIds?: string[] | null;
   memberIds?: string[] | null;
+  /** Whether the person may change its goals. */
+  canEdit?: boolean;
+  /** Whether the person may add progress to its goals by hand. */
+  canUpdate?: boolean;
+};
+
+/**
+ * A task of a project on a day, for the week: one finished that day, or
+ * one still open (to do, in progress or in review) that is for that day.
+ */
+export type WorkTask = {
+  id: string;
+  title: string;
+  projectId: string;
+  day: string;
+  status: string;
+  /** Who finished it, else who it is for. */
+  people: string[];
 };
 
 export type CalendarCompany = {
@@ -87,8 +105,11 @@ export type GoalsCalendarData = {
   goals: CalendarGoal[];
   tasks: CalendarTask[];
   tallies: CalendarTally[];
-  /** Tasks finished per project and day (completedAt), goal or not. */
-  done?: { projectId: string; day: string; count: number }[];
+  /**
+   * Every task of these projects finished from `from` to `to` (on the day
+   * it was finished), and every open one for a day in it, goal or not.
+   */
+  work?: WorkTask[];
   users: {
     id: string;
     name?: string | null;

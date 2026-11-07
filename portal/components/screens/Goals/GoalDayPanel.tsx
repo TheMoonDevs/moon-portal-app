@@ -8,7 +8,7 @@ import { isTarget, PERIOD_NOUN } from '@/lib/workspace/projects';
 
 import { Icon, UserAvatar } from '../Admin/shared/AdminUI';
 import { entriesOn } from './GoalsMonth';
-import { type DoneCounts, doneOn, type GoalRow } from './model';
+import { doneOn, type GoalRow, type WorkIndex } from './model';
 import {
   Bar,
   CompanyDivider,
@@ -132,10 +132,12 @@ const DayGoal = ({
   row,
   day,
   people,
+  onEdit,
 }: {
   row: GoalRow;
   day: string;
   people: Map<string, Person>;
+  onEdit: (row: GoalRow) => void;
 }) => {
   const cell = row.days.get(day)!;
   const meta = STATE_META[cell.state as keyof typeof STATE_META];
@@ -165,6 +167,17 @@ const DayGoal = ({
           <span className="shrink-0 text-[11px] tabular-nums text-violet-300 auto-light:text-violet-700">
             +{fmtNum(cell.added)} by hand
           </span>
+        )}
+        {row.project.canEdit && (
+          <button
+            type="button"
+            onClick={() => onEdit(row)}
+            aria-label={`Edit ${row.label}`}
+            title="Edit goal"
+            className="-my-1 -mr-1.5 flex size-6 shrink-0 items-center justify-center rounded-md text-neutral-500 hover:bg-white/[0.08] hover:text-white auto-light:hover:bg-black/[0.05] auto-light:hover:text-neutral-950"
+          >
+            <Icon name="edit" className="text-[15px]" />
+          </button>
         )}
       </div>
       {cell.tasks.length > 0 && (
@@ -229,14 +242,16 @@ export const GoalDayPanel = ({
   people,
   onClose,
   onOpenProject,
+  onEditGoal,
 }: {
   day: string;
   rows: GoalRow[];
-  done: DoneCounts;
+  done: WorkIndex;
   today: string;
   people: Map<string, Person>;
   onClose: () => void;
   onOpenProject: (projectId: string) => void;
+  onEditGoal: (row: GoalRow) => void;
 }) => {
   const entries = entriesOn(rows, day);
   const due = entries.filter((e) => e.cell.due > 0);
@@ -313,7 +328,13 @@ export const GoalDayPanel = ({
                 {goals.length > 0 && (
                   <ul className="flex flex-col gap-2">
                     {goals.map((g) => (
-                      <DayGoal key={g.key} row={g} day={day} people={people} />
+                      <DayGoal
+                        key={g.key}
+                        row={g}
+                        day={day}
+                        people={people}
+                        onEdit={onEditGoal}
+                      />
                     ))}
                   </ul>
                 )}
