@@ -197,6 +197,31 @@ const Contributors = ({
 
 /* ------------------------------ repeating goal ----------------------------- */
 
+/** A goal's inspiration image, across the top of its card. */
+const GoalCover = ({ goal }: { goal: ProjectGoal }) =>
+  goal.image ? (
+    <a
+      href={goal.image}
+      target="_blank"
+      rel="noreferrer"
+      aria-label={`Inspiration for ${goal.title}`}
+      className="group relative block h-32 overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.03] sm:h-40"
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={goal.image}
+        alt=""
+        loading="lazy"
+        className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+      />
+      <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+      <span className="pointer-events-none absolute bottom-2 left-3 flex items-center gap-1 text-[11px] font-medium text-white/80">
+        <Icon name="auto_awesome" className="text-[13px]" />
+        Inspiration
+      </span>
+    </a>
+  ) : null;
+
 const ScheduledGoal = ({
   goal,
   project,
@@ -242,6 +267,7 @@ const ScheduledGoal = ({
   return (
     <div className="flex flex-col gap-5 rounded-3xl border border-white/[0.07] bg-white/[0.02] p-5 lg:flex-row">
       <div className="flex min-w-0 flex-1 flex-col gap-4">
+        <GoalCover goal={goal} />
         <div className="flex items-center gap-4">
           <Tip
             content={
@@ -349,7 +375,9 @@ const ScheduledGoal = ({
           <ul className="-mx-2 flex flex-col">
             <AnimatePresence initial={false}>
               {shown.map((t) => {
-                const late = !!t.forDate && t.forDate < today;
+                // Late once its last day went by: its due day, else its own.
+                const last = (t.dueDate ?? t.forDate)?.slice(0, 10);
+                const late = !!last && last < today;
                 return (
                   <motion.li
                     key={t.id}
@@ -522,6 +550,7 @@ const TargetGoal = ({
       )}
     >
       <div className="flex min-w-0 flex-1 flex-col gap-3">
+        <GoalCover goal={goal} />
         <div className="flex items-start gap-3">
           <span
             className={cn(
@@ -1069,7 +1098,7 @@ export const GoalsSection = ({
           open={removing}
           onOpenChange={setRemoving}
           title={`Remove ${editing?.title || 'this goal'}?`}
-          message="Its tasks stay; they stop counting towards it, and it makes no new ones."
+          message="It makes no new tasks. Ones already worked on or past their day stay and stop counting towards it; untouched ones still to come are cleared."
           confirmLabel="Remove goal"
           loading={saving}
           onConfirm={remove}

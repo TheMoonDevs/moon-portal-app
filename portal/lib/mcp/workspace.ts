@@ -25,6 +25,7 @@ import {
 } from '@/lib/workspace/projectRequests';
 import {
   describeGoalSchedule,
+  goalImage,
   PERIOD_LABELS,
   toDay,
 } from '@/lib/workspace/projects';
@@ -404,6 +405,7 @@ export const goalView = (g: ProjectGoal, people?: Map<string, string>) => ({
     : 'whole team',
   ...(g.achievedAt && { reached: g.achievedAt }),
   ...(g.planId && { planId: g.planId }),
+  ...(g.image && { image: g.image }),
   ...(g.parts?.length && {
     parts: g.parts.map((p) => `${p.label}: ${p.target}`),
   }),
@@ -439,6 +441,12 @@ export async function goalFields(
       parseSlot,
     );
   if (typeof args?.makeTasks === 'boolean') out.makeTasks = args.makeTasks;
+  if (args?.image !== undefined) {
+    const image = args.image ? goalImage(args.image) : null;
+    if (args.image && !image)
+      throw new ToolError('The image is a link to it, starting https://.');
+    out.image = image;
+  }
   if (args?.people !== undefined)
     out.assigneeIds =
       (await resolvePeople(user, project.companyId, args.people)) ?? [];
@@ -703,6 +711,11 @@ export const WORKSPACE_TOOLS: Tool[] = [
           description: 'Who it is for; empty for the whole team.',
         },
         plan: { type: 'string', description: 'Plan id or title (optional).' },
+        image: {
+          type: 'string',
+          description:
+            'A link (https://) to an image for inspiration, shown on the goal; "" takes it off (optional).',
+        },
         parts: {
           type: 'array',
           items: {
@@ -757,7 +770,7 @@ export const WORKSPACE_TOOLS: Tool[] = [
     name: 'remove_goal',
     title: 'Remove a goal',
     description:
-      'Removes a goal from a project. Its tasks stay; they just stop counting towards it. Confirm with the person first.',
+      'Removes a goal from a project. Tasks worked on or past their day stay and stop counting towards it; its untouched tasks still to come are cleared. Confirm with the person first.',
     inputSchema: {
       type: 'object',
       properties: {

@@ -2,13 +2,13 @@ import { db } from '@/lib/mongodb/db-client';
 import type { Project, ProjectGoal, TaskSchedule } from '@/models/workspace';
 import { TASK_SIZE } from '@/models/workspace';
 
-import { clearRunsAhead, retitleRunTasks } from './goalRuns';
+import { clearRunsAhead, clearStaleRuns, retitleRunTasks } from './goalRuns';
 import {
   goalRule,
   goalTaskTitle,
   isTarget,
   nextRunOnOrAfter,
-  runsOn,
+  runCovering,
   toDay,
 } from './projects';
 import { runDueSchedules } from './schedules';
@@ -21,8 +21,9 @@ import { runDueSchedules } from './schedules';
  * goal's people, or the whole team) and the plan they link to. Changing the
  * goal changes it; a target goal, a goal that makes no tasks, or a removed
  * goal or part stops it. Tasks already made stay, except untouched ones
- * still ahead for runs that will no longer happen (new days, or a goal
- * that stopped), which are cleared.
+ * not past their day that no longer fit the goal (new days, more or fewer
+ * a run, other people or due day, or a goal that stopped): they are
+ * cleared, and made again as the goal now says.
  */
 
 type Unit = {
@@ -101,7 +102,7 @@ export async function syncGoalSchedules(
           (mine.monthDay ?? null) === rule.monthDay &&
           JSON.stringify(mine.slots ?? []) === JSON.stringify(rule.slots) &&
           (mine.anchor ?? null) === rule.anchor;
-        if (
+        const same =
           sameDays &&
           mine.active &&
           mine.title === want.title &&
@@ -109,27 +110,39 @@ export async function syncGoalSchedules(
           mine.count === count &&
           (mine.dueInDays ?? null) === rule.dueInDays &&
           (mine.planId ?? null) === want.planId &&
-          sameList(mine.assigneeIds ?? [], people)
-        )
-          continue;
-        // Runs ahead on days it no longer runs on are cleared.
-        if (!sameDays)
-          await clearRunsAhead([mine], (_s, day) => runsOn(rule, day));
+          sameList(mine.assigneeIds ?? [], people);
         // Its open tasks take the new name (the goal or project renamed).
         if (mine.taskTitle !== want.taskTitle)
           await retitleRunTasks(mine, want.taskTitle);
-        await db.taskSchedule.update({
-          where: { id: mine.id },
-          data: {
-            ...want,
-            active: true,
-            // New days: the next run is the first of them from today.
-            ...((!sameDays || !mine.active) && {
-              nextRunOn: nextRunOnOrAfter(rule, today),
-            }),
-            updatedAt: now,
-          },
-        });
+        const after: TaskSchedule = same
+          ? mine
+          : await db.taskSchedule.update({
+              where: { id: mine.id },
+              data: { ...want, active: true, updatedAt: now },
+            });
+        // Tasks still to do that the goal no longer makes as they are (other
+        // days, more or fewer a run, other people or due day) are cleared,
+        // and made again below as it now says. This also tidies ones left
+        // behind by earlier changes.
+        const cleared = await clearStaleRuns(mine, after);
+        if (same && !cleared.length) continue;
+        // The next run: the one covering today when a task of it was
+        // cleared, so it is made again; else the first of its days from
+        // today.
+        const current = runCovering(after, today);
+        const redo =
+          !!current && cleared.some((t) => (t.forDate ?? '') <= today);
+        if (cleared.length || !sameDays || !mine.active)
+          await db.taskSchedule.update({
+            where: { id: mine.id },
+            data: {
+              nextRunOn:
+                redo && current ? current : nextRunOnOrAfter(rule, today),
+              // So the coming run is shown again when it was cleared.
+              lastRunOn: null,
+              updatedAt: now,
+            },
+          });
         changed = true;
         continue;
       }
@@ -143,11 +156,10 @@ export async function syncGoalSchedules(
           goalId: goal.id,
           goalPartId: unit.partId,
           active: true,
-          // This period's tasks are made now, then on each run day.
-          nextRunOn:
-            rule.every !== 'day' && rule.dueInDays === 0
-              ? nextRunOnOrAfter(rule, today)
-              : today,
+          // This period's tasks are made now (for the run that covers
+          // today, so a weekly batch set on a Saturday is still this week's
+          // Monday batch, due Sunday), then on each run day.
+          nextRunOn: runCovering(rule, today) ?? nextRunOnOrAfter(rule, today),
           lastRunOn: null,
           fromGoal: true,
           createdById: userId,

@@ -147,6 +147,16 @@ const ids = (v: unknown) =>
 
 export const isTarget = (g: Pick<ProjectGoal, 'kind'>) => g.kind === 'target';
 
+/** A goal's inspiration image: an http(s) or site-relative URL, else null. */
+export const goalImage = (v: unknown): string | null => {
+  if (typeof v !== 'string') return null;
+  const url = v.trim();
+  if (!url || url.length > 2000) return null;
+  return /^https?:\/\/\S+$/i.test(url) || /^\/[^/\s]\S*$/.test(url)
+    ? url
+    : null;
+};
+
 /**
  * Keeps well-formed goals only; gives new goals and parts an id. A goal
  * keeps the day it was set: from the input, else from `previous` (the
@@ -233,6 +243,7 @@ export function sanitizeGoals(
           typeof g.previousId === 'string' &&
           g.previousId && { previousId: g.previousId }),
         ...(typeof g.planId === 'string' && g.planId && { planId: g.planId }),
+        ...(goalImage(g.image) && { image: goalImage(g.image)! }),
       };
     })
     .filter((g): g is ProjectGoal => !!g);

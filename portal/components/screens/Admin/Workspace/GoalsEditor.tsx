@@ -1,6 +1,7 @@
 'use client';
 
 import type { User } from '@db/client';
+import { useState } from 'react';
 
 import { cn } from '@/lib/utils';
 import {
@@ -25,6 +26,7 @@ import {
   Segmented,
   TextInput,
 } from '../shared/AdminUI';
+import { ImageField } from '../shared/ImageField';
 import { PeoplePicker } from './shared';
 
 export type GoalDraft = Omit<ProjectGoal, 'id' | 'parts'> & {
@@ -279,6 +281,7 @@ export const GoalFields = ({
     ? parts.reduce((n, p) => n + (p.target || 0), 0)
     : goal.target;
   const makesTasks = goal.makeTasks !== false;
+  const [addingImage, setAddingImage] = useState(false);
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3">
@@ -458,6 +461,34 @@ export const GoalFields = ({
           className="self-start text-xs text-neutral-500 hover:text-neutral-300"
         >
           {parts.length ? '+ Add a part' : 'Split it (e.g. across channels)'}
+        </button>
+      )}
+
+      {goal.image || addingImage ? (
+        <div className="flex flex-col gap-1.5">
+          <p className="text-[11px] font-medium uppercase tracking-wider text-neutral-500">
+            Inspiration{' '}
+            <span className="normal-case tracking-normal text-neutral-600">
+              · an image to keep in mind, shown on the goal
+            </span>
+          </p>
+          <ImageField
+            value={goal.image ?? ''}
+            size={72}
+            onChange={(url) => {
+              onChange({ image: url || null });
+              if (!url) setAddingImage(false);
+            }}
+          />
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAddingImage(true)}
+          className="flex items-center gap-1.5 self-start text-xs text-neutral-500 hover:text-neutral-300"
+        >
+          <Icon name="add_photo_alternate" className="text-[15px]" />
+          Add an inspiration image
         </button>
       )}
 

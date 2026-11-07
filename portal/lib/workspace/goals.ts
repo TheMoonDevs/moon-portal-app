@@ -60,7 +60,7 @@ export async function changeGoal(
   return updated.goals?.find((g) => g.id === goalId) ?? null;
 }
 
-/** Removes one goal; its tasks stay and stop counting towards it. */
+/** Removes one goal: worked-on and past tasks stay and stop counting towards it; untouched ones still to come are cleared. */
 export async function removeGoal(
   project: Project,
   goalId: string,
