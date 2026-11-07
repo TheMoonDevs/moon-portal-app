@@ -1,11 +1,6 @@
 'use client';
 
-import {
-  Caveat,
-  DM_Mono,
-  Plus_Jakarta_Sans,
-  Space_Grotesk,
-} from 'next/font/google';
+import localFont from 'next/font/local';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import {
@@ -36,24 +31,28 @@ import {
   TimelineScene,
 } from './TaskScenes';
 
-const sans = Plus_Jakarta_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '700', '800'],
+// Kept in the repo (latin, from Google Fonts, OFL) so the build never has
+// to download them: fetching them from Google broke deploys.
+const sans = localFont({
+  src: './fonts/PlusJakartaSans-latin.woff2',
+  weight: '200 800',
   variable: '--task-sans',
 });
-const mono = DM_Mono({
-  subsets: ['latin'],
-  weight: ['400', '500'],
+const mono = localFont({
+  src: [
+    { path: './fonts/DMMono-400-latin.woff2', weight: '400' },
+    { path: './fonts/DMMono-500-latin.woff2', weight: '500' },
+  ],
   variable: '--task-mono',
 });
-const hand = Caveat({
-  subsets: ['latin'],
-  weight: ['600'],
+const hand = localFont({
+  src: './fonts/Caveat-latin.woff2',
+  weight: '400 700',
   variable: '--task-hand',
 });
-const display = Space_Grotesk({
-  subsets: ['latin'],
-  weight: ['400', '500', '700'],
+const display = localFont({
+  src: './fonts/SpaceGrotesk-latin.woff2',
+  weight: '300 700',
   variable: '--task-display',
 });
 
