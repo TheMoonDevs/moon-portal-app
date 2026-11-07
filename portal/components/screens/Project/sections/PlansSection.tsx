@@ -1,5 +1,6 @@
 'use client';
 
+import { useMediaQuery } from '@mui/material';
 import { useState } from 'react';
 
 import { cn } from '@/lib/utils';
@@ -128,6 +129,7 @@ export const PlansSection = ({
   onCreated: (plan: PlanView) => void;
 }) => {
   const { data, change, flush } = plans;
+  const wide = useMediaQuery('(min-width: 1024px)');
   const [stepId, setStepId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -242,9 +244,11 @@ export const PlansSection = ({
     onOpen(null);
   };
 
-  // The picked step in full, under it in the steps.
+  // The picked step in full: on the right on a wide screen, else under it.
   const details = step && (
     <StepPanel
+      key={step.id}
+      asSidebar={wide}
       plan={plan}
       step={step}
       projects={choices.projects}
@@ -284,7 +288,7 @@ export const PlansSection = ({
         plans.updateStepTask(plan.id, stepId, fields)
       }
       onAddNote={(stepId, text) => plans.addNote(plan.id, stepId, text)}
-      stepDetails={details}
+      stepDetails={wide ? undefined : details}
       onShare={(change) => plans.share(plan.id, change)}
       meId={plans.meId}
       onDeleteTask={(id) => deleteStepTask(id)}
@@ -294,6 +298,11 @@ export const PlansSection = ({
   return (
     <div className="flex h-full min-h-0">
       <div className="min-w-0 flex-1">{editor}</div>
+      {wide && details && (
+        <div className="w-[360px] shrink-0 border-l border-white/[0.07]">
+          {details}
+        </div>
+      )}
       <ConfirmDialog
         open={confirmDelete}
         onOpenChange={setConfirmDelete}

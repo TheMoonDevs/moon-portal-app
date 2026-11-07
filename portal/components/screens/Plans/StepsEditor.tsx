@@ -518,10 +518,7 @@ const StepBar = ({
         className={cn(chip, 'ml-auto', detailsOpen && 'text-neutral-200')}
         title={detailsOpen ? 'Close the details' : 'Open the step in full'}
       >
-        <Icon
-          name={detailsOpen ? 'expand_less' : 'tune'}
-          className="text-[13px]"
-        />
+        <Icon name={'tune'} className="text-[13px]" />
         Details
       </button>
     </div>

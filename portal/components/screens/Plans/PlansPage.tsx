@@ -435,9 +435,11 @@ export const PlansPage = () => {
 
   const choices = plan ? plans.choicesFor(plan) : null;
 
-  // The picked step in full, under it in the steps.
+  // The picked step in full: on the right on a wide screen, else under it.
   const details = plan && choices && step && (
     <StepPanel
+      key={step.id}
+      asSidebar={wide}
       plan={plan}
       step={step}
       projects={choices.projects}
@@ -485,7 +487,7 @@ export const PlansPage = () => {
         onShare={(change) => plans.share(plan.id, change)}
         meId={plans.meId}
         onDeleteTask={(stepId) => deleteStepTask(stepId)}
-        stepDetails={details}
+        stepDetails={wide ? undefined : details}
       />
     ) : (
       <EmptyState
@@ -601,13 +603,33 @@ export const PlansPage = () => {
           </div>
         ) : wide ? (
           <PanelGroup direction="horizontal" autoSaveId="plans-panels-2">
-            <ResizablePanel defaultSize={22} minSize={15} maxSize={35}>
+            <ResizablePanel
+              id="list"
+              order={1}
+              defaultSize={22}
+              minSize={15}
+              maxSize={35}
+            >
               {list}
             </ResizablePanel>
             <Handle />
-            <ResizablePanel defaultSize={78} minSize={50}>
+            <ResizablePanel id="plan" order={2} defaultSize={50} minSize={30}>
               {editor}
             </ResizablePanel>
+            {details && (
+              <>
+                <Handle />
+                <ResizablePanel
+                  id="step"
+                  order={3}
+                  defaultSize={28}
+                  minSize={20}
+                  maxSize={45}
+                >
+                  {details}
+                </ResizablePanel>
+              </>
+            )}
           </PanelGroup>
         ) : view !== 'list' && plan ? (
           editor
