@@ -13,6 +13,7 @@ import { db } from '@/lib/mongodb/db-client';
 import { syncTaskPoints } from '@/lib/progress/server';
 import { linkCandidates } from '@/lib/worklogs/linker';
 import { attachToRun, releaseRun } from '@/lib/workspace/goalRuns';
+import { isPrivateTask } from '@/lib/workspace/personalSpace';
 import { fail, goalLink, ok, requireUser } from '@/lib/workspace/server';
 import type { Task } from '@/models/workspace';
 
@@ -102,6 +103,8 @@ export async function PATCH(request: Request, { params }: Params) {
     const fields = placeFields(place, candidates);
     if (!fields) return fail(400, 'You are not on that project.');
     Object.assign(data, fields);
+    // Put in their PERSONAL, it is theirs alone.
+    if ('personal' in place) data.assigneeIds = [user.id];
   }
   let updated = task;
   if (Object.keys(data).length) {
@@ -120,9 +123,7 @@ export async function PATCH(request: Request, { params }: Params) {
       await db.workPoint.updateMany({
         where: { taskId: task.id },
         data: {
-          isPrivate:
-            !updated.projectId &&
-            (!updated.companyId || updated.companyId === 'personal'),
+          isPrivate: await isPrivateTask(updated),
         },
       });
     }

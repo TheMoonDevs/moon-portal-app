@@ -45,7 +45,7 @@ const SendNotifications = ({
   const [description, setDescription] = useState('');
   const [sending, setSending] = useState(false);
 
-  const { companies } = useWorkspace();
+  const { workCompanies: companies } = useWorkspace();
   const [companyUserIds, setCompanyUserIds] = useState<string[] | null>(null);
 
   useEffect(() => {

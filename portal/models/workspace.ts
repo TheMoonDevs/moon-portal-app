@@ -143,6 +143,13 @@ export type Company = Loose<
     /** Logos, colors, fonts, guide and other brand files. */
     brandKit?: Nullable<BrandKit>;
     status: COMPANY_STATUS;
+    /**
+     * Someone's PERSONAL: a private company for their own work, with them
+     * as its only member (lib/workspace/personalSpace).
+     */
+    isPersonal?: boolean;
+    /** A PERSONAL's owner. */
+    ownerId?: Nullable<string>;
     createdById: string;
   }
 >;
@@ -190,6 +197,8 @@ export type Project = Loose<
     parentId?: Nullable<string>;
     /** The company's CORE project, made with the company. One per company. */
     isCore?: boolean;
+    /** The project of someone's PERSONAL (it is that company's CORE). */
+    isPersonal?: boolean;
     leadIds: string[];
     memberIds: string[];
     createdById: string;
@@ -234,13 +243,13 @@ export type ProjectRequest = Loose<
  * A task is the one thing a person plans and finishes; what happens on it is
  * logged as work points under it (see WorkPoint). A task usually sits in a
  * project. One written on someone's day sheet can also be company work on
- * no project (`projectId` empty), personal (`companyId` "personal"), or not
- * placed yet (both empty). Company work is seen by the company as usual;
- * personal and unplaced tasks only by their owner.
+ * no project (`projectId` empty), personal (in the owner's PERSONAL), or
+ * not placed yet (both empty). Company work is seen by the company as
+ * usual; personal and unplaced tasks only by their owner.
  */
 export type Task = Loose<
   BaseModel & {
-    /** Empty while not placed yet; "personal" for the owner's own work. */
+    /** Empty while not placed yet. */
     companyId: string;
     /** Empty for company work on no project, personal or unplaced tasks. */
     projectId: string;

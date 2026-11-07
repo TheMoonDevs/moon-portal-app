@@ -328,7 +328,7 @@ export const AdminCourses = ({
   selectedCompanyId: string | null;
   onSelectCompany: (companyId: string) => void;
 }) => {
-  const { companies, can } = useWorkspace();
+  const { workCompanies: companies, can } = useWorkspace();
   const editable = companies.filter((c) => can(c.company.id, 'courses:edit'));
   const companyId = editable.some((c) => c.company.id === selectedCompanyId)
     ? selectedCompanyId

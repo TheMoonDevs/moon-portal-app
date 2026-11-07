@@ -101,7 +101,7 @@ export const AdminOverview = ({
         />
         <StatCard
           label="Companies"
-          value={workspace.companies.length}
+          value={workspace.workCompanies.length}
           icon="domain"
           tone="info"
           loading={workspace.loading}
@@ -243,7 +243,7 @@ export const AdminOverview = ({
               </AdminButton>
             }
           />
-          {workspace.companies.length === 0 ? (
+          {workspace.workCompanies.length === 0 ? (
             <EmptyState
               icon="domain"
               title="No companies yet"
@@ -255,7 +255,7 @@ export const AdminOverview = ({
             />
           ) : (
             <ul className="divide-y divide-white/[0.05]">
-              {workspace.companies.slice(0, 6).map(({ company }) => (
+              {workspace.workCompanies.slice(0, 6).map(({ company }) => (
                 <li key={company.id}>
                   <button
                     onClick={() => onNavigate('companies')}

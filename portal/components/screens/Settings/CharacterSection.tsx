@@ -50,7 +50,7 @@ const label = (value: string) => value[0].toUpperCase() + value.slice(1);
  */
 export const CharacterSection = () => {
   const { user, refetchUser } = useUser();
-  const { companies } = useWorkspace();
+  const { workCompanies: companies } = useWorkspace();
   const company = companies[0]?.company;
   const brand = useMemo(
     () =>

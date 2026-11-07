@@ -1,5 +1,6 @@
 import { isMine, moveTask, settleFromPoints } from '@/lib/daywork/server';
 import { db } from '@/lib/mongodb/db-client';
+import { isPrivateTask } from '@/lib/workspace/personalSpace';
 import { fail, ok, requireUser } from '@/lib/workspace/server';
 import type { Task, WorkPoint } from '@/models/workspace';
 import { TASK_STATUS } from '@/models/workspace';
@@ -36,8 +37,7 @@ export async function PATCH(request: Request, { params }: Params) {
     where: { id: point.id },
     data: {
       taskId: to.id,
-      isPrivate:
-        !to.projectId && (!to.companyId || to.companyId === 'personal'),
+      isPrivate: await isPrivateTask(to),
       updatedAt: new Date().toISOString(),
     },
   });

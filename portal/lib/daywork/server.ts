@@ -6,6 +6,10 @@ import type { LinkCandidates } from '@/lib/worklogs/linker';
 import { guessPlaces, linkCandidates } from '@/lib/worklogs/linker';
 import { PERSONAL_COMPANY_ID, PERSONAL_TITLE } from '@/lib/worklogs/personal';
 import { fitGoal } from '@/lib/workspace/goalFit';
+import {
+  deletePersonalSpace,
+  isPrivateTask,
+} from '@/lib/workspace/personalSpace';
 import type { Task, WorkPoint, WorkPointStatus } from '@/models/workspace';
 import { OPEN_TASK_STATUSES, TASK_SIZE, TASK_STATUS } from '@/models/workspace';
 
@@ -68,7 +72,11 @@ export const isMine = (task: Task, userId: string) =>
   task.createdById === userId ||
   (task.assigneeIds ?? []).includes(userId);
 
-/** Seen by its owner only: personal, or not placed yet. */
+/**
+ * Seen by its owner only: not placed yet, or under the old made-up
+ * Personal. Tasks in a PERSONAL are kept to their owner by being in it
+ * (isPrivateTask also counts those).
+ */
 export const isOwnerOnly = (task: Pick<Task, 'companyId' | 'projectId'>) =>
   !task.projectId && (!task.companyId || task.companyId === PERSONAL);
 
@@ -212,7 +220,7 @@ export async function addPoint(input: {
       status: input.status ?? null,
       by: input.by ?? 'person',
       at,
-      isPrivate: isOwnerOnly(input.task),
+      isPrivate: await isPrivateTask(input.task),
       createdAt: at,
       updatedAt: at,
     },
@@ -253,12 +261,15 @@ export function placeFields(
   place: PlaceInput,
   candidates: LinkCandidates,
 ): Pick<Task, 'companyId' | 'projectId' | 'placedBy'> | null {
-  if ('personal' in place)
+  if ('personal' in place) {
+    // Their own PERSONAL project; the old made-up place until it is made.
+    const personal = candidates.projects.find((p) => p.isPersonal);
     return {
-      companyId: PERSONAL,
-      projectId: null as any,
+      companyId: personal?.companyId ?? PERSONAL,
+      projectId: (personal?.id ?? null) as any,
       placedBy: 'personal',
     };
+  }
   if ('none' in place)
     return {
       companyId: null as any,
@@ -780,6 +791,7 @@ export async function deletePersonalWork(userId: string) {
     take: 10000,
   });
   for (const task of own.filter(isOwnerOnly)) await deleteTask(task);
+  await deletePersonalSpace(userId, deleteTask);
   await db.workPoint.deleteMany({ where: { userId, isPrivate: true } });
   await db.restDay.deleteMany({ where: { userId } });
 }

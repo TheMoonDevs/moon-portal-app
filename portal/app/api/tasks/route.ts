@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 import { db } from '@/lib/mongodb/db-client';
 import { syncTaskPoints } from '@/lib/progress/server';
 import { fitGoal } from '@/lib/workspace/goalFit';
+import { isPersonalCompany } from '@/lib/workspace/personalSpace';
 import { runDueSchedules } from '@/lib/workspace/schedules';
 import {
   asDay,
@@ -92,7 +93,10 @@ export async function POST(request: Request) {
       description: body.description ?? null,
       size: body.size === TASK_SIZE.MAJOR ? TASK_SIZE.MAJOR : TASK_SIZE.MINOR,
       status,
-      assigneeIds: asStringArray(body.assigneeIds),
+      // A PERSONAL task is its owner's, whoever else is named.
+      assigneeIds: (await isPersonalCompany(project.companyId))
+        ? [user.id]
+        : asStringArray(body.assigneeIds),
       dueDate: body.dueDate || null,
       forDate,
       ...goalLink(project, body),

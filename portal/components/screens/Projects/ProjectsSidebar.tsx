@@ -72,7 +72,7 @@ const Row = ({
             style={{ backgroundColor: project.color || '#737373' }}
           />
           <span className="truncate">{project.name}</span>
-          {project.isCore && (
+          {project.isCore && !project.isPersonal && (
             <span className="shrink-0 rounded bg-white/[0.06] px-1 text-[9px] font-semibold uppercase tracking-wider text-neutral-500">
               Core
             </span>
@@ -199,6 +199,9 @@ export const ProjectsSidebar = ({
                   size={18}
                 />
                 <span className="flex-1 truncate">{company.name}</span>
+                {company.isPersonal && (
+                  <Icon name="lock" className="text-[13px] text-neutral-500" />
+                )}
                 <Icon
                   name="expand_more"
                   className={cn(

@@ -4,6 +4,7 @@ import { db } from '@/lib/mongodb/db-client';
 import { hasPermission } from '@/lib/permissions/matching';
 import { recentPoints } from '@/lib/progress/myPoints';
 import { sanitizeAliases } from '@/lib/worklogs/aliases';
+import { isPersonalCompany } from '@/lib/workspace/personalSpace';
 import {
   canCreateDirectly,
   createProject,
@@ -125,6 +126,12 @@ export async function POST(request: Request) {
   const parent = await checkParent(companyId, null, body.parentId);
   if (parent.error) return fail(400, parent.error);
 
+  // In a PERSONAL, its owner is the only one on every project.
+  const personal = await isPersonalCompany(companyId);
+  if (personal) {
+    body.leadIds = [user.id];
+    body.memberIds = [];
+  }
   const input = {
     companyId,
     name: name.slice(0, 120),

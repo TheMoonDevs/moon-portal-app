@@ -18,6 +18,7 @@ import {
   pointSpan,
   type PointStatus,
 } from '@/lib/worklogs/timeline';
+import { personalCompanyIds } from '@/lib/workspace/personalSpace';
 import { withTasks } from '@/lib/workspace/planServer';
 import { addDays, toDay } from '@/lib/workspace/projects';
 import { runDueSchedules } from '@/lib/workspace/schedules';
@@ -94,6 +95,7 @@ const companyView = (c: Company): PageCompany => ({
   name: c.name,
   color: c.color ?? null,
   logo: c.logo ?? null,
+  ...(c.isPersonal && { isPersonal: true }),
 });
 
 /**
@@ -208,15 +210,18 @@ export async function loadWork(
     select: { timezone: true },
   });
 
+  const personal = await personalCompanyIds(
+    Array.from(tasks.values()).map((t) => t.companyId),
+  );
   const all: WorkPoint[] = [];
   let hidden = 0;
   for (const task of Array.from(tasks.values())) {
     // Personal work is theirs alone. Work not placed in a project yet (most
     // lines from the old worklogs) is shown, as those lines always were.
     const unplaced = !task.projectId && !task.companyId;
+    const inPersonal = !!task.companyId && personal.has(task.companyId);
     const ownerOnly =
-      (!task.projectId && task.companyId === PERSONAL_ID) ||
-      (unplaced && PERSONAL_TITLE.test(task.title));
+      inPersonal || (unplaced && PERSONAL_TITLE.test(task.title));
     if (ownerOnly && !isSelf) continue;
     // Archived without any work in the period: put away, not worked on.
     const points = dayPoints.filter((p) => p.taskId === task.id);
@@ -226,7 +231,11 @@ export async function loadWork(
       !points.length
     )
       continue;
-    const companyId = ownerOnly ? PERSONAL_ID : (task.companyId ?? null);
+    const companyId = inPersonal
+      ? task.companyId
+      : ownerOnly
+        ? PERSONAL_ID
+        : (task.companyId ?? null);
     if (!visible(companyId)) {
       hidden += 1;
       continue;
@@ -316,7 +325,7 @@ export async function loadWork(
   ]);
 
   const companies = [...shared.companies];
-  if (isSelf && all.some((p) => p.isPrivate))
+  if (isSelf && all.some((p) => p.companyId === PERSONAL_ID))
     companies.push({
       id: PERSONAL_COMPANY.id,
       name: 'Personal',

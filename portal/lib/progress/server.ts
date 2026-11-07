@@ -3,6 +3,7 @@ import dayjs from 'dayjs';
 import { db } from '@/lib/mongodb/db-client';
 import { FINISH_POINTS } from '@/lib/progress/buff';
 import { localClock } from '@/lib/push/dayReminders';
+import { isPersonalCompany } from '@/lib/workspace/personalSpace';
 import type { Badge, PointEntry, UserBadge } from '@/models/progress';
 import { BADGE_METRIC, POINT_SOURCE } from '@/models/progress';
 import type { Task, WorkPoint } from '@/models/workspace';
@@ -23,6 +24,8 @@ export async function syncTaskPoints(task: Task | null, taskId?: string) {
     where: { taskId: id, source: POINT_SOURCE.TASK },
   });
   if (!task || task.status !== TASK_STATUS.DONE) return;
+  // Personal work earns no points: its count is nobody else's business.
+  if (await isPersonalCompany(task.companyId)) return;
   const assignees = task.assigneeIds ?? [];
   if (!assignees.length) return;
   // The day it was finished for whoever finished it, as their days run.

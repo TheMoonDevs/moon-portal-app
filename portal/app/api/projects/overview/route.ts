@@ -46,6 +46,7 @@ export async function GET() {
     color: company.color ?? null,
     logo: company.logo ?? null,
     description: company.description ?? null,
+    ...(company.isPersonal && { isPersonal: true }),
   }));
   if (!companies.length) return ok({ companies, projects: [], users: [] });
 

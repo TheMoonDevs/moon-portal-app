@@ -236,6 +236,15 @@ export function placeOf(
   const auto = task.placedBy === 'auto';
   if (task.projectId) {
     const project = projects.find((p) => p.id === task.projectId);
+    // Their PERSONAL project reads as Personal, with its lock.
+    if (project?.isPersonal)
+      return {
+        key: 'personal',
+        kind: 'personal',
+        name: project.name || 'Personal',
+        color: project.color,
+        companyId: project.companyId,
+      };
     return {
       key: `project:${task.projectId}`,
       kind: 'project',
@@ -246,7 +255,10 @@ export function placeOf(
       auto,
     };
   }
-  if (task.companyId === PERSONAL_ID)
+  if (
+    task.companyId === PERSONAL_ID ||
+    companies.some((c) => c.id === task.companyId && c.isPersonal)
+  )
     return { key: 'personal', kind: 'personal', name: 'Personal' };
   if (task.companyId) {
     const company = companies.find((c) => c.id === task.companyId);
@@ -298,16 +310,19 @@ export function placeOptions(
 ): PickerOption[] {
   const names = new Map(companies.map((c) => [c.id, c.name]));
   return [
-    ...projects.map((p) => ({
-      id: `project:${p.id}`,
-      label: p.name,
-      hint: names.get(p.companyId) ?? p.companyName,
-      group: 'Projects',
-      color: p.color,
-    })),
+    // Their PERSONAL project is the Personal choice below.
+    ...projects
+      .filter((p) => !p.isPersonal)
+      .map((p) => ({
+        id: `project:${p.id}`,
+        label: p.name,
+        hint: names.get(p.companyId) ?? p.companyName,
+        group: 'Projects',
+        color: p.color,
+      })),
     // A company with a CORE project takes its company work there.
     ...companies
-      .filter((c) => !c.coreProjectId)
+      .filter((c) => !c.coreProjectId && !c.isPersonal)
       .map((c) => ({
         id: `company:${c.id}`,
         label: c.name,
@@ -318,7 +333,7 @@ export function placeOptions(
     {
       id: 'personal',
       label: 'Personal',
-      hint: 'Only you see it',
+      hint: 'Only you see it: gym, exercise, self-help',
       group: 'Other',
       icon: 'lock',
     },

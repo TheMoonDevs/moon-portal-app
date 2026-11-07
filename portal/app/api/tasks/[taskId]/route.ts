@@ -8,6 +8,7 @@ import { db } from '@/lib/mongodb/db-client';
 import { syncTaskPoints } from '@/lib/progress/server';
 import { fitGoal } from '@/lib/workspace/goalFit';
 import { attachToRun, releaseRun } from '@/lib/workspace/goalRuns';
+import { isPersonalCompany } from '@/lib/workspace/personalSpace';
 import {
   asDay,
   asStringArray,
@@ -94,6 +95,12 @@ export async function PATCH(request: Request, { params }: Params) {
     }
   }
   if ('assigneeIds' in data) data.assigneeIds = asStringArray(data.assigneeIds);
+  // A PERSONAL task stays its owner's alone.
+  if (await isPersonalCompany(task.companyId)) {
+    if ('assigneeIds' in data) data.assigneeIds = [user.id];
+    if ('completedByIds' in data && asStringArray(data.completedByIds).length)
+      data.completedByIds = [user.id];
+  }
   if ('dueDate' in data) data.dueDate = data.dueDate || null;
   if ('forDate' in data) {
     const forDate = asDay(data.forDate);

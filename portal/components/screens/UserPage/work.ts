@@ -216,7 +216,11 @@ export function groupWork(data: WorkData): CompanyGroup[] {
   );
 
   const rank = (g: CompanyGroup) =>
-    !g.company ? 2 : g.company.id === PERSONAL_COMPANY_ID ? 1 : 0;
+    !g.company
+      ? 2
+      : g.company.id === PERSONAL_COMPANY_ID || g.company.isPersonal
+        ? 1
+        : 0;
   return groups.sort(
     (a, b) =>
       rank(a) - rank(b) ||

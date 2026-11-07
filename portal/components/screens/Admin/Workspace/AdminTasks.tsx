@@ -238,7 +238,7 @@ export const AdminTasks = ({
   selectedProjectId: string | null;
   onSelectProject: (projectId: string | null) => void;
 }) => {
-  const { companies, canInProject } = useWorkspace();
+  const { workCompanies: companies, canInProject } = useWorkspace();
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);

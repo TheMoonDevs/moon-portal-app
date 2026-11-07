@@ -3,6 +3,7 @@ import { db } from '@/lib/mongodb/db-client';
 import { sanitizeAliases } from '@/lib/worklogs/aliases';
 import { fitGoals } from '@/lib/workspace/goalFit';
 import { syncGoalSchedules } from '@/lib/workspace/goalSchedules';
+import { isPersonalCompany } from '@/lib/workspace/personalSpace';
 import { addDays, sanitizeGoals, toDay } from '@/lib/workspace/projects';
 import { withProjectStats } from '@/lib/workspace/projectStats';
 import { runDueSchedules } from '@/lib/workspace/schedules';
@@ -148,6 +149,11 @@ export async function PATCH(request: Request, { params }: Params) {
   if ('aliases' in data) data.aliases = sanitizeAliases(data.aliases);
   if ('leadIds' in data) data.leadIds = asStringArray(data.leadIds);
   if ('memberIds' in data) data.memberIds = asStringArray(data.memberIds);
+  // A PERSONAL project's team is its owner alone.
+  if (await isPersonalCompany(project.companyId)) {
+    if ('leadIds' in data) data.leadIds = [user.id];
+    if ('memberIds' in data) data.memberIds = [];
+  }
 
   const updated = await db.project.update({
     where: { id: project.id },

@@ -446,7 +446,13 @@ export const AdminCompanies = ({
   selectedCompanyId: string | null;
   onSelectCompany: (companyId: string) => void;
 }) => {
-  const { companies, loading, isSuperAdmin, can, refresh } = useWorkspace();
+  const {
+    workCompanies: companies,
+    loading,
+    isSuperAdmin,
+    can,
+    refresh,
+  } = useWorkspace();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [archiving, setArchiving] = useState(false);

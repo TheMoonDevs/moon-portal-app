@@ -125,7 +125,7 @@ export const AdminRoles = ({
   selectedCompanyId: string | null;
   onSelectCompany: (companyId: string) => void;
 }) => {
-  const { companies, can, canPortal } = useWorkspace();
+  const { workCompanies: companies, can, canPortal } = useWorkspace();
   const portalAllowed = canPortal('permissions:read');
   const [scope, setScope] = useState<Scope>('company');
   const [roles, setRoles] = useState<AnyRole[]>([]);

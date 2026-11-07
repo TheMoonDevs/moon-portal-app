@@ -3,11 +3,13 @@
 import { cn } from '@/lib/utils';
 import { useWorkspace } from '@/utils/hooks/useWorkspace';
 
+import { Icon } from '../Admin/shared/AdminUI';
 import { CompanyMark } from '../Admin/Workspace/shared';
 
 /** Small chips with the icon and name of every company the user is in. */
 export const CompanyChips = ({ className }: { className?: string }) => {
-  const { companies } = useWorkspace();
+  // Their PERSONAL is no company of theirs to show.
+  const { workCompanies: companies } = useWorkspace();
   if (!companies.length) return null;
   return (
     <div className={cn('flex flex-wrap gap-1.5', className)}>
@@ -35,7 +37,7 @@ const roleLabel = (keys?: string[] | null) =>
 
 /** The companies the user belongs to, with their role in each. */
 export const CompaniesSection = () => {
-  const { companies, loading } = useWorkspace();
+  const { workCompanies: companies, personal, loading } = useWorkspace();
 
   return (
     <div>
@@ -66,6 +68,24 @@ export const CompaniesSection = () => {
               </div>
             </div>
           ))
+        )}
+        {personal && (
+          <div className="flex items-center gap-3 p-3">
+            <span
+              className="flex size-10 shrink-0 items-center justify-center rounded-lg text-white"
+              style={{ backgroundColor: personal.company.color || '#0d9488' }}
+            >
+              <Icon name="lock" className="text-[18px]" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-neutral-900">
+                Personal
+              </p>
+              <p className="text-xs text-neutral-500">
+                Only you: gym, exercise and self-help goals and plans
+              </p>
+            </div>
+          </div>
         )}
       </div>
     </div>
