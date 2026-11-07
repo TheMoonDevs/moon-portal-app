@@ -7,9 +7,13 @@ import { APP_ROUTES } from '@/utils/constants/appInfo';
  * on small white tiles that grow to fit their label. Add new shortcuts here.
  */
 const SHORTCUTS = [
-  { label: 'Meet', icon: 'calendar_month', href: APP_ROUTES.meet },
   // Looking back over the person's days and work: their User page.
-  { label: 'Retrospect', icon: 'history', href: APP_ROUTES.user },
+  { label: 'Past', icon: 'history', href: APP_ROUTES.user },
+  { label: 'Meet', icon: 'calendar_month', href: APP_ROUTES.meet },
+  { label: 'Chat', icon: 'chat_bubble', href: APP_ROUTES.messages },
+  { label: 'Goals', icon: 'flag', href: APP_ROUTES.goals },
+  // Tasks are logged as worklogs, so this opens the person's worklogs.
+  { label: 'Tasks', icon: 'task_alt', href: APP_ROUTES.userWorklogs },
 ];
 
 export const ShortcutsSection = () => (
