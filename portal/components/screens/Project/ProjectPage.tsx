@@ -712,7 +712,7 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const [deleting, setDeleting] = useState<Page | null>(null);
   const [sharing, setSharing] = useState(false);
-  const { user: me } = useUser();
+  const { user: meUser } = useUser();
   const [busy, setBusy] = useState(false);
   const [editingDetails, setEditingDetails] = useState(false);
   const [plansOpen, setPlansOpen] = useState(true);
@@ -1272,7 +1272,7 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
               ? [{ id: page.createdById, reason: 'Made this page' }]
               : []
           }
-          meId={me?.id}
+          meId={meUser?.id}
           limitedBy={(() => {
             const above = limitingParent(all, page.id);
             return above
