@@ -1,9 +1,11 @@
 import { db } from '@/lib/mongodb/db-client';
+import { teamAllows } from '@/lib/permissions/company';
 import { hasPermission } from '@/lib/permissions/matching';
 import type {
   CalendarGoal,
   CalendarTally,
   CalendarTask,
+  WorkTask,
 } from '@/lib/workspace/goalCalendar';
 import {
   addDays,
@@ -32,13 +34,42 @@ const MAX_DAYS = 400;
 const dayOf = (value: unknown) =>
   value ? toDay(new Date(value as string)) : null;
 
+const OPEN = [TASK_STATUS.TODO, TASK_STATUS.IN_PROGRESS, TASK_STATUS.IN_REVIEW];
+
+const WORK_SELECT = {
+  id: true,
+  title: true,
+  projectId: true,
+  status: true,
+  forDate: true,
+  dueDate: true,
+  completedAt: true,
+  completedByIds: true,
+  assigneeIds: true,
+} as const;
+
+const workTask = (
+  t: Task,
+  day: string,
+  people: string[] | null | undefined,
+): WorkTask => ({
+  id: t.id,
+  title: t.title,
+  projectId: t.projectId,
+  day,
+  status: t.status,
+  people: people ?? [],
+});
+
 /**
  * Every goal of every project the caller can read, across their companies,
  * for the goals calendar: each goal with its progress now, and the tasks
  * and hand-added progress of `from` to `to` (YYYY-MM-DD, this month when
  * left out), plus enough on either side to count the periods they touch.
  * Projects come with their effort, so the page can filter by it, and
- * `done` counts the tasks finished in each project on each day of the range.
+ * whether the person may change their goals. `work` lists the tasks
+ * finished in each project on each day of the range, and the open ones
+ * for those days.
  */
 export async function GET(request: Request) {
   const { response, user } = await requireUser();
@@ -56,6 +87,7 @@ export async function GET(request: Request) {
     return fail(400, `Pick at most ${MAX_DAYS} days at a time.`);
 
   const workspace = await getWorkspaceForUser(user);
+  const allowed = new Map(workspace.map((w) => [w.company.id, w.permissions]));
   const companies = workspace
     .filter((w) => hasPermission(w.permissions, 'projects:read'))
     .map(({ company }) => ({
@@ -73,7 +105,7 @@ export async function GET(request: Request) {
     goals: [],
     tasks: [],
     tallies: [],
-    done: [],
+    work: [],
     users: [],
   };
   if (!companies.length) return ok(empty);
@@ -87,6 +119,10 @@ export async function GET(request: Request) {
   });
   if (!projects.length) return ok(empty);
   const ids = projects.map((p) => p.id);
+  // As the goal routes check: the company's permission, or the team's.
+  const may = (p: Project, permission: string) =>
+    hasPermission(allowed.get(p.companyId) ?? [], permission) ||
+    teamAllows(user, p, permission);
   // Today's goal tasks are made before they are counted.
   await runDueSchedules({ projectId: { in: ids } });
 
@@ -187,23 +223,58 @@ export async function GET(request: Request) {
       amount: t.amount,
     }));
 
-  // Every task finished in these projects from `from` to `to`, counted per
-  // project and day, goal or not: the work done beside the goals.
-  const finished: Task[] = await db.task.findMany({
-    where: { projectId: { in: ids }, status: TASK_STATUS.DONE },
-    select: { projectId: true, completedAt: true },
-  });
-  const doneCount = new Map<string, number>();
+  // The work beside the goals: every task finished in these projects from
+  // `from` to `to`, on the day it was finished, and every open one for a
+  // day in the range (its day, else its due day). A day either side covers
+  // the time zone.
+  const lo = addDays(from, -1);
+  const hi = addDays(to, 1);
+  const [finished, open]: [Task[], Task[]] = await Promise.all([
+    db.task.findMany({
+      where: {
+        projectId: { in: ids },
+        status: TASK_STATUS.DONE,
+        // Stored as ISO strings, though older records may hold dates.
+        OR: [
+          {
+            completedAt: { gte: `${lo}T00:00:00`, lte: `${hi}T23:59:59.999Z` },
+          },
+          {
+            completedAt: {
+              gte: new Date(`${lo}T00:00:00Z`),
+              lte: new Date(`${hi}T23:59:59.999Z`),
+            },
+          },
+        ],
+      },
+      select: WORK_SELECT,
+    }),
+    db.task.findMany({
+      where: {
+        projectId: { in: ids },
+        status: { in: OPEN },
+        OR: [
+          { forDate: { gte: from, lte: to } },
+          { forDate: null, dueDate: { gte: from, lte: `${to}T23:59:59.999Z` } },
+        ],
+      },
+      select: WORK_SELECT,
+    }),
+  ]);
+  const work: WorkTask[] = [];
   for (const t of finished) {
     const day = dayOf(t.completedAt);
     if (!day || day < from || day > to) continue;
-    const key = `${t.projectId}|${day}`;
-    doneCount.set(key, (doneCount.get(key) ?? 0) + 1);
+    work.push(workTask(t, day, t.completedByIds));
   }
-  const done = Array.from(doneCount, ([key, count]) => {
-    const [projectId, day] = key.split('|');
-    return { projectId, day, count };
-  });
+  for (const t of open) {
+    const day = (t.forDate ?? (t.dueDate ? String(t.dueDate) : '')).slice(
+      0,
+      10,
+    );
+    if (!DAY.test(day) || day < from || day > to) continue;
+    work.push(workTask(t, day, t.assigneeIds));
+  }
 
   const userIds = new Set<string>();
   projects.forEach((p) =>
@@ -217,6 +288,7 @@ export async function GET(request: Request) {
       userIds.add(id),
     ),
   );
+  work.forEach((t) => t.people.forEach((id) => userIds.add(id)));
 
   return ok({
     today,
@@ -235,11 +307,13 @@ export async function GET(request: Request) {
       isCore: !!p.isCore,
       leadIds: p.leadIds ?? [],
       memberIds: p.memberIds ?? [],
+      canEdit: may(p, 'projects:edit'),
+      canUpdate: may(p, 'tasks:edit'),
     })),
     goals,
     tasks: shownTasks,
     tallies: shownTallies,
-    done,
+    work,
     users: await getPublicUsers(Array.from(userIds)),
   });
 }

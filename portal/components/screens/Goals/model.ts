@@ -11,6 +11,7 @@ import {
   type GoalsCalendarData,
   type GoalStatus,
   goalStatus,
+  type WorkTask,
 } from '@/lib/workspace/goalCalendar';
 import {
   goalCadence,
@@ -183,17 +184,36 @@ export function filtersFromParams(params: URLSearchParams): Filters {
   };
 }
 
-/* ------------------------------- tasks done ------------------------------- */
+/* ----------------------------- tasks of a day ----------------------------- */
 
-/** Tasks finished per project and day, keyed "projectId|YYYY-MM-DD". */
-export type DoneCounts = Map<string, number>;
+/** A project's tasks on a day: those finished then, and those still open. */
+export type DayWork = { done: WorkTask[]; open: WorkTask[] };
 
-export const doneCounts = (data: GoalsCalendarData | null): DoneCounts =>
-  new Map((data?.done ?? []).map((d) => [`${d.projectId}|${d.day}`, d.count]));
+/** Tasks per project and day, keyed "projectId|YYYY-MM-DD". */
+export type WorkIndex = Map<string, DayWork>;
 
-export const doneOn = (done: DoneCounts, projectId: string, day: string) =>
-  done.get(`${projectId}|${day}`) ?? 0;
+const NO_WORK: DayWork = { done: [], open: [] };
+
+export const workIndex = (data: GoalsCalendarData | null): WorkIndex => {
+  const out: WorkIndex = new Map();
+  for (const t of data?.work ?? []) {
+    const key = `${t.projectId}|${t.day}`;
+    const w = out.get(key) ?? { done: [], open: [] };
+    (t.status === 'DONE' ? w.done : w.open).push(t);
+    out.set(key, w);
+  }
+  return out;
+};
+
+export const workOn = (work: WorkIndex, projectId: string, day: string) =>
+  work.get(`${projectId}|${day}`) ?? NO_WORK;
+
+export const doneOn = (work: WorkIndex, projectId: string, day: string) =>
+  workOn(work, projectId, day).done.length;
+
+export const openOn = (work: WorkIndex, projectId: string, day: string) =>
+  workOn(work, projectId, day).open.length;
 
 /** Tasks a project finished over some days. */
-export const doneOver = (done: DoneCounts, projectId: string, days: string[]) =>
-  days.reduce((n, d) => n + doneOn(done, projectId, d), 0);
+export const doneOver = (work: WorkIndex, projectId: string, days: string[]) =>
+  days.reduce((n, d) => n + doneOn(work, projectId, d), 0);

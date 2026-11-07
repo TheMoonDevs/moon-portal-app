@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 
 import { cn } from '@/lib/utils';
 import { GOAL_STATUS } from '@/lib/workspace/goalCalendar';
@@ -10,7 +11,7 @@ import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { Icon } from '../Admin/shared/AdminUI';
 import { PanelHead } from './GoalDayPanel';
 import { wholeText } from './GoalsWeek';
-import { type DoneCounts, doneOn, type GoalRow } from './model';
+import { doneOn, type GoalRow, type WorkIndex, workOn } from './model';
 import { Bar, EffortTag, fmtDay, fmtNum, ProjectLogo, STATE_META } from './ui';
 
 const PERIOD_NOW: Record<string, string> = {
@@ -86,10 +87,61 @@ const DoneBars = ({
   );
 };
 
+/** Adds to a target goal's progress by hand: "+ 120". */
+const AddProgress = ({
+  onAdd,
+}: {
+  onAdd: (amount: number) => Promise<void>;
+}) => {
+  const [value, setValue] = useState('');
+  const [busy, setBusy] = useState(false);
+  const amount = Number(value);
+  const submit = async () => {
+    if (!Number.isFinite(amount) || !amount) return;
+    setBusy(true);
+    try {
+      await onAdd(amount);
+      setValue('');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        void submit();
+      }}
+      className="mt-2.5 flex items-center gap-1.5"
+    >
+      <label className="flex h-7 flex-1 items-center gap-1 rounded-lg bg-white/[0.04] px-2 text-xs text-neutral-400 ring-1 ring-inset ring-white/[0.07] focus-within:ring-white/25 auto-light:bg-white auto-light:ring-black/10">
+        <Icon name="add" className="text-[14px]" />
+        <input
+          value={value}
+          onChange={(e) => setValue(e.target.value.replace(/[^\d.-]/g, ''))}
+          inputMode="decimal"
+          placeholder="Add progress"
+          aria-label="Add progress"
+          className="min-w-0 flex-1 bg-transparent tabular-nums text-neutral-100 outline-none placeholder:text-neutral-500 auto-light:text-neutral-900"
+        />
+      </label>
+      <button
+        type="submit"
+        disabled={busy || !amount}
+        className="h-7 rounded-lg bg-white px-2.5 text-xs font-medium text-neutral-950 disabled:opacity-40 auto-light:bg-neutral-900 auto-light:text-white"
+      >
+        {busy ? 'Adding…' : 'Add'}
+      </button>
+    </form>
+  );
+};
+
 /**
  * One project in the sidebar: the tasks it finished over the days shown,
- * day by day, and each of its goals with where it stands now, its days
- * as dots and how its periods went. Links to the project's Goals tab.
+ * day by day, those still open, and each of its goals with where it
+ * stands now, its days as dots and how its periods went. People who may
+ * change its goals edit or add them here, and add progress to a target.
+ * Links to the project's Goals tab.
  */
 export const GoalProjectPanel = ({
   projectId,
@@ -100,6 +152,9 @@ export const GoalProjectPanel = ({
   today,
   onClose,
   onOpenDay,
+  onEditGoal,
+  onNewGoal,
+  onAddProgress,
 }: {
   projectId: string;
   /** Every goal row; the project's are picked out. */
@@ -107,16 +162,20 @@ export const GoalProjectPanel = ({
   /** The days the page shows (the week, or the month). */
   days: string[];
   rangeLabel: string;
-  done: DoneCounts;
+  done: WorkIndex;
   today: string;
   onClose: () => void;
   onOpenDay: (day: string) => void;
+  onEditGoal: (row: GoalRow) => void;
+  onNewGoal: () => void;
+  onAddProgress: (row: GoalRow, amount: number) => Promise<void>;
 }) => {
   const mine = rows.filter((r) => r.project.id === projectId);
   const first = mine[0];
   if (!first) return null;
   const { project, company, effort, color } = first;
   const counts = days.map((d) => doneOn(done, projectId, d));
+  const open = days.flatMap((d) => workOn(done, projectId, d).open);
   const total = counts.reduce((n, c) => n + c, 0);
   const goalDone = mine.reduce(
     (n, r) =>
@@ -169,10 +228,53 @@ export const GoalProjectPanel = ({
           </p>
         </section>
 
+        {open.length > 0 && (
+          <section>
+            <h3 className="mb-2 text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-500">
+              Still to do · {open.length}
+            </h3>
+            <ul className="flex flex-col gap-1">
+              {open.slice(0, 8).map((t) => (
+                <li key={t.id} className="flex items-center gap-2 text-xs">
+                  <span
+                    className={cn(
+                      'size-[5px] shrink-0 rounded-full',
+                      t.day < today ? 'bg-rose-400' : 'bg-amber-300',
+                    )}
+                  />
+                  <span className="min-w-0 flex-1 truncate text-neutral-200 auto-light:text-neutral-800">
+                    {t.title}
+                  </span>
+                  <span className="shrink-0 text-[11px] text-neutral-500">
+                    {fmtDay(t.day, { weekday: 'short', month: undefined })}
+                  </span>
+                </li>
+              ))}
+              {open.length > 8 && (
+                <li className="text-[11px] text-neutral-500">
+                  +{open.length - 8} more
+                </li>
+              )}
+            </ul>
+          </section>
+        )}
+
         <section>
-          <h3 className="mb-3 text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-500">
-            Goals
-          </h3>
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h3 className="text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-500">
+              Goals
+            </h3>
+            {project.canEdit && (
+              <button
+                type="button"
+                onClick={onNewGoal}
+                className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium text-neutral-300 hover:bg-white/[0.06] hover:text-white auto-light:text-neutral-600 auto-light:hover:bg-black/[0.04] auto-light:hover:text-neutral-950"
+              >
+                <Icon name="add" className="text-[14px]" />
+                New goal
+              </button>
+            )}
+          </div>
           <ul className="flex flex-col gap-2.5">
             {mine.map((r) => {
               const p = r.goal.progress;
@@ -204,6 +306,17 @@ export const GoalProjectPanel = ({
                     >
                       {status.label}
                     </span>
+                    {project.canEdit && (
+                      <button
+                        type="button"
+                        onClick={() => onEditGoal(r)}
+                        aria-label={`Edit ${r.label}`}
+                        title="Edit goal"
+                        className="-mr-1 flex size-6 shrink-0 items-center justify-center rounded-md text-neutral-500 hover:bg-white/[0.08] hover:text-white auto-light:hover:bg-black/[0.05] auto-light:hover:text-neutral-950"
+                      >
+                        <Icon name="edit" className="text-[15px]" />
+                      </button>
+                    )}
                   </div>
                   <div className="mt-2 flex items-center gap-2">
                     <Bar
@@ -250,6 +363,12 @@ export const GoalProjectPanel = ({
                       over.length > 0 &&
                       ` · ${over.filter((x) => x.met).length}/${over.length} ${PERIOD_NOUN[r.goal.period]}s met`}
                   </p>
+                  {target &&
+                    !r.goal.achievedAt &&
+                    !r.goal.parts?.length &&
+                    project.canUpdate && (
+                      <AddProgress onAdd={(n) => onAddProgress(r, n)} />
+                    )}
                 </li>
               );
             })}

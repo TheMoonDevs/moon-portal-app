@@ -1,15 +1,24 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import type { CalendarCompany, GoalDay } from '@/lib/workspace/goalCalendar';
+import {
+  type CalendarCompany,
+  GOAL_STATUS,
+  type GoalDay,
+  type WorkTask,
+} from '@/lib/workspace/goalCalendar';
 import { isTarget, PERIOD_LABELS } from '@/lib/workspace/projects';
 
-import { Icon } from '../Admin/shared/AdminUI';
-import { type DoneCounts, doneOn, type GoalRow } from './model';
+import { Icon, UserAvatar } from '../Admin/shared/AdminUI';
+import { Tip, TipTitle } from '../Projects/Tip';
+import type { Person } from './GoalDayPanel';
+import { type DayWork, type GoalRow, type WorkIndex, workOn } from './model';
 import {
   card,
   CompanyDivider,
+  EffortTag,
   fmtDay,
+  fmtNum,
   ProjectLogo,
   rateColor,
   STATE_META,
@@ -17,11 +26,17 @@ import {
 
 type Entry = { row: GoalRow; cell: GoalDay };
 
-/** What a day of a goal asks for: "1 song releases", or its whole number. */
+/**
+ * What a day of a goal asks for: "1 song releases" on its days. A repeating
+ * goal's whole number ("3 shorts" a week) is never put on one day, where it
+ * would read as 3 that day; a target shows its number.
+ */
 export const dayText = ({ row, cell }: Entry) =>
-  !isTarget(row.goal) && cell.due > 0
-    ? `${cell.due.toLocaleString('en-US')} ${row.goal.title}`
-    : row.label;
+  isTarget(row.goal)
+    ? row.label
+    : cell.due > 0
+      ? `${cell.due.toLocaleString('en-US')} ${row.goal.title}`
+      : row.goal.title;
 
 /** The goal's whole target: "2 a week", or "target". */
 export const wholeText = (row: GoalRow) =>
@@ -29,103 +44,203 @@ export const wholeText = (row: GoalRow) =>
     ? 'target'
     : `${row.goal.target.toLocaleString('en-US')} ${PERIOD_LABELS[row.goal.period]}`;
 
-/** One goal on a day: what is due, the whole target and how it went. */
-const GoalLine = (e: Entry) => {
-  const { row, cell } = e;
+/* --------------------------------- pieces --------------------------------- */
+
+/** One goal on a day: what is due and how it went. Clicking edits it. */
+const GoalLine = ({
+  entry,
+  onClick,
+}: {
+  entry: Entry;
+  onClick: (row: GoalRow) => void;
+}) => {
+  const { row, cell } = entry;
   const meta = STATE_META[cell.state as keyof typeof STATE_META];
-  const text = dayText(e);
+  const text = dayText(entry);
   const done = cell.state === 'done' || cell.state === 'reached';
   return (
-    <li
-      title={`${text} (${wholeText(row)}) · ${meta.label}`}
-      className="flex gap-2"
-    >
-      <span
-        className={cn(
-          'mt-[6px] size-[6px] shrink-0 rounded-full',
-          meta.dot,
-          cell.state === 'planned' && 'opacity-60',
-        )}
-      />
-      <span className="min-w-0 flex-1 text-[12px] leading-[18px]">
+    <li>
+      <button
+        type="button"
+        onClick={() => onClick(row)}
+        title={`${text} (${wholeText(row)}) · ${meta.label}${row.project.canEdit ? ' · click to edit' : ''}`}
+        className="-mx-1 flex w-[calc(100%+0.5rem)] gap-2 rounded-md px-1 py-0.5 text-left hover:bg-white/[0.05] auto-light:hover:bg-black/[0.04]"
+      >
         <span
           className={cn(
-            done
-              ? 'text-neutral-500 auto-light:text-neutral-400'
-              : 'text-neutral-200 auto-light:text-neutral-800',
+            'mt-[6px] size-[6px] shrink-0 rounded-full',
+            meta.dot,
+            cell.state === 'planned' && 'opacity-60',
           )}
-        >
-          {text}
+        />
+        <span className="min-w-0 flex-1 text-[12px] leading-[18px]">
+          <span
+            className={cn(
+              done
+                ? 'text-neutral-500 auto-light:text-neutral-400'
+                : 'text-neutral-200 auto-light:text-neutral-800',
+            )}
+          >
+            {text}
+          </span>
+          {cell.due > 1 && (
+            <>
+              {' '}
+              <span className="tabular-nums text-neutral-500">
+                {Math.min(cell.done, cell.due)}/{cell.due}
+              </span>
+            </>
+          )}
         </span>
-        {cell.due > 1 && (
-          <>
-            {' '}
-            <span className="tabular-nums text-neutral-500">
-              {Math.min(cell.done, cell.due)}/{cell.due}
-            </span>
-          </>
-        )}
-      </span>
+      </button>
     </li>
   );
 };
 
-/** Tasks a project finished on a day. */
-const DoneCount = ({ n }: { n: number }) => (
-  <span
-    title={`${n} task${n === 1 ? '' : 's'} finished that day`}
-    className="flex shrink-0 items-center gap-0.5 text-[11px] font-medium tabular-nums text-emerald-400 auto-light:text-emerald-600"
-  >
-    <Icon name="check" className="text-[13px]" />
-    {n}
-  </span>
-);
-
-type ProjectGroup = {
-  project: GoalRow['project'];
-  entries: Entry[];
-  done: number;
+const STATUS_WORD: Record<string, string> = {
+  IN_PROGRESS: 'In progress',
+  IN_REVIEW: 'In review',
 };
 
+/** The tasks behind a badge, listed in its hover card. */
+const TaskTip = ({
+  title,
+  tasks,
+  people,
+  open,
+}: {
+  title: string;
+  tasks: WorkTask[];
+  people: Map<string, Person>;
+  open?: boolean;
+}) => (
+  <div className="w-[248px]">
+    <TipTitle>{title}</TipTitle>
+    <ul className="flex flex-col gap-1.5">
+      {tasks.slice(0, 10).map((t) => {
+        const who = t.people
+          .map((id) => people.get(id))
+          .filter((p): p is Person => !!p);
+        return (
+          <li key={t.id} className="flex items-center gap-2">
+            <Icon
+              name={open ? 'radio_button_unchecked' : 'check_circle'}
+              className={cn(
+                'shrink-0 text-[13px]',
+                open ? 'text-amber-300' : 'text-emerald-400',
+              )}
+            />
+            <span className="min-w-0 flex-1 truncate text-neutral-200">
+              {t.title}
+            </span>
+            {open && STATUS_WORD[t.status] && (
+              <span className="shrink-0 text-[10px] text-neutral-500">
+                {STATUS_WORD[t.status]}
+              </span>
+            )}
+            <span className="flex shrink-0 -space-x-1">
+              {who.slice(0, 2).map((p) => (
+                <UserAvatar
+                  key={p.id}
+                  src={p.avatar}
+                  name={p.name}
+                  size={16}
+                  className="ring-1 ring-neutral-900"
+                />
+              ))}
+            </span>
+          </li>
+        );
+      })}
+      {tasks.length > 10 && (
+        <li className="text-neutral-500">+{tasks.length - 10} more</li>
+      )}
+    </ul>
+  </div>
+);
+
 /**
- * A day's projects in row order (effort, company, project): those with a
- * goal that day, or with tasks finished on it, split by company.
+ * A project's tasks on a day as two quiet badges: finished (a check, green)
+ * and still open (a dot, amber; rose once the day has gone by). Hovering
+ * either lists its tasks.
  */
-function groupsOn(
-  rows: GoalRow[],
-  day: string,
-  done: DoneCounts,
-): { company: CalendarCompany | undefined; projects: ProjectGroup[] }[] {
-  const projects: ProjectGroup[] = [];
-  for (const row of rows) {
-    let g = projects.find((p) => p.project.id === row.project.id);
-    if (!g) {
-      g = {
-        project: row.project,
-        entries: [],
-        done: doneOn(done, row.project.id, day),
-      };
-      projects.push(g);
-    }
-    const cell = row.days.get(day);
-    if (cell && cell.state !== 'none') g.entries.push({ row, cell });
-  }
-  const shown = projects.filter((p) => p.entries.length || p.done);
-  const companies: {
-    company: CalendarCompany | undefined;
-    projects: ProjectGroup[];
-  }[] = [];
-  for (const p of shown) {
-    const company = rows.find((r) => r.project.id === p.project.id)?.company;
-    let c = companies.find((x) => x.company?.id === company?.id);
-    if (!c) {
-      c = { company, projects: [] };
-      companies.push(c);
-    }
-    c.projects.push(p);
-  }
-  return companies;
-}
+const WorkBadges = ({
+  work,
+  day,
+  today,
+  people,
+  hover = true,
+}: {
+  work: DayWork;
+  day: string;
+  today: string;
+  people: Map<string, Person>;
+  hover?: boolean;
+}) => {
+  if (!work.done.length && !work.open.length) return null;
+  const late = day < today;
+  const done = work.done.length > 0 && (
+    <span className="flex cursor-default items-center gap-0.5 rounded-full bg-emerald-400/[0.08] px-1.5 py-px text-[11px] font-medium tabular-nums text-emerald-400 auto-light:bg-emerald-50 auto-light:text-emerald-700">
+      <Icon name="check" className="text-[12px]" />
+      {work.done.length}
+    </span>
+  );
+  const open = work.open.length > 0 && (
+    <span
+      className={cn(
+        'flex cursor-default items-center gap-1 rounded-full px-1.5 py-px text-[11px] font-medium tabular-nums',
+        late
+          ? 'bg-rose-400/[0.08] text-rose-300 auto-light:bg-rose-50 auto-light:text-rose-700'
+          : 'bg-amber-300/[0.08] text-amber-200 auto-light:bg-amber-50 auto-light:text-amber-800',
+      )}
+    >
+      <span
+        className={cn(
+          'size-[5px] rounded-full',
+          late ? 'bg-rose-400' : 'bg-amber-300',
+        )}
+      />
+      {work.open.length}
+    </span>
+  );
+  return (
+    <div className="flex flex-wrap items-center gap-1">
+      {done &&
+        (hover ? (
+          <Tip
+            content={
+              <TaskTip
+                title={`${work.done.length} finished`}
+                tasks={work.done}
+                people={people}
+              />
+            }
+          >
+            {done}
+          </Tip>
+        ) : (
+          done
+        ))}
+      {open &&
+        (hover ? (
+          <Tip
+            content={
+              <TaskTip
+                title={`${work.open.length} ${late ? 'still open, past their day' : 'still to do'}`}
+                tasks={work.open}
+                people={people}
+                open
+              />
+            }
+          >
+            {open}
+          </Tip>
+        ) : (
+          open
+        ))}
+    </div>
+  );
+};
 
 /** The day's head: its date, and how much of what was due got done. */
 const DayHead = ({
@@ -151,7 +266,7 @@ const DayHead = ({
       type="button"
       onClick={onClick}
       aria-pressed={selected}
-      className="group flex shrink-0 flex-col gap-2 px-2.5 py-3 text-left xl:px-3"
+      className="group flex w-full flex-col gap-2 p-3 text-left"
     >
       <span className="flex items-end justify-between gap-2">
         <span className="flex flex-col">
@@ -204,145 +319,383 @@ const DayHead = ({
   );
 };
 
+/* --------------------------------- model ---------------------------------- */
+
+type ProjectWeek = {
+  project: GoalRow['project'];
+  company: CalendarCompany | undefined;
+  goals: GoalRow[];
+  /** Per day: its goals then, and its tasks. */
+  days: { day: string; entries: Entry[]; work: DayWork }[];
+};
+
 /**
- * A week to plan by: a column a day, split by company (a quiet, letter-
- * spaced divider), then project, each with its logo, how many of its
- * tasks were finished that day and its goals for the day: what is due,
- * the whole target and how it went. Projects with finished tasks but no
- * goal that day sit as small chips at the end. Today stands out; clicking
- * a day or a project opens it in the sidebar. On wide screens the week
- * fills the screen and a long day scrolls inside its column; on phones
- * the days stack.
+ * The week by company, then project, in row order (effort, company,
+ * project): projects with a goal on some day of it, or tasks finished or
+ * still open on one.
+ */
+function weekOf(rows: GoalRow[], days: string[], work: WorkIndex) {
+  const projects: ProjectWeek[] = [];
+  for (const row of rows) {
+    let p = projects.find((x) => x.project.id === row.project.id);
+    if (!p) {
+      p = {
+        project: row.project,
+        company: row.company,
+        goals: [],
+        days: days.map((day) => ({
+          day,
+          entries: [],
+          work: workOn(work, row.project.id, day),
+        })),
+      };
+      projects.push(p);
+    }
+    p.goals.push(row);
+    p.days.forEach((d) => {
+      const cell = row.days.get(d.day);
+      if (cell && cell.state !== 'none') d.entries.push({ row, cell });
+    });
+  }
+  const shown = projects.filter((p) =>
+    p.days.some(
+      (d) => d.entries.length || d.work.done.length || d.work.open.length,
+    ),
+  );
+  const companies: {
+    company: CalendarCompany | undefined;
+    projects: ProjectWeek[];
+  }[] = [];
+  for (const p of shown) {
+    let c = companies.find((x) => x.company?.id === p.company?.id);
+    if (!c) {
+      c = { company: p.company, projects: [] };
+      companies.push(c);
+    }
+    c.projects.push(p);
+  }
+  return companies;
+}
+
+/** Each day's due goals: how many there were, and how many got done. */
+const dayTotals = (rows: GoalRow[], day: string) => {
+  let due = 0;
+  let done = 0;
+  for (const r of rows) {
+    const c = r.days.get(day);
+    if (!c || c.due <= 0) continue;
+    due += 1;
+    if (c.state === 'done') done += 1;
+  }
+  return { due, done };
+};
+
+/* ------------------------------- the project ------------------------------ */
+
+/** What a project's logo shows on hover: its goals and its week. */
+const ProjectCard = ({ week }: { week: ProjectWeek }) => {
+  const done = week.days.reduce((n, d) => n + d.work.done.length, 0);
+  const open = week.days.reduce((n, d) => n + d.work.open.length, 0);
+  return (
+    <div className="w-[256px]">
+      <div className="flex items-center gap-2">
+        <ProjectLogo project={week.project} size={22} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-semibold text-white">
+            {week.project.name}
+          </p>
+          {week.company && (
+            <p className="text-[10px] uppercase tracking-[0.16em] text-neutral-500">
+              {week.company.name}
+            </p>
+          )}
+        </div>
+        <EffortTag effort={week.goals[0].effort} />
+      </div>
+      <ul className="mt-2.5 flex flex-col gap-1.5 border-t border-white/[0.08] pt-2.5">
+        {week.goals.map((r) => {
+          const p = r.goal.progress;
+          return (
+            <li key={r.key} className="flex items-center gap-2">
+              <span
+                className={cn(
+                  'size-1.5 shrink-0 rounded-full',
+                  GOAL_STATUS[r.status].dot,
+                )}
+              />
+              <span className="min-w-0 flex-1 truncate text-neutral-200">
+                {r.label}
+              </span>
+              <span className="shrink-0 tabular-nums text-neutral-500">
+                {fmtNum(p.done)}/{fmtNum(p.target)}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="mt-2.5 flex items-center gap-3 border-t border-white/[0.08] pt-2 text-[11px] text-neutral-400">
+        <span className="flex items-center gap-1">
+          <Icon name="check" className="text-[12px] text-emerald-400" />
+          {done} done this week
+        </span>
+        {open > 0 && (
+          <span className="flex items-center gap-1">
+            <span className="size-[5px] rounded-full bg-amber-300" />
+            {open} open
+          </span>
+        )}
+      </p>
+      <p className="mt-1 text-[10px] text-neutral-500">Click to open it.</p>
+    </div>
+  );
+};
+
+/* ---------------------------------- week ---------------------------------- */
+
+const COLS = 'grid grid-cols-[60px_repeat(7,minmax(0,1fr))]';
+
+/**
+ * A week to plan by, as a grid: a column a day and a row a project, split
+ * by company (a quiet, letter-spaced divider). A row starts with the
+ * project's logo, which shows its goals and week on hover. Each day of a
+ * row lists the project's goals for that day (what is due and how it
+ * went; clicking one edits it) and its tasks, finished and still open,
+ * each listed on hover. Rows have no borders; the space between them
+ * keeps them apart. Today stands out; clicking a day or a logo opens it in
+ * the sidebar. On wide screens the week fills the screen and scrolls
+ * inside itself; on phones each day is a list of its own.
  */
 export const GoalsWeek = ({
   days,
   rows,
-  done,
+  work,
   today,
+  people,
   selectedDay,
   selectedProject,
   onSelectDay,
   onSelectProject,
+  onGoal,
 }: {
   /** Monday to Sunday. */
   days: string[];
   rows: GoalRow[];
-  done: DoneCounts;
+  work: WorkIndex;
   today: string;
+  people: Map<string, Person>;
   selectedDay: string | null;
   selectedProject: string | null;
   onSelectDay: (day: string) => void;
   onSelectProject: (projectId: string) => void;
-}) => (
-  <div
-    className={cn(
-      card,
-      'grid grid-cols-1 divide-y divide-white/[0.05] overflow-hidden auto-light:divide-black/[0.06] md:h-full md:grid-cols-7 md:divide-x md:divide-y-0 md:[grid-template-rows:minmax(0,1fr)]',
-    )}
-  >
-    {days.map((day) => {
-      const companies = groupsOn(rows, day, done);
-      const entries = companies.flatMap((c) =>
-        c.projects.flatMap((p) => p.entries),
-      );
-      const due = entries.filter((e) => e.cell.due > 0);
-      const doneDue = due.filter((e) => e.cell.state === 'done').length;
-      const isToday = day === today;
-      const isSelected = day === selectedDay;
-      return (
-        <section
-          key={day}
-          className={cn(
-            'relative flex min-h-0 min-w-0 flex-col',
-            isToday && 'bg-white/[0.03] auto-light:bg-emerald-50/40',
-            isSelected && 'bg-white/[0.045] auto-light:bg-black/[0.025]',
-          )}
-        >
-          {isToday && (
-            <span className="absolute inset-x-0 top-0 h-[2px] bg-emerald-400" />
-          )}
-          <DayHead
-            day={day}
-            today={today}
-            due={due.length}
-            doneDue={doneDue}
-            selected={isSelected}
-            onClick={() => onSelectDay(day)}
-          />
+  /** A goal was clicked: to edit it. */
+  onGoal: (row: GoalRow) => void;
+}) => {
+  const companies = weekOf(rows, days, work);
+  const totals = days.map((d) => dayTotals(rows, d));
+  const tint = (day: string) =>
+    day === selectedDay
+      ? 'bg-white/[0.045] auto-light:bg-black/[0.03]'
+      : day === today
+        ? 'bg-white/[0.025] auto-light:bg-emerald-50/50'
+        : '';
 
-          <div className="custom-scrollbar flex min-h-0 flex-1 flex-col gap-5 px-2.5 pb-4 pt-1 md:overflow-y-auto xl:px-3">
-            {companies.map(({ company, projects }) => {
-              const withGoals = projects.filter((p) => p.entries.length);
-              const onlyDone = projects.filter((p) => !p.entries.length);
-              return (
-                <div
-                  key={company?.id ?? 'none'}
-                  className="flex flex-col gap-3"
-                >
-                  {company && <CompanyDivider name={company.name} />}
-                  {withGoals.map((p) => (
-                    <div
-                      key={p.project.id}
-                      className={cn(
-                        '-mx-1.5 rounded-xl px-1.5 py-1 ring-1 ring-inset ring-transparent',
-                        selectedProject === p.project.id &&
-                          'bg-white/[0.04] ring-white/15 auto-light:bg-black/[0.03] auto-light:ring-black/10',
-                      )}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => onSelectProject(p.project.id)}
-                        title={`Open ${p.project.name}`}
-                        className="group flex w-full items-center gap-2 text-left"
-                      >
-                        <ProjectLogo project={p.project} size={20} />
-                        <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium text-neutral-100 group-hover:underline group-hover:underline-offset-2 auto-light:text-neutral-900">
-                          {p.project.name}
-                        </span>
-                        {p.done > 0 && <DoneCount n={p.done} />}
-                      </button>
-                      <ul className="mt-1.5 flex flex-col gap-1 pl-7">
-                        {p.entries.map((e) => (
-                          <GoalLine key={e.row.key} {...e} />
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                  {/* Finished tasks, but no goal due that day. */}
-                  {onlyDone.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {onlyDone.map((p) => (
+  return (
+    <>
+      {/* Wide screens: the grid. */}
+      <div
+        className={cn(
+          card,
+          'hidden flex-col overflow-hidden md:flex md:h-full',
+        )}
+      >
+        <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto">
+          <div
+            className={cn(
+              COLS,
+              'sticky top-0 z-10 border-b border-white/[0.06] bg-neutral-950/95 backdrop-blur auto-light:border-black/[0.06] auto-light:bg-white/95',
+            )}
+          >
+            <div />
+            {days.map((day, i) => (
+              <div
+                key={day}
+                className={cn(
+                  'relative border-l border-white/[0.05] auto-light:border-black/[0.06]',
+                  tint(day),
+                )}
+              >
+                {day === today && (
+                  <span className="absolute inset-x-0 top-0 h-[2px] bg-emerald-400" />
+                )}
+                <DayHead
+                  day={day}
+                  today={today}
+                  due={totals[i].due}
+                  doneDue={totals[i].done}
+                  selected={day === selectedDay}
+                  onClick={() => onSelectDay(day)}
+                />
+              </div>
+            ))}
+          </div>
+
+          {companies.map(({ company, projects }) => (
+            <section key={company?.id ?? 'none'}>
+              {company && (
+                <CompanyDivider
+                  name={company.name}
+                  className="px-4 pb-1 pt-5"
+                />
+              )}
+              {projects.map((week) => {
+                const selected = week.project.id === selectedProject;
+                return (
+                  <div key={week.project.id} className={cn(COLS, 'group/row')}>
+                    <div className="flex justify-center pb-3 pt-3.5">
+                      <Tip side="right" content={<ProjectCard week={week} />}>
                         <button
-                          key={p.project.id}
                           type="button"
-                          onClick={() => onSelectProject(p.project.id)}
-                          title={`${p.project.name}: ${p.done} task${p.done === 1 ? '' : 's'} finished, no goal due`}
+                          onClick={() => onSelectProject(week.project.id)}
+                          aria-label={week.project.name}
+                          aria-pressed={selected}
                           className={cn(
-                            'flex min-w-0 max-w-full items-center gap-1.5 rounded-full py-[3px] pl-[3px] pr-2 text-[11px] text-neutral-400 ring-1 ring-inset ring-white/[0.07] hover:bg-white/[0.05] hover:text-neutral-200 auto-light:text-neutral-600 auto-light:ring-black/[0.08] auto-light:hover:bg-black/[0.03]',
-                            selectedProject === p.project.id &&
-                              'bg-white/[0.06] text-neutral-100 ring-white/20 auto-light:bg-black/[0.04] auto-light:ring-black/20',
+                            'h-fit rounded-[10px] ring-2 ring-transparent ring-offset-2 ring-offset-neutral-950 transition-shadow hover:ring-white/30 auto-light:ring-offset-white auto-light:hover:ring-black/20',
+                            selected &&
+                              'ring-white/60 auto-light:ring-black/40',
                           )}
                         >
-                          <ProjectLogo project={p.project} size={16} />
-                          <span className="min-w-0 truncate">
+                          <ProjectLogo project={week.project} size={30} />
+                        </button>
+                      </Tip>
+                    </div>
+                    {week.days.map(({ day, entries, work: w }) => (
+                      <div
+                        key={day}
+                        className={cn(
+                          'flex min-w-0 flex-col gap-1.5 border-l border-white/[0.05] px-2.5 py-3 transition-colors auto-light:border-black/[0.06]',
+                          tint(day),
+                          selected
+                            ? 'bg-white/[0.035] auto-light:bg-black/[0.025]'
+                            : 'group-hover/row:bg-white/[0.015] auto-light:group-hover/row:bg-black/[0.012]',
+                        )}
+                      >
+                        {entries.length > 0 && (
+                          <ul className="flex flex-col gap-0.5">
+                            {entries.map((e) => (
+                              <GoalLine
+                                key={e.row.key}
+                                entry={e}
+                                onClick={onGoal}
+                              />
+                            ))}
+                          </ul>
+                        )}
+                        <WorkBadges
+                          work={w}
+                          day={day}
+                          today={today}
+                          people={people}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
+            </section>
+          ))}
+          {!companies.length && (
+            <p className="p-6 text-sm text-neutral-500">
+              Nothing due and no tasks this week.
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Phones: a list a day. */}
+      <div
+        className={cn(
+          card,
+          'divide-y divide-white/[0.05] overflow-hidden auto-light:divide-black/[0.06] md:hidden',
+        )}
+      >
+        {days.map((day, i) => {
+          const list = companies
+            .map((c) => ({
+              company: c.company,
+              projects: c.projects
+                .map((p) => ({ p, d: p.days[i] }))
+                .filter(
+                  ({ d }) =>
+                    d.entries.length ||
+                    d.work.done.length ||
+                    d.work.open.length,
+                ),
+            }))
+            .filter((c) => c.projects.length);
+          return (
+            <section key={day} className={cn('relative', tint(day))}>
+              {day === today && (
+                <span className="absolute inset-x-0 top-0 h-[2px] bg-emerald-400" />
+              )}
+              <DayHead
+                day={day}
+                today={today}
+                due={totals[i].due}
+                doneDue={totals[i].done}
+                selected={day === selectedDay}
+                onClick={() => onSelectDay(day)}
+              />
+              <div className="flex flex-col gap-5 px-3 pb-4 pt-1">
+                {list.map(({ company, projects }) => (
+                  <div
+                    key={company?.id ?? 'none'}
+                    className="flex flex-col gap-3"
+                  >
+                    {company && <CompanyDivider name={company.name} />}
+                    {projects.map(({ p, d }) => (
+                      <div key={p.project.id}>
+                        <button
+                          type="button"
+                          onClick={() => onSelectProject(p.project.id)}
+                          className="flex w-full items-center gap-2 text-left"
+                        >
+                          <ProjectLogo project={p.project} size={20} />
+                          <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-neutral-100 auto-light:text-neutral-900">
                             {p.project.name}
                           </span>
-                          <DoneCount n={p.done} />
+                          <WorkBadges
+                            work={d.work}
+                            day={day}
+                            today={today}
+                            people={people}
+                            hover={false}
+                          />
                         </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-            {!companies.length && (
-              <p className="pt-2 text-[11px] text-neutral-600 auto-light:text-neutral-400">
-                Nothing due.
-              </p>
-            )}
-          </div>
-        </section>
-      );
-    })}
-  </div>
-);
+                        {d.entries.length > 0 && (
+                          <ul className="mt-1.5 flex flex-col gap-0.5 pl-7">
+                            {d.entries.map((e) => (
+                              <GoalLine
+                                key={e.row.key}
+                                entry={e}
+                                onClick={onGoal}
+                              />
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+                {!list.length && (
+                  <p className="text-[11px] text-neutral-600 auto-light:text-neutral-400">
+                    Nothing due.
+                  </p>
+                )}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+    </>
+  );
+};
