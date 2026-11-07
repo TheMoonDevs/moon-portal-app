@@ -11,6 +11,7 @@ import { TASK_STATUS } from '@/models/workspace';
 import {
   addDays,
   goalTaskTitle,
+  nextRunOnOrAfter,
   runCovering,
   runsFrom,
   runsOn,
@@ -258,37 +259,127 @@ export async function attachToRun(
 }
 
 /**
- * Clears the schedule-made tasks of runs that will no longer happen: those
- * still ahead (after today), untouched and with no notes, of schedules that
- * stopped, or on days a schedule no longer runs on. Past and worked-on
- * tasks always stay.
+ * The last day a schedule's task is for: its due day, else the day before
+ * the schedule's next run after its own.
  */
-export async function clearRunsAhead(
-  schedules: TaskSchedule[],
-  keep: (schedule: TaskSchedule, day: string) => boolean = () => false,
-) {
-  if (!schedules.length) return 0;
+const lastDayOf = (schedule: TaskSchedule, task: Task) =>
+  task.dueDate
+    ? String(task.dueDate).slice(0, 10)
+    : task.forDate
+      ? addDays(nextRunOnOrAfter(schedule, addDays(task.forDate, 1)), -1)
+      : null;
+
+/**
+ * The schedule-made tasks of `schedules` still to do: untouched (TODO, no
+ * notes, not renamed) and not past their day (their due day, or the day
+ * before the next run when they have none). Past and worked-on tasks are
+ * never in it.
+ */
+async function untouchedAhead(schedules: TaskSchedule[]): Promise<Task[]> {
+  if (!schedules.length) return [];
+  const today = toDay();
   const tasks: Task[] = await db.task.findMany({
     where: {
       scheduleId: { in: schedules.map((s) => s.id) },
       status: TASK_STATUS.TODO,
-      forDate: { gt: toDay() },
     },
   });
-  const gone = tasks.filter((t) => {
+  const ahead = tasks.filter((t) => {
     const schedule = schedules.find((s) => s.id === t.scheduleId)!;
-    return madeBySchedule(schedule, t) && !keep(schedule, t.forDate!);
+    const last = lastDayOf(schedule, t);
+    return !!last && last >= today && madeBySchedule(schedule, t);
   });
-  if (!gone.length) return 0;
+  if (!ahead.length) return [];
   const worked: WorkPoint[] = await db.workPoint.findMany({
-    where: { taskId: { in: gone.map((t) => t.id) } },
+    where: { taskId: { in: ahead.map((t) => t.id) } },
     select: { taskId: true },
   });
-  const ids = gone
-    .map((t) => t.id)
-    .filter((id) => !worked.some((p) => p.taskId === id));
-  if (ids.length) await db.task.deleteMany({ where: { id: { in: ids } } });
-  return ids.length;
+  const touched = new Set(worked.map((p) => p.taskId));
+  return ahead.filter((t) => !touched.has(t.id));
+}
+
+async function deleteTasks(tasks: Task[]) {
+  if (tasks.length)
+    await db.task.deleteMany({ where: { id: { in: tasks.map((t) => t.id) } } });
+  return tasks.length;
+}
+
+/**
+ * Clears the untouched tasks still to do of schedules that stopped (their
+ * goal was removed, became a target or makes no tasks). Past and
+ * worked-on tasks always stay.
+ */
+export async function clearRunsAhead(schedules: TaskSchedule[]) {
+  return deleteTasks(await untouchedAhead(schedules));
+}
+
+const sameSet = (a: string[] = [], b: string[] = []) =>
+  a.length === b.length && a.every((x) => b.includes(x));
+
+/** "Title (2/3)" → [2, 3]; "Title" → [1, 1]. */
+const runIndex = (schedule: TaskSchedule, task: Task) => {
+  const base = [schedule.taskTitle, schedule.title]
+    .filter((b): b is string => !!b)
+    .sort((a, b) => b.length - a.length)
+    .find((b) => task.title === b || task.title.startsWith(`${b} (`));
+  if (base == null) return null;
+  const rest = task.title.slice(base.length);
+  if (!rest) return [1, 1] as const;
+  const m = rest.match(/^ \((\d+)\/(\d+)\)$/);
+  return m ? ([+m[1], +m[2]] as const) : null;
+};
+
+const pickDays = (s: TaskSchedule) => ({
+  every: s.every,
+  weekdays: s.weekdays,
+  monthDay: s.monthDay,
+  slots: s.slots,
+  anchor: s.anchor,
+});
+
+/**
+ * Brings a goal schedule's tasks still to do in step with its settings,
+ * from `before` to `after` (the same schedule; `before` is how it was):
+ * untouched tasks not past their day that it would no longer make as they
+ * are (a day it no longer runs on, a different number of tasks a run, or
+ * other people, due day or plan) are cleared, so the next run-through
+ * makes them again as the goal now says. Tasks someone worked on, renamed
+ * or that are past their day stay. Returns the cleared tasks.
+ */
+export async function clearStaleRuns(
+  before: TaskSchedule,
+  after: TaskSchedule,
+): Promise<Task[]> {
+  const count = Math.max(1, after.count || 1);
+  const people = after.assigneeIds?.length
+    ? after.assigneeIds
+    : [after.createdById];
+  const peopleChanged = !sameSet(before.assigneeIds, after.assigneeIds);
+  const dueChanged = (before.dueInDays ?? null) !== (after.dueInDays ?? null);
+  const planChanged = (before.planId ?? null) !== (after.planId ?? null);
+  const fits = (t: Task) => {
+    if (!t.forDate || !runsOn(after, t.forDate)) return false;
+    const index = runIndex(after, t);
+    if (!index) return false;
+    if (count === 1 ? index[1] !== 1 : index[1] !== count || index[0] > count)
+      return false;
+    if (peopleChanged && !sameSet(t.assigneeIds ?? [], people)) return false;
+    if (
+      dueChanged &&
+      (t.dueDate ? String(t.dueDate).slice(0, 10) : null) !==
+        (after.dueInDays != null ? addDays(t.forDate, after.dueInDays) : null)
+    )
+      return false;
+    if (planChanged && (t.planId ?? null) !== (after.planId ?? null))
+      return false;
+    return true;
+  };
+  // Days are judged by how the schedule was when the task was made.
+  const ahead = (
+    await untouchedAhead([{ ...after, ...pickDays(before) }])
+  ).filter((t) => !fits(t));
+  await deleteTasks(ahead);
+  return ahead;
 }
 
 /**

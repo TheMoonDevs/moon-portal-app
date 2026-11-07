@@ -17,11 +17,17 @@ import {
 
 type Entry = { row: GoalRow; cell: GoalDay };
 
-/** What a day of a goal asks for: "1 song releases", or its whole number. */
+/**
+ * What a day of a goal asks for: "1 song releases" on its days. A repeating
+ * goal's whole number ("3 shorts" a week) is never put on one day, where it
+ * would read as 3 that day; a target shows its number.
+ */
 export const dayText = ({ row, cell }: Entry) =>
-  !isTarget(row.goal) && cell.due > 0
-    ? `${cell.due.toLocaleString('en-US')} ${row.goal.title}`
-    : row.label;
+  isTarget(row.goal)
+    ? row.label
+    : cell.due > 0
+      ? `${cell.due.toLocaleString('en-US')} ${row.goal.title}`
+      : row.goal.title;
 
 /** The goal's whole target: "2 a week", or "target". */
 export const wholeText = (row: GoalRow) =>

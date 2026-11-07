@@ -1,6 +1,7 @@
 'use client';
 
 import type { User } from '@db/client';
+import { useState } from 'react';
 
 import { cn } from '@/lib/utils';
 import {
@@ -25,6 +26,7 @@ import {
   Segmented,
   TextInput,
 } from '../shared/AdminUI';
+import { ImageField } from '../shared/ImageField';
 import { PeoplePicker } from './shared';
 
 export type GoalDraft = Omit<ProjectGoal, 'id' | 'parts'> & {
@@ -257,6 +259,40 @@ const SlotsPicker = ({
 };
 
 /**
+ * How the period's target splits over the picked days, in words: "3 shorts
+ * a week over 3 days: 1 on each day, not 3". When it does not split evenly,
+ * says how many that makes, since each day gets the same number.
+ */
+const SpreadNote = ({ goal, total }: { goal: GoalDraft; total: number }) => {
+  const days =
+    goal.period === 'week' || goal.period === 'fortnight'
+      ? (goal.days ?? []).length
+      : goal.period === 'month' || goal.period === 'quarter'
+        ? (goal.slots ?? []).length
+        : 0;
+  if (days < 2 || total < 1) return null;
+  const each = Math.ceil(total / days);
+  const what = goal.title.trim() || 'tasks';
+  const per = PERIOD_LABELS[goal.period];
+  if (each * days === total)
+    return (
+      <p className="text-[11px] text-neutral-400">
+        {total} {what} {per} over {days} days:{' '}
+        <span className="font-medium text-neutral-200">{each} on each day</span>
+        {each !== total && `, not ${total} on each`}.
+      </p>
+    );
+  return (
+    <p className="flex items-start gap-1.5 text-[11px] text-amber-300/90">
+      <Icon name="warning" className="mt-px text-[13px]" />
+      {total} doesn’t split evenly over {days} days, so each day gets {each} (
+      {each * days} {per}). Set the target to a multiple of {days}, or pick
+      other days.
+    </p>
+  );
+};
+
+/**
  * One goal: what kind, the target, and for a repeating one when its tasks
  * are made and for whom.
  */
@@ -279,6 +315,7 @@ export const GoalFields = ({
     ? parts.reduce((n, p) => n + (p.target || 0), 0)
     : goal.target;
   const makesTasks = goal.makeTasks !== false;
+  const [addingImage, setAddingImage] = useState(false);
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3">
@@ -364,7 +401,7 @@ export const GoalFields = ({
           {makesTasks &&
             (goal.period === 'week' || goal.period === 'fortnight') && (
               <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-500">
-                For
+                Spread over
                 <DayPicker
                   value={goal.days ?? []}
                   onChange={(days) => onChange({ days })}
@@ -394,6 +431,7 @@ export const GoalFields = ({
                 />
               </div>
             )}
+          {makesTasks && <SpreadNote goal={goal} total={total} />}
           <p className="flex items-center gap-1.5 text-[11px] text-neutral-500">
             <Icon name="event_repeat" className="text-[13px]" />
             {makesTasks
@@ -458,6 +496,34 @@ export const GoalFields = ({
           className="self-start text-xs text-neutral-500 hover:text-neutral-300"
         >
           {parts.length ? '+ Add a part' : 'Split it (e.g. across channels)'}
+        </button>
+      )}
+
+      {goal.image || addingImage ? (
+        <div className="flex flex-col gap-1.5">
+          <p className="text-[11px] font-medium uppercase tracking-wider text-neutral-500">
+            Inspiration{' '}
+            <span className="normal-case tracking-normal text-neutral-600">
+              · an image to keep in mind, shown on the goal
+            </span>
+          </p>
+          <ImageField
+            value={goal.image ?? ''}
+            size={72}
+            onChange={(url) => {
+              onChange({ image: url || null });
+              if (!url) setAddingImage(false);
+            }}
+          />
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAddingImage(true)}
+          className="flex items-center gap-1.5 self-start text-xs text-neutral-500 hover:text-neutral-300"
+        >
+          <Icon name="add_photo_alternate" className="text-[15px]" />
+          Add an inspiration image
         </button>
       )}
 

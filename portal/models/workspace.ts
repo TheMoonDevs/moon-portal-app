@@ -126,6 +126,8 @@ export type ProjectGoal = {
   previousId?: string | null;
   /** The plan it was set up in, if any; its tasks link to that plan. */
   planId?: string | null;
+  /** An image to look at for inspiration (a hosted URL), shown on its card. */
+  image?: string | null;
 };
 
 export enum TASK_SIZE {

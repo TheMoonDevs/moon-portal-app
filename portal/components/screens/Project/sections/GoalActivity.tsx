@@ -141,7 +141,10 @@ export const GoalActivity = ({
         t.forDate &&
         ['TODO', 'IN_PROGRESS', 'IN_REVIEW'].includes(t.status)
       ) {
-        if (t.forDate < today) cell(t.forDate).missed += 1;
+        // Missed once its last day went by (a Monday batch due Sunday is
+        // still on during the week).
+        const last = (t.dueDate ? String(t.dueDate) : t.forDate).slice(0, 10);
+        if (last < today) cell(t.forDate).missed += 1;
         else cell(t.forDate).planned += 1;
       }
     }
