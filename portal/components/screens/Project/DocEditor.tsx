@@ -25,6 +25,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
+import { docToMarkdown, markdownToDoc } from '@/lib/workspace/pageMarkdown';
 import { uploadImage } from '@/utils/helpers/uploads';
 
 import { Icon, Spin } from '../Admin/shared/AdminUI';
@@ -43,6 +44,12 @@ import {
   TrailingLine,
 } from './editor/blocks';
 import { normaliseUrl } from './editor/embeds';
+import {
+  isMarkdownPaste,
+  markdownContent,
+  MarkdownShortcuts,
+  sliceToMarkdown,
+} from './editor/markdown';
 
 export type { DocLinks, PageTarget } from './editor/blocks';
 
@@ -54,6 +61,8 @@ export type { DocLinks, PageTarget } from './editor/blocks';
 type Tools = {
   ask: (kind: Asking['kind']) => void;
   newPage: () => void;
+  /** Switches to writing the page as Markdown. */
+  markdown: () => void;
 };
 
 type Command = {
@@ -64,6 +73,8 @@ type Command = {
   group: 'Basic blocks' | 'Pages' | 'Media' | 'Advanced';
   /** More words it is found by. */
   also?: string;
+  /** The Markdown that makes it while typing, shown in the menu. */
+  md?: string;
   /** Only shown when the document can link to pages. */
   pages?: 'link' | 'create';
   run: (editor: Editor, tools: Tools) => void;
@@ -108,6 +119,7 @@ const COMMANDS: Command[] = [
   },
   {
     key: 'h1',
+    md: '#',
     label: 'Heading 1',
     hint: 'Big section title',
     icon: 'format_h1',
@@ -117,6 +129,7 @@ const COMMANDS: Command[] = [
   },
   {
     key: 'h2',
+    md: '##',
     label: 'Heading 2',
     hint: 'Medium section title',
     icon: 'format_h2',
@@ -125,6 +138,7 @@ const COMMANDS: Command[] = [
   },
   {
     key: 'h3',
+    md: '###',
     label: 'Heading 3',
     hint: 'Small section title',
     icon: 'format_h3',
@@ -133,6 +147,7 @@ const COMMANDS: Command[] = [
   },
   {
     key: 'todo',
+    md: '[]',
     label: 'To-do list',
     hint: 'Track things with checkboxes',
     icon: 'check_box',
@@ -142,6 +157,7 @@ const COMMANDS: Command[] = [
   },
   {
     key: 'bullet',
+    md: '-',
     label: 'Bulleted list',
     hint: 'A simple list',
     icon: 'format_list_bulleted',
@@ -151,6 +167,7 @@ const COMMANDS: Command[] = [
   },
   {
     key: 'numbered',
+    md: '1.',
     label: 'Numbered list',
     hint: 'A list in order',
     icon: 'format_list_numbered',
@@ -169,6 +186,7 @@ const COMMANDS: Command[] = [
   },
   {
     key: 'quote',
+    md: '>',
     label: 'Quote',
     hint: 'Call out a line',
     icon: 'format_quote',
@@ -196,6 +214,7 @@ const COMMANDS: Command[] = [
   },
   {
     key: 'divider',
+    md: '---',
     label: 'Divider',
     hint: 'Split sections',
     icon: 'horizontal_rule',
@@ -275,6 +294,7 @@ const COMMANDS: Command[] = [
   },
   {
     key: 'code',
+    md: '```',
     label: 'Code',
     hint: 'A block of code',
     icon: 'code_blocks',
@@ -291,6 +311,15 @@ const COMMANDS: Command[] = [
     also: 'outline contents',
     run: (e) =>
       e.chain().focus().insertContent({ type: 'tableOfContents' }).run(),
+  },
+  {
+    key: 'markdown',
+    label: 'Edit as Markdown',
+    hint: 'Write or paste the whole page as Markdown',
+    icon: 'edit_note',
+    group: 'Advanced',
+    also: 'md source raw import',
+    run: (_e, tools) => tools.markdown(),
   },
   {
     key: 'date',
@@ -715,6 +744,90 @@ const AskBox = ({
   );
 };
 
+/** A small button above the page, e.g. Copy as Markdown. */
+const DocTool = ({
+  icon,
+  label,
+  active,
+  onClick,
+}: {
+  icon: string;
+  label: string;
+  active?: boolean;
+  onClick: () => void;
+}) => (
+  <button
+    type="button"
+    title={label}
+    onMouseDown={(e) => e.preventDefault()}
+    onClick={onClick}
+    className={cn(
+      'flex h-6 items-center gap-1 rounded-md px-1.5 text-[11px] transition-colors',
+      active
+        ? 'bg-white/[0.1] text-white'
+        : 'text-neutral-500 hover:bg-white/[0.06] hover:text-neutral-200',
+    )}
+  >
+    <Icon name={icon} className="text-[15px]" />
+    <span className="hidden sm:inline">{label}</span>
+  </button>
+);
+
+/** The page written as Markdown; Esc or Done goes back to the page. */
+const MarkdownBox = ({
+  value,
+  compact,
+  onChange,
+  onDone,
+}: {
+  value: string;
+  compact: boolean;
+  onChange: (value: string) => void;
+  onDone: () => void;
+}) => {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = '0px';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [value]);
+  useEffect(() => ref.current?.focus(), []);
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/[0.02]">
+      <textarea
+        ref={ref}
+        value={value}
+        spellCheck={false}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            onDone();
+          }
+        }}
+        placeholder={
+          '# A heading\n\nWrite in **Markdown**: - lists, [ ] to-dos, > quotes, ``` code…'
+        }
+        className={cn(
+          'block w-full resize-none bg-transparent px-4 py-3 font-mono text-[13px] leading-6 text-neutral-200 outline-none placeholder:text-neutral-600',
+          compact ? 'min-h-[96px]' : 'min-h-[50vh]',
+        )}
+      />
+      <div className="flex items-center justify-between border-t border-white/[0.06] px-3 py-1.5 text-[11px] text-neutral-500">
+        <span>Markdown · saves as you type · Esc to go back</span>
+        <button
+          type="button"
+          onClick={onDone}
+          className="rounded-md px-2 py-0.5 text-neutral-300 hover:bg-white/[0.06] hover:text-white"
+        >
+          Done
+        </button>
+      </div>
+    </div>
+  );
+};
+
 /* -------------------------------------------------------------------------- */
 /*                                   Editor                                   */
 /* -------------------------------------------------------------------------- */
@@ -750,6 +863,9 @@ export const DocEditor = ({
   const [slash, setSlash] = useState<Slash | null>(null);
   const [active, setActive] = useState(0);
   const [asking, setAsking] = useState<Asking | null>(null);
+  /** The page as Markdown while it is being written that way. */
+  const [markdown, setMarkdown] = useState<string | null>(null);
+  const markdownTimer = useRef<ReturnType<typeof setTimeout>>();
   // Keyboard handling runs inside the editor, outside React's render.
   const slashRef = useRef<{ slash: Slash | null; active: number }>({
     slash: null,
@@ -785,6 +901,42 @@ export const DocEditor = ({
     linksRef.current?.open(page.id);
   };
 
+  const openMarkdown = (editor: Editor) => {
+    setSlash(null);
+    setMarkdown(docToMarkdown(editor.getJSON()));
+  };
+
+  /** Puts the Markdown being written into the page, which saves it. */
+  const applyMarkdown = (text: string) => {
+    clearTimeout(markdownTimer.current);
+    const editor = editorRef.current;
+    if (!editor) return;
+    const next = markdownToDoc(text) as JSONContent;
+    if (
+      JSON.stringify(next) ===
+      JSON.stringify(markdownToDoc(docToMarkdown(editor.getJSON())))
+    )
+      return;
+    editor.commands.setContent(next, true);
+  };
+
+  const closeMarkdown = () => {
+    if (markdown !== null) applyMarkdown(markdown);
+    setMarkdown(null);
+    setTimeout(() => editorRef.current?.commands.focus('end'));
+  };
+
+  const copyMarkdown = async () => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    try {
+      await navigator.clipboard.writeText(docToMarkdown(editor.getJSON()));
+      toast.success('Copied as Markdown.');
+    } catch {
+      toast.error('Could not copy.');
+    }
+  };
+
   const runCommand = (editor: Editor, command: Command) => {
     const current = slashRef.current.slash;
     if (current)
@@ -797,6 +949,7 @@ export const DocEditor = ({
       ask: (kind) =>
         setAsking({ kind, x: current?.x ?? 0, y: current?.y ?? 0 }),
       newPage: () => newPage(editor),
+      markdown: () => openMarkdown(editor),
     });
     setSlash(null);
   };
@@ -843,6 +996,7 @@ export const DocEditor = ({
         HTMLAttributes: { rel: 'noopener noreferrer', target: '_blank' },
       }),
       Image.configure({ HTMLAttributes: { class: 'doc-image' } }),
+      MarkdownShortcuts,
       Table.configure({ resizable: false }),
       TableRow,
       TableHeader,
@@ -871,12 +1025,28 @@ export const DocEditor = ({
     ],
     editorProps: {
       attributes: { class: VARIANTS[variant] },
-      handlePaste: (_view, event) => {
+      handlePaste: (view, event) => {
+        const editor = editorRef.current;
+        if (!editor?.isEditable) return false;
         const files = imagesIn(event.clipboardData?.files);
-        if (!files.length || !editorRef.current?.isEditable) return false;
-        dropImages(files);
+        if (files.length) {
+          dropImages(files);
+          return true;
+        }
+        // Markdown pasted as plain text (notes, a README, a chat answer)
+        // turns into blocks, unless it goes into a code block.
+        const text = event.clipboardData?.getData('text/plain') ?? '';
+        const html = event.clipboardData?.getData('text/html') ?? '';
+        if (
+          view.state.selection.$from.parent.type.spec.code ||
+          !isMarkdownPaste(text, html)
+        )
+          return false;
+        editor.chain().focus().insertContent(markdownContent(text)).run();
         return true;
       },
+      // Copying puts Markdown on the clipboard for anything that takes text.
+      clipboardTextSerializer: (slice) => sliceToMarkdown(slice),
       handleDrop: (view, event, _slice, moved) => {
         const files = imagesIn(event.dataTransfer?.files);
         if (moved || !files.length || !editorRef.current?.isEditable)
@@ -972,10 +1142,55 @@ export const DocEditor = ({
 
   return (
     <DocLinksContext.Provider value={links ?? null}>
-      <div className={cn('relative', className)}>
+      <div className={cn('group/doc relative', className)}>
+        {editor && (
+          <div
+            className={cn(
+              'absolute -top-7 right-0 z-10 flex items-center gap-0.5 transition-opacity',
+              markdown === null &&
+                'opacity-0 focus-within:opacity-100 group-hover/doc:opacity-100',
+            )}
+          >
+            <DocTool
+              icon="content_copy"
+              label="Copy as Markdown"
+              onClick={copyMarkdown}
+            />
+            {editable && (
+              <DocTool
+                icon={markdown === null ? 'edit_note' : 'article'}
+                label={
+                  markdown === null ? 'Edit as Markdown' : 'Back to the page'
+                }
+                active={markdown !== null}
+                onClick={() =>
+                  markdown === null ? openMarkdown(editor) : closeMarkdown()
+                }
+              />
+            )}
+          </div>
+        )}
+        {/* Kept mounted: their menus live outside this box. */}
         {editor && editable && <FormatBar editor={editor} />}
         {editor && editable && <TableBar editor={editor} />}
-        <EditorContent editor={editor} />
+        <div className={cn(markdown !== null && 'hidden')}>
+          <EditorContent editor={editor} />
+        </div>
+        {markdown !== null && (
+          <MarkdownBox
+            value={markdown}
+            compact={variant === 'compact'}
+            onChange={(text) => {
+              setMarkdown(text);
+              clearTimeout(markdownTimer.current);
+              markdownTimer.current = setTimeout(
+                () => applyMarkdown(text),
+                400,
+              );
+            }}
+            onDone={closeMarkdown}
+          />
+        )}
 
         <AnimatePresence>
           {editor && slash && list.length > 0 && (
@@ -1015,7 +1230,7 @@ export const DocEditor = ({
                       <span className="flex size-8 shrink-0 items-center justify-center rounded-md border border-white/10 bg-white/[0.04] text-[18px] text-neutral-300">
                         <Icon name={command.icon} />
                       </span>
-                      <span className="min-w-0">
+                      <span className="min-w-0 flex-1">
                         <span className="block text-sm text-neutral-100">
                           {command.label}
                         </span>
@@ -1023,6 +1238,11 @@ export const DocEditor = ({
                           {command.hint}
                         </span>
                       </span>
+                      {command.md && (
+                        <kbd className="shrink-0 font-mono text-[11px] text-neutral-600">
+                          {command.md}
+                        </kbd>
+                      )}
                     </button>
                   </div>
                 ))}

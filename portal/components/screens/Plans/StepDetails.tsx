@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
+import { stripMarkdown } from '@/lib/workspace/pageMarkdown';
 import type { PlanStepKind } from '@/models/workspace';
 import { TASK_STATUS } from '@/models/workspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
@@ -378,7 +379,7 @@ const GoalBox = ({
       ? { ...existing }
       : {
           ...newGoalDraft(step.draftGoal ?? 'scheduled'),
-          title: step.text.trim(),
+          title: stripMarkdown(step.text).trim(),
         };
   const [draft, setDraft] = useState<GoalDraft>(fresh);
   const [projectId, setProjectId] = useState(

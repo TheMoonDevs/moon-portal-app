@@ -18,6 +18,10 @@ import {
   goalLine,
   GoalStar,
   GrowingText,
+  hasMarkdown,
+  headingOf,
+  MarkdownLines,
+  MarkdownText,
   ProjectDot,
   ProjectOptions,
 } from './planBits';
@@ -34,6 +38,11 @@ import { isPast, stepKind } from './types';
  * edited shows its project, date, people and type; Details opens it in full
  * on the right, and the (i) at the end of a step shows it to anyone.
  * Steps move with the handle (drag, or its menu) or Alt+↑/↓.
+ *
+ * Steps take Markdown too: "[] " starts a task, "- " a text step, "# " a
+ * heading; **bold**, *italic*, `code`, ~~strike~~, ==highlight== and
+ * [links](…) show formatted once the cursor leaves the step. Pasting a
+ * Markdown list makes a step of each line.
  */
 
 /** A step the editor holds; a new goal waits for its details. */
@@ -64,7 +73,13 @@ export const KIND_META: Record<
 };
 
 type Command =
-  | { type: 'kind'; key: string; kind: PlanStepKind; goal?: GoalKind }
+  | {
+      type: 'kind';
+      key: string;
+      kind: PlanStepKind;
+      goal?: GoalKind;
+      prefix?: string;
+    }
   | { type: 'link'; key: string; link: StepLink };
 
 const KIND_COMMANDS: {
@@ -73,15 +88,36 @@ const KIND_COMMANDS: {
   label: string;
   icon: string;
   hint: string;
+  /** More words it is found by. */
+  also?: string;
+  /** The Markdown that makes it while typing, shown in the menu. */
+  md?: string;
+  /** What the step starts with, e.g. "## " for a heading. */
+  prefix?: string;
 }[] = [
-  { kind: 'info', ...KIND_META.info },
-  { kind: 'task', ...KIND_META.task },
+  { kind: 'info', ...KIND_META.info, also: 'note paragraph bullet', md: '-' },
+  {
+    kind: 'info',
+    label: 'Heading',
+    icon: 'format_h2',
+    hint: 'A title for the steps under it',
+    also: 'h1 h2 h3 section title phase',
+    md: '#',
+    prefix: '## ',
+  },
+  {
+    kind: 'task',
+    ...KIND_META.task,
+    also: 'todo to-do checkbox',
+    md: '[]',
+  },
   {
     kind: 'goal',
     goal: 'scheduled',
     label: 'Repeating goal',
     icon: 'event_repeat',
     hint: 'Makes its own tasks every day, week or month',
+    also: 'schedule recurring weekly daily',
   },
   {
     kind: 'goal',
@@ -89,8 +125,55 @@ const KIND_COMMANDS: {
     label: 'Target goal',
     icon: 'emoji_events',
     hint: 'One number to reach',
+    also: 'number kpi metric',
   },
 ];
+
+/** A shortcut typed at the start of an empty step: what it turns it into. */
+const typedShortcut = (
+  text: string,
+): { kind: PlanStepKind; text: string; done?: boolean } | null => {
+  const todo = /^(?:[-*+]\s)?\[( |x|X)?\]\s$/.exec(text);
+  if (todo) return { kind: 'task', text: '', done: !!todo[1]?.trim() };
+  if (/^[-*+]\s$/.test(text)) return { kind: 'info', text: '' };
+  if (/^#{1,3}\s$/.test(text)) return { kind: 'info', text };
+  return null;
+};
+
+/** Pasted Markdown lines as steps; null for a single line. */
+const pastedSteps = (text: string) => {
+  const lines = text
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l && !/^(```|~~~|-{3,}$)/.test(l));
+  if (lines.length < 2) return null;
+  return lines.map((line) => {
+    const todo = /^(?:[-*+]\s+|\d+[.)]\s+)?\[([ xX])\]\s+(.*)$/.exec(line);
+    if (todo)
+      return { kind: 'task' as const, text: todo[2], done: todo[1] !== ' ' };
+    const heading = /^(#{1,6})\s+(.*)$/.exec(line);
+    if (heading)
+      return {
+        kind: 'info' as const,
+        text: `${'#'.repeat(Math.min(3, heading[1].length))} ${heading[2]}`,
+      };
+    const item = /^(?:[-*+]|\d+[.)])\s+(.*)$/.exec(line);
+    return { kind: null, text: item ? item[1] : line.replace(/^>\s?/, '') };
+  });
+};
+
+/** A heading step ("# ", "## ", "### ") is bigger, as typed and shown. */
+const headingClass = (text: string) => {
+  const level = headingOf(text)?.level;
+  return level === 1
+    ? 'text-lg font-semibold leading-7'
+    : level === 2
+      ? 'text-base font-semibold leading-7'
+      : level === 3
+        ? 'font-semibold'
+        : undefined;
+};
 
 /** "Nov 3, 4:12 PM": when a step's task was done. */
 export const doneAt = (iso: string) => {
@@ -450,6 +533,11 @@ export const StepsEditor = ({
   /** Steps whose details box is open while still empty. */
   const [openDetails, setOpenDetails] = useState<Set<string>>(new Set());
   const [slashId, setSlashId] = useState<string | null>(null);
+  /** The box being typed in ("<id>" or "<id>:details"): shows its Markdown. */
+  const [typingId, setTypingId] = useState<string | null>(null);
+  /** Whether a box shows its text formatted rather than as typed. */
+  const showsFormatted = (box: string, text: string) =>
+    hasMarkdown(text) && (!canEdit || (typingId !== box && focusId !== box));
   const [active, setActive] = useState(0);
   const [makingId, setMakingId] = useState<string | null>(null);
   /** A step linked to a task, asked about before it goes. */
@@ -504,12 +592,16 @@ export const StepsEditor = ({
     const q = query.trim().toLowerCase();
     return [
       ...KIND_COMMANDS.filter(
-        (c) => !q || c.label.toLowerCase().includes(q),
+        (c) =>
+          !q ||
+          c.label.toLowerCase().includes(q) ||
+          c.also?.split(' ').some((w) => w.startsWith(q)),
       ).map((c) => ({
         type: 'kind' as const,
         key: `kind:${c.label}`,
         kind: c.kind,
         goal: c.goal,
+        prefix: c.prefix,
       })),
       ...links.items.map((link) => ({
         type: 'link' as const,
@@ -622,9 +714,74 @@ export const StepsEditor = ({
       setFocusId(step.id);
       return;
     }
-    setStep(step.id, { text: '' });
-    setKind({ ...step, text: '' }, command.kind, command.goal);
+    const text = command.prefix ?? '';
+    setStep(step.id, { text });
+    setKind({ ...step, text }, command.kind, command.goal);
     setFocusId(step.id);
+  };
+
+  /** Typing in a step's title, with its Markdown shortcuts. */
+  const typeTitle = (step: EditorStep, text: string) => {
+    const shortcut = typedShortcut(text);
+    if (shortcut && !step.taskId && !step.goalId) {
+      setSlashId(null);
+      setStep(step.id, {
+        text: shortcut.text,
+        ...(shortcut.done !== undefined && { done: shortcut.done }),
+      });
+      setKind({ ...step, text: shortcut.text }, shortcut.kind);
+      return;
+    }
+    setStep(step.id, { text });
+    setSlashId(text.startsWith('/') ? step.id : null);
+  };
+
+  /** Pasting several lines (a Markdown list, notes) makes a step of each. */
+  const pasteSteps = (
+    e: React.ClipboardEvent<HTMLTextAreaElement>,
+    step: EditorStep,
+  ) => {
+    const lines = pastedSteps(e.clipboardData.getData('text/plain'));
+    if (!lines) return;
+    e.preventDefault();
+    const current = stepKind(step);
+    const fallback: PlanStepKind = current === 'goal' ? 'task' : current;
+    const projectId =
+      (!step.taskId && !step.goalId ? step.projectId : null) ??
+      newStepProjectId ??
+      plan.projectId ??
+      null;
+    const fillsThis = !step.text.trim() && !step.taskId && !step.goalId;
+    const made = lines.map((line, i) =>
+      fillsThis && i === 0
+        ? null
+        : (newStep({
+            kind: line.kind ?? fallback,
+            text: line.text,
+            done: !!('done' in line && line.done),
+            projectId,
+          }) as EditorStep),
+    );
+    onChange((p) => {
+      const list = p.steps.map((s) =>
+        s.id === step.id && fillsThis
+          ? {
+              ...s,
+              kind: lines[0].kind ?? fallback,
+              text: lines[0].text,
+              done: !!('done' in lines[0] && lines[0].done),
+            }
+          : s,
+      );
+      const at = list.findIndex((s) => s.id === step.id);
+      list.splice(at + 1, 0, ...(made.filter(Boolean) as EditorStep[]));
+      return { ...p, steps: list };
+    });
+    const last = made.at(-1) ?? null;
+    if (last) {
+      setActiveId(last.id);
+      setFocusId(last.id);
+    }
   };
 
   const makeTask = async (step: EditorStep) => {
@@ -904,7 +1061,9 @@ export const StepsEditor = ({
                           : 'text-neutral-100',
                       )}
                     >
-                      {step.task?.title ?? step.goal?.title ?? step.text}
+                      <MarkdownText
+                        text={step.task?.title ?? step.goal?.title ?? step.text}
+                      />
                     </span>
                     {step.done && step.task?.completedAt && (
                       <span
@@ -921,33 +1080,59 @@ export const StepsEditor = ({
                   </p>
                 ) : (
                   <div className="min-w-0 flex-1">
-                    <GrowingText
-                      value={step.text}
-                      boxRef={(el) => boxes.current.set(step.id, el)}
-                      onChange={(text) => {
-                        setStep(step.id, { text });
-                        setSlashId(text.startsWith('/') ? step.id : null);
-                      }}
-                      onFocus={() => setActiveId(step.id)}
-                      onBlur={() =>
-                        setSlashId((id) => (id === step.id ? null : id))
-                      }
-                      onKeyDown={(e) => onTitleKey(e, step, index)}
-                      disabled={!canEdit}
-                      placeholder={
-                        kind === 'goal'
-                          ? 'Name the goal, then set it up on the right'
-                          : 'Type / for commands'
-                      }
-                      className={cn(
-                        'py-px text-sm leading-6 placeholder:text-neutral-600',
-                        kind === 'info'
-                          ? 'text-neutral-300'
-                          : step.done
-                            ? 'text-neutral-500 line-through'
-                            : 'text-neutral-100',
-                      )}
-                    />
+                    {showsFormatted(step.id, step.text) ? (
+                      <div
+                        tabIndex={canEdit ? 0 : -1}
+                        onFocus={() => {
+                          setActiveId(step.id);
+                          setFocusId(step.id);
+                        }}
+                        className={cn(
+                          'min-h-6 cursor-text whitespace-pre-wrap break-words py-px text-sm leading-6 focus:outline-none',
+                          headingClass(step.text),
+                          kind === 'info'
+                            ? 'text-neutral-300'
+                            : step.done
+                              ? 'text-neutral-500 line-through'
+                              : 'text-neutral-100',
+                        )}
+                      >
+                        <MarkdownText
+                          text={headingOf(step.text)?.text ?? step.text}
+                        />
+                      </div>
+                    ) : (
+                      <GrowingText
+                        value={step.text}
+                        boxRef={(el) => boxes.current.set(step.id, el)}
+                        onChange={(text) => typeTitle(step, text)}
+                        onPaste={(e) => pasteSteps(e, step)}
+                        onFocus={() => {
+                          setActiveId(step.id);
+                          setTypingId(step.id);
+                        }}
+                        onBlur={() => {
+                          setSlashId((id) => (id === step.id ? null : id));
+                          setTypingId((id) => (id === step.id ? null : id));
+                        }}
+                        onKeyDown={(e) => onTitleKey(e, step, index)}
+                        disabled={!canEdit}
+                        placeholder={
+                          kind === 'goal'
+                            ? 'Name the goal, then set it up on the right'
+                            : 'Type / for commands'
+                        }
+                        className={cn(
+                          'py-px text-sm leading-6 placeholder:text-neutral-600',
+                          headingClass(step.text),
+                          kind === 'info'
+                            ? 'text-neutral-300'
+                            : step.done
+                              ? 'text-neutral-500 line-through'
+                              : 'text-neutral-100',
+                        )}
+                      />
+                    )}
                   </div>
                 )}
                 <StepInfo
@@ -959,21 +1144,41 @@ export const StepsEditor = ({
               </div>
 
               {/* Details, under the title (Shift+Enter) */}
-              {detailsShown && (
-                <GrowingText
-                  value={step.notes ?? ''}
-                  boxRef={(el) => boxes.current.set(`${step.id}:details`, el)}
-                  onChange={(notes) => setStep(step.id, { notes })}
-                  onFocus={() => setActiveId(step.id)}
-                  onBlur={() => {
-                    if (!step.notes?.trim()) hideDetails(step.id);
-                  }}
-                  onKeyDown={(e) => onDetailsKey(e, step, index)}
-                  disabled={!canEdit}
-                  placeholder="Details, links, anything that helps"
-                  className="mb-0.5 border-l border-white/10 pl-2 text-xs leading-5 text-neutral-400 placeholder:text-neutral-600"
-                />
-              )}
+              {detailsShown &&
+                showsFormatted(`${step.id}:details`, step.notes ?? '') && (
+                  <div
+                    tabIndex={canEdit ? 0 : -1}
+                    onFocus={() => {
+                      setActiveId(step.id);
+                      setFocusId(`${step.id}:details`);
+                    }}
+                    className="mb-0.5 cursor-text whitespace-pre-wrap break-words border-l border-white/10 pl-2 text-xs leading-5 text-neutral-400 focus:outline-none"
+                  >
+                    <MarkdownLines text={step.notes ?? ''} />
+                  </div>
+                )}
+              {detailsShown &&
+                !showsFormatted(`${step.id}:details`, step.notes ?? '') && (
+                  <GrowingText
+                    value={step.notes ?? ''}
+                    boxRef={(el) => boxes.current.set(`${step.id}:details`, el)}
+                    onChange={(notes) => setStep(step.id, { notes })}
+                    onFocus={() => {
+                      setActiveId(step.id);
+                      setTypingId(`${step.id}:details`);
+                    }}
+                    onBlur={() => {
+                      setTypingId((id) =>
+                        id === `${step.id}:details` ? null : id,
+                      );
+                      if (!step.notes?.trim()) hideDetails(step.id);
+                    }}
+                    onKeyDown={(e) => onDetailsKey(e, step, index)}
+                    disabled={!canEdit}
+                    placeholder="Details, links, anything that helps"
+                    className="mb-0.5 border-l border-white/10 pl-2 text-xs leading-5 text-neutral-400 placeholder:text-neutral-600"
+                  />
+                )}
 
               {slashId === step.id && (
                 <div className="absolute inset-x-0 top-full z-30 mt-1">
@@ -1010,7 +1215,7 @@ export const StepsEditor = ({
                                 className="text-[16px] text-neutral-300"
                               />
                             </span>
-                            <span className="min-w-0">
+                            <span className="min-w-0 flex-1">
                               <span className="block text-sm text-neutral-100">
                                 {meta.label}
                               </span>
@@ -1018,6 +1223,11 @@ export const StepsEditor = ({
                                 {meta.hint}
                               </span>
                             </span>
+                            {meta.md && (
+                              <kbd className="shrink-0 font-mono text-[11px] text-neutral-600">
+                                {meta.md}
+                              </kbd>
+                            )}
                           </button>
                         );
                       })}

@@ -69,6 +69,27 @@ function inline(text: string, marks: Mark[] = []): Node[] {
   ];
 }
 
+/** The text and marks of one line of Markdown, e.g. a plan step's title. */
+export type InlinePiece = { text: string; marks: string[]; href?: string };
+
+export function inlineMarkdown(text: string): InlinePiece[] {
+  return inline(text).map((n) => ({
+    text: n.text ?? '',
+    marks: (n.marks ?? []).map((m) => m.type),
+    href: n.marks?.find((m) => m.type === 'link')?.attrs?.href as
+      | string
+      | undefined,
+  }));
+}
+
+/** A line of Markdown as plain words: "## **Ship** it" is "Ship it". */
+export const stripMarkdown = (text: string) =>
+  inline(
+    text.replace(/^\s*(#{1,6}\s+|[-*+]\s+(\[[ xX]\]\s+)?|\[[ xX]\]\s+)/, ''),
+  )
+    .map((n) => n.text ?? '')
+    .join('');
+
 /* --------------------------------- Blocks --------------------------------- */
 
 const LIST_ITEM = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/;

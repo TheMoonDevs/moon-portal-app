@@ -1,6 +1,7 @@
 import { db } from '@/lib/mongodb/db-client';
 import { isAllowedInCompany, isOnProjectTeam } from '@/lib/permissions/company';
 import { syncTaskPoints } from '@/lib/progress/server';
+import { stripMarkdown } from '@/lib/workspace/pageMarkdown';
 import type {
   CompanyMember,
   GoalTally,
@@ -519,7 +520,7 @@ export async function stepToTask(plan: Plan, stepId: string, userId: string) {
     data: {
       companyId: plan.companyId,
       projectId: project.id,
-      title: step.text.slice(0, 200),
+      title: (stripMarkdown(step.text).trim() || step.text).slice(0, 200),
       description: step.notes ?? null,
       size: TASK_SIZE.MINOR,
       status: step.done ? TASK_STATUS.DONE : TASK_STATUS.TODO,
