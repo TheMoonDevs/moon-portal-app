@@ -31,6 +31,10 @@ export const CLOSED_STATUSES: string[] = [
   TASK_STATUS.IGNORED,
 ];
 
+/** Archived or let go: kept for Your tasks, never shown on a day. */
+export const isPutAway = (task: Pick<Task, 'status'>) =>
+  task.status === TASK_STATUS.ARCHIVED || task.status === TASK_STATUS.IGNORED;
+
 /** A point status, or the two a person can also set on a task. */
 export type TaskMove = WorkPointStatus | 'todo' | 'archived';
 
@@ -493,14 +497,8 @@ export async function loadDay(userId: string, date: string) {
   const byId = new Map<string, Task>();
   for (const t of [...planned, ...worked]) byId.set(t.id, t);
   const tasks = Array.from(byId.values())
-    // Put away earlier: only on the day it was planned for.
-    .filter(
-      (t) =>
-        !CLOSED_STATUSES.includes(t.status) ||
-        t.forDate === date ||
-        pointTaskIds.includes(t.id) ||
-        t.status === TASK_STATUS.DONE,
-    )
+    // Archived (or let go) tasks are off the day; Your tasks brings them back.
+    .filter((t) => !isPutAway(t))
     // Someone else's task without a project is not theirs to see.
     .filter((t) => !isOwnerOnly(t) || isMine(t, user.id));
   const ids = tasks.map((t) => t.id);
@@ -580,7 +578,11 @@ export async function loadDays(userId: string, from: string, to: string) {
   ]);
   const byId = new Map<string, Task>();
   for (const t of [...planned, ...worked])
-    if (t.title?.trim() && (!isOwnerOnly(t) || isMine(t, userId)))
+    if (
+      t.title?.trim() &&
+      !isPutAway(t) &&
+      (!isOwnerOnly(t) || isMine(t, userId))
+    )
       byId.set(t.id, t);
 
   const onDay = new Map<string, Set<string>>();
