@@ -1,11 +1,11 @@
 'use client';
 
 import type { User } from '@db/client';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { answerText, APPLICATION_STAGES } from '@/lib/hiring/forms';
-import { TASK_PAGES } from '@/lib/hiring/taskPages';
 import { TASK_SETS, type TaskSet, taskSetOf } from '@/lib/hiring/taskSets';
 import { cn } from '@/lib/utils';
 import {
@@ -13,14 +13,28 @@ import {
   FORM_FIELD_TYPE,
   JOB_OPENING_STATUS,
 } from '@/models/hiring';
-import { useWorkspace } from '@/utils/hooks/useWorkspace';
+import { APP_ROUTES } from '@/utils/constants/appInfo';
+import {
+  useWorkspace,
+  type WorkspaceCompany,
+} from '@/utils/hooks/useWorkspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
+import {
+  HiringLayout,
+  type HiringNavGroup,
+  type HiringNavItem,
+} from '../../Hiring/HiringLayout';
+import { AdminCourses, type CourseView } from '../Courses/AdminCourses';
+import {
+  AdminOnboarding,
+  type OnboardingCounts,
+  type OnboardingView,
+} from '../Onboarding/AdminOnboarding';
 import {
   AdminButton,
   CheckBox,
   ConfirmDialog,
-  CopyButton,
   EmptyState,
   Icon,
   IconAction,
@@ -31,21 +45,21 @@ import {
   Segmented,
   SkeletonRows,
 } from '../shared/AdminUI';
-import { CompanyPicker, errorText, NeedsCompany } from '../Workspace/shared';
+import { errorText, NeedsCompany } from '../Workspace/shared';
 import { ApplicantDetail } from './ApplicantDetail';
 import { EmailComposer } from './EmailComposer';
+import { HiringCandidates } from './HiringCandidates';
 import { HiringEmails } from './HiringEmails';
+import { HiringFunnel } from './HiringFunnel';
 import { HiringInterviews } from './HiringInterviews';
 import {
   type ApplicationRow,
-  applyUrl,
   type ComposeOpening,
   EMAIL_STATUS_META,
   type HiringSectionProps,
   OPENING_STATUS_META,
   type OpeningRow,
   STAGE_META,
-  taskPreviewUrl,
   timeAgo,
 } from './hiringMeta';
 import { HiringPool } from './HiringPool';
@@ -54,29 +68,128 @@ import { HiringSkills } from './HiringSkills';
 import { HiringSources } from './HiringSources';
 import { HiringTeam } from './HiringTeam';
 import { ImportApplicants } from './ImportApplicants';
-import { OpeningEditor } from './OpeningEditor';
+import { OpeningEditor, type OpeningEditorSection } from './OpeningEditor';
 
 /** How often the board checks for new applicants while the tab is visible. */
 const LIVE_INTERVAL_MS = 15_000;
 
 type StageFilter = 'ALL' | APPLICATION_STAGE;
 
-/** The Hiring tab's sections, in the order the switch shows them. */
-const SECTIONS = [
-  { value: 'openings', label: 'Openings', icon: 'work' },
-  { value: 'queue', label: 'Review queue', icon: 'inbox' },
-  { value: 'interviews', label: 'Interviews', icon: 'forum' },
-  { value: 'pool', label: 'Talent pool', icon: 'diversity_3' },
-  { value: 'emails', label: 'Emails', icon: 'mail' },
-  { value: 'sources', label: 'Sources', icon: 'campaign' },
-  { value: 'team', label: 'Team', icon: 'groups' },
-  { value: 'skills', label: 'Skills', icon: 'psychology' },
-] as const;
+/** The pages of the Hiring space, each a row in its sidebar. */
+const VIEW_META = {
+  candidates: {
+    label: 'Candidates',
+    icon: 'groups',
+    title: 'Candidates',
+    subtitle: 'Everyone who applied, across every opening.',
+  },
+  queue: {
+    label: 'Review queue',
+    icon: 'inbox',
+    title: 'Review queue',
+    subtitle: 'Everything waiting on the hiring team, across openings.',
+  },
+  interviews: {
+    label: 'Interviews',
+    icon: 'forum',
+    title: 'Interviews',
+    subtitle: 'Interviews booked through meeting links, with scorecards.',
+  },
+  pool: {
+    label: 'Talent pool',
+    icon: 'diversity_3',
+    title: 'Talent pool',
+    subtitle: 'Strong people from past openings, kept to ask again.',
+  },
+  funnel: {
+    label: 'Funnel',
+    icon: 'filter_alt',
+    title: 'Funnel and timing',
+    subtitle: 'Where candidates drop off, and how long each stage takes.',
+  },
+  opening: {
+    label: 'Opening',
+    icon: 'work',
+    title: 'Openings',
+    subtitle: 'Pick an opening in the sidebar.',
+  },
+  onboarding: {
+    label: 'In progress',
+    icon: 'view_kanban',
+    title: 'Onboarding',
+    subtitle:
+      'New hires from their details form and agreements, through the trial, to their offer.',
+  },
+  'onboarding-hired': {
+    label: 'Hired',
+    icon: 'verified',
+    title: 'Hired',
+    subtitle: 'People who finished onboarding and joined the team.',
+  },
+  'onboarding-ended': {
+    label: 'Ended',
+    icon: 'block',
+    title: 'Ended',
+    subtitle: 'Onboardings that stopped before an offer.',
+  },
+  'onboarding-documents': {
+    label: 'Documents',
+    icon: 'description',
+    title: 'Documents',
+    subtitle: 'The agreements and policies new hires read and sign.',
+  },
+  courses: {
+    label: 'Courses',
+    icon: 'school',
+    title: 'Courses',
+    subtitle: 'Short courses for your people.',
+  },
+  emails: {
+    label: 'Emails',
+    icon: 'mail',
+    title: 'Emails',
+    subtitle: 'Saved templates and every email sent to candidates.',
+  },
+  sources: {
+    label: 'Sources',
+    icon: 'campaign',
+    title: 'Sources',
+    subtitle: 'Which channels bring people, and a share kit per opening.',
+  },
+  team: {
+    label: 'Team',
+    icon: 'supervisor_account',
+    title: 'Hiring team',
+    subtitle: 'Who leads which opening, and what waits on each lead.',
+  },
+  skills: {
+    label: 'Skills',
+    icon: 'psychology',
+    title: 'Skills',
+    subtitle: 'Claude skills the team uses for screening and emails.',
+  },
+} as const;
 
-type Section = (typeof SECTIONS)[number]['value'];
+type View = keyof typeof VIEW_META;
 
-const isSection = (value: unknown): value is Section =>
-  SECTIONS.some((s) => s.value === value);
+const isView = (value: unknown): value is View =>
+  typeof value === 'string' && value in VIEW_META;
+
+/** Older links name the board "openings". */
+const LEGACY_VIEWS: Record<string, View> = { openings: 'opening' };
+
+const ONBOARDING_VIEW: Partial<Record<View, OnboardingView>> = {
+  onboarding: 'board',
+  'onboarding-hired': 'hired',
+  'onboarding-ended': 'ended',
+  'onboarding-documents': 'documents',
+};
+
+const OPENING_DOT: Record<string, string> = {
+  OPEN: '#34d399',
+  DRAFT: '#737373',
+  CLOSED: '#f59e0b',
+};
 
 /** The composer opened from a section other than the board. */
 /** An applicant opened from another section, shown over it. */
@@ -236,21 +349,33 @@ const EmailMark = ({
   );
 };
 
+/**
+ * The Hiring space: hiring, onboarding and courses for one company at a
+ * time, behind a single sidebar.
+ */
 export const AdminHiring = ({
   users,
+  spaceCompanies,
   selectedCompanyId,
   onSelectCompany,
+  showAdminLink,
 }: {
   users: User[];
+  /** Companies where the user can see hiring or edit courses. */
+  spaceCompanies: WorkspaceCompany[];
   selectedCompanyId: string | null;
   onSelectCompany: (companyId: string) => void;
+  showAdminLink?: boolean;
 }) => {
+  const router = useRouter();
   const { hiringCompanies, can, loading: workspaceLoading } = useWorkspace();
-  const companyId = hiringCompanies.some(
+  const companyId = spaceCompanies.some(
     (c) => c.company.id === selectedCompanyId,
   )
     ? selectedCompanyId
-    : (hiringCompanies[0]?.company.id ?? null);
+    : (spaceCompanies[0]?.company.id ?? null);
+  const hasHiring = hiringCompanies.some((c) => c.company.id === companyId);
+  const hasCourses = can(companyId, 'courses:edit');
 
   const [openings, setOpenings] = useState<OpeningRow[]>([]);
   const [openingsLoading, setOpeningsLoading] = useState(false);
@@ -262,7 +387,7 @@ export const AdminHiring = ({
   const [applicationsLoading, setApplicationsLoading] = useState(false);
   const [lastSync, setLastSync] = useState<Date | null>(null);
 
-  const [view, setView] = useState<'board' | 'list'>('board');
+  const [boardView, setBoardView] = useState<'board' | 'list'>('board');
   const [stageFilter, setStageFilter] = useState<StageFilter>('ALL');
   /** In the list's Task stage: one of its sets, or all of them. */
   const [taskSet, setTaskSet] = useState<'ALL' | TaskSet>('ALL');
@@ -278,26 +403,67 @@ export const AdminHiring = ({
   const [composeIds, setComposeIds] = useState<string[] | null>(null);
   /** A template to start the composer with, e.g. the task reminder. */
   const [composeTemplate, setComposeTemplate] = useState<string | null>(null);
+  const [editorSection, setEditorSection] =
+    useState<OpeningEditorSection>('details');
   const [importOpen, setImportOpen] = useState(false);
-  /** Which part of hiring is on screen; Openings is the board. */
-  const [section, setSection] = useState<Section>('openings');
+  /** Which page of the space is on screen; `opening` is an opening's board. */
+  const [view, setView] = useState<View>('candidates');
+  const [courses, setCourses] = useState<CourseView[]>([]);
+  const [courseId, setCourseId] = useState<string | null>(null);
+  /** Bumped by the sidebar's "New course" button. */
+  const [courseCreate, setCourseCreate] = useState(0);
+  const [onboardingCounts, setOnboardingCounts] = useState<OnboardingCounts>({
+    live: 0,
+    hired: 0,
+  });
   const [externalCompose, setExternalCompose] =
     useState<ExternalCompose | null>(null);
   const [floating, setFloating] = useState<FloatingDetail | null>(null);
 
-  // `?tab=hiring&section=queue` (or skills, team, …) opens that section.
+  // `?view=queue` (or skills, team, onboarding, …) opens that page. Links
+  // with an opening open its board; older links call the page `section`.
   useEffect(() => {
-    const value = new URLSearchParams(window.location.search).get('section');
-    if (isSection(value)) setSection(value);
+    const params = new URLSearchParams(window.location.search);
+    const raw = params.get('view') ?? params.get('section');
+    const value = raw ? (LEGACY_VIEWS[raw] ?? raw) : null;
+    if (isView(value)) setView(value);
+    else if (params.get('opening')) setView('opening');
+    const course = params.get('course');
+    if (course) setCourseId(course);
   }, []);
 
-  const switchSection = (next: Section) => {
-    setSection(next);
+  const switchView = useCallback((next: View) => {
+    setView(next);
     const url = new URL(window.location.href);
-    if (next !== 'openings') url.searchParams.set('section', next);
-    else url.searchParams.delete('section');
+    url.searchParams.set('view', next);
+    url.searchParams.delete('section');
+    if (!next.startsWith('onboarding')) {
+      url.searchParams.delete('hire');
+      url.searchParams.delete('start');
+    }
     window.history.replaceState(null, '', url.toString());
-  };
+  }, []);
+
+  // A company with courses but no hiring opens on its courses.
+  useEffect(() => {
+    if (!workspaceLoading && companyId && !hasHiring && hasCourses)
+      setView('courses');
+  }, [workspaceLoading, companyId, hasHiring, hasCourses]);
+
+  // The sidebar lists the company's courses.
+  useEffect(() => {
+    setCourses([]);
+    if (!companyId || !hasCourses) return;
+    let cancelled = false;
+    PortalSdk.getData(`/api/courses?companyId=${companyId}`, null)
+      .then((res) => {
+        if (!cancelled) setCourses(res?.data?.courses ?? []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [companyId, hasCourses]);
 
   const knownIds = useRef<Set<string> | null>(null);
   const currentOpeningId = useRef<string | null>(null);
@@ -401,7 +567,7 @@ export const AdminHiring = ({
 
   /* ------------------------------ applicant links ----------------------------- */
 
-  // `?tab=hiring&company=<id>&opening=<id>&application=<id>` opens that
+  // `/hiring?company=<id>&opening=<id>&application=<id>` opens that
   // applicant: pick their company, then their opening, then show them once
   // the opening's applicants load. Older links carry only the application,
   // so its company and opening are looked up first. Without `application`
@@ -479,7 +645,7 @@ export const AdminHiring = ({
     }
     if (applicationsLoading || applicationsFor !== linked.openingId) return;
     if (linked.stage) {
-      setView('list');
+      setBoardView('list');
       setStageFilter(linked.stage);
     }
     if (linked.id) {
@@ -709,59 +875,275 @@ export const AdminHiring = ({
 
   /* --------------------------------- render -------------------------------- */
 
-  if (!hiringCompanies.length)
+  const status = opening ? OPENING_STATUS_META[opening.status] : null;
+  const viewMeta = VIEW_META[view];
+
+  const item = (id: View): HiringNavItem => ({
+    id,
+    label: VIEW_META[id].label,
+    icon: VIEW_META[id].icon,
+    active: view === id,
+    onClick: () => switchView(id),
+  });
+
+  const groups: HiringNavGroup[] = [];
+  if (hasHiring) {
+    groups.push({
+      id: 'hiring',
+      label: 'Hiring',
+      items: [
+        item('candidates'),
+        item('queue'),
+        item('interviews'),
+        item('pool'),
+        item('funnel'),
+      ],
+    });
+    groups.push({
+      id: 'openings',
+      label: 'Openings',
+      action: can(companyId, 'hiring:create')
+        ? {
+            icon: 'add',
+            label: 'New opening',
+            onClick: () => {
+              setEditing(null);
+              setEditorSection('details');
+              setEditorOpen(true);
+            },
+          }
+        : undefined,
+      empty: openingsLoading ? 'Loading…' : 'No openings yet',
+      items: openings.map((o) => ({
+        id: `opening:${o.id}`,
+        label: o.title,
+        dot: OPENING_DOT[o.status] ?? '#737373',
+        dim: o.status !== JOB_OPENING_STATUS.OPEN,
+        count: o.counts.APPLIED || o.counts.total || null,
+        countTone: o.counts.APPLIED ? 'alert' : 'muted',
+        active: view === 'opening' && o.id === openingId,
+        onClick: () => {
+          setOpeningId(o.id);
+          switchView('opening');
+        },
+      })),
+    });
+    groups.push({
+      id: 'onboarding',
+      label: 'Onboarding',
+      items: [
+        { ...item('onboarding'), count: onboardingCounts.live || null },
+        { ...item('onboarding-hired'), count: onboardingCounts.hired || null },
+        item('onboarding-ended'),
+        item('onboarding-documents'),
+      ],
+    });
+  }
+  if (hasCourses)
+    groups.push({
+      id: 'courses',
+      label: 'Courses',
+      action: {
+        icon: 'add',
+        label: 'New course',
+        onClick: () => {
+          switchView('courses');
+          setCourseCreate((n) => n + 1);
+        },
+      },
+      empty: 'No courses yet',
+      items: courses.map((c) => ({
+        id: `course:${c.id}`,
+        label: c.title,
+        icon: 'school',
+        active: view === 'courses' && c.id === courseId,
+        onClick: () => {
+          setCourseId(c.id);
+          switchView('courses');
+        },
+      })),
+    });
+  if (hasHiring) {
+    groups.push({
+      id: 'outreach',
+      label: 'Outreach',
+      items: [item('emails'), item('sources')],
+    });
+    groups.push({
+      id: 'setup',
+      label: 'Setup',
+      items: [item('team'), item('skills')],
+    });
+  }
+
+  const footer = [
+    {
+      icon: 'arrow_back',
+      label: 'Back to portal',
+      onClick: () => router.push(APP_ROUTES.home),
+    },
+    ...(showAdminLink
+      ? [
+          {
+            icon: 'admin_panel_settings',
+            label: 'Admin console',
+            onClick: () => router.push(APP_ROUTES.admin),
+          },
+        ]
+      : []),
+  ];
+
+  const openingActions = opening && view === 'opening' && (
+    <>
+      {canEdit && opening.status !== JOB_OPENING_STATUS.OPEN && (
+        <AdminButton
+          size="sm"
+          tone="primary"
+          icon="rocket_launch"
+          loading={busy}
+          onClick={() => setOpeningStatus(JOB_OPENING_STATUS.OPEN)}
+        >
+          {opening.status === JOB_OPENING_STATUS.DRAFT ? 'Publish' : 'Reopen'}
+        </AdminButton>
+      )}
+      {canEdit && opening.status === JOB_OPENING_STATUS.OPEN && (
+        <AdminButton
+          size="sm"
+          icon="lock"
+          loading={busy}
+          onClick={() => setOpeningStatus(JOB_OPENING_STATUS.CLOSED)}
+        >
+          Close
+        </AdminButton>
+      )}
+      <IconAction
+        icon="link"
+        label="Links: apply, per channel and task page"
+        onClick={() => {
+          setEditing(opening);
+          setEditorSection('links');
+          setEditorOpen(true);
+        }}
+      />
+      {canEdit && (
+        <IconAction
+          icon="upload_file"
+          label="Import applicants from a sheet"
+          onClick={() => setImportOpen(true)}
+        />
+      )}
+      {canEdit && (
+        <IconAction
+          icon="edit"
+          label="Edit opening and form"
+          onClick={() => {
+            setEditing(opening);
+            setEditorSection('details');
+            setEditorOpen(true);
+          }}
+        />
+      )}
+      {can(companyId, 'hiring:delete') && (
+        <IconAction
+          icon="archive"
+          label="Archive opening"
+          tone="danger"
+          onClick={() => setArchiving(opening)}
+        />
+      )}
+    </>
+  );
+
+  const title =
+    view === 'opening' && opening ? (
+      <span className="flex items-center gap-2">
+        <span className="truncate">{opening.title}</span>
+        <Pill tone={status?.tone}>{status?.label}</Pill>
+      </span>
+    ) : view === 'courses' ? (
+      (courses.find((c) => c.id === courseId)?.title ?? 'Courses')
+    ) : (
+      viewMeta.title
+    );
+  const subtitle =
+    view === 'opening' && opening
+      ? [
+          opening.department,
+          opening.location,
+          opening.employmentType,
+          `${opening.fields?.length ?? 0} questions`,
+          opening.task ? 'take-home task' : null,
+        ]
+          .filter(Boolean)
+          .join(' · ')
+      : viewMeta.subtitle;
+
+  if (!spaceCompanies.length)
     return (
-      <NeedsCompany text="You don’t have hiring access in any company yet. Ask an owner to give you a role with Hiring access." />
+      <div className="flex min-h-dvh items-center justify-center bg-neutral-950 p-6">
+        <NeedsCompany text="You don’t have hiring or courses access in any company yet. Ask an owner to give you a role with Hiring access." />
+      </div>
     );
 
-  const status = opening ? OPENING_STATUS_META[opening.status] : null;
-
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-center gap-3">
-        <CompanyPicker
-          companies={hiringCompanies}
-          value={companyId}
-          onChange={onSelectCompany}
-        />
-        <div className="flex-1" />
-        {companyId &&
-          section === 'openings' &&
-          can(companyId, 'hiring:create') && (
-            <AdminButton
-              tone="primary"
-              icon="add"
-              onClick={() => {
-                setEditing(null);
-                setEditorOpen(true);
-              }}
-            >
-              New opening
-            </AdminButton>
-          )}
-      </div>
-      <div className="custom-scrollbar -mx-1 overflow-x-auto px-1 pb-1">
-        <Segmented
-          value={section}
-          onChange={switchSection}
-          options={SECTIONS.map((s) => ({ ...s }))}
-        />
-      </div>
-
+    <HiringLayout
+      companies={spaceCompanies}
+      companyId={companyId}
+      onSelectCompany={onSelectCompany}
+      groups={groups}
+      title={title}
+      subtitle={subtitle}
+      actions={openingActions}
+      footer={footer}
+    >
       {!companyId ? (
-        <NeedsCompany text="Choose a company to see its openings." />
-      ) : section === 'skills' ? (
+        <NeedsCompany text="Choose a company to see its hiring." />
+      ) : view === 'courses' ? (
+        <AdminCourses
+          selectedCompanyId={companyId}
+          onSelectCompany={onSelectCompany}
+          embedded
+          activeId={courseId}
+          onActiveChange={setCourseId}
+          onCoursesChange={setCourses}
+          createSignal={courseCreate}
+        />
+      ) : !hasHiring ? (
+        <NeedsCompany text="You don’t have hiring access in this company." />
+      ) : view.startsWith('onboarding') ? (
+        <AdminOnboarding
+          selectedCompanyId={companyId}
+          onSelectCompany={onSelectCompany}
+          embedded
+          view={ONBOARDING_VIEW[view] ?? 'board'}
+          onCounts={setOnboardingCounts}
+        />
+      ) : view === 'skills' ? (
         <HiringSkills companyId={companyId} canEdit={canEdit} users={users} />
-      ) : section !== 'openings' && sectionProps ? (
-        section === 'queue' ? (
+      ) : view !== 'opening' && sectionProps ? (
+        view === 'candidates' ? (
+          <HiringCandidates {...sectionProps} />
+        ) : view === 'queue' ? (
           <HiringQueue {...sectionProps} />
-        ) : section === 'interviews' ? (
+        ) : view === 'interviews' ? (
           <HiringInterviews {...sectionProps} />
-        ) : section === 'pool' ? (
+        ) : view === 'pool' ? (
           <HiringPool {...sectionProps} />
-        ) : section === 'emails' ? (
+        ) : view === 'funnel' ? (
+          <HiringFunnel
+            {...sectionProps}
+            onOpenOpening={(id, stage) => {
+              setOpeningId(id);
+              if (stage) {
+                setBoardView('list');
+                setStageFilter(stage);
+              }
+              switchView('opening');
+            }}
+          />
+        ) : view === 'emails' ? (
           <HiringEmails {...sectionProps} />
-        ) : section === 'sources' ? (
+        ) : view === 'sources' ? (
           <HiringSources {...sectionProps} />
         ) : (
           <HiringTeam {...sectionProps} />
@@ -776,520 +1158,386 @@ export const AdminHiring = ({
             icon="work"
             title="No openings yet"
             description="Create an opening with its application form, then share the link. Applicants show up here as they apply."
+            action={
+              can(companyId, 'hiring:create') && (
+                <AdminButton
+                  size="sm"
+                  tone="primary"
+                  icon="add"
+                  onClick={() => {
+                    setEditing(null);
+                    setEditorSection('details');
+                    setEditorOpen(true);
+                  }}
+                >
+                  New opening
+                </AdminButton>
+              )
+            }
           />
         </Panel>
       ) : (
-        <div className="grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
-          <div className="flex flex-col gap-2">
-            {openings.map((o) => (
-              <OpeningCard
-                key={o.id}
-                opening={o}
-                active={o.id === openingId}
-                onClick={() => setOpeningId(o.id)}
+        opening && (
+          <div className="flex min-w-0 flex-col gap-4">
+            {opening.status === JOB_OPENING_STATUS.DRAFT && (
+              <p className="flex items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2 text-xs text-neutral-400">
+                <Icon name="info" className="text-[16px]" />
+                This opening is a draft. Publish it to get a link candidates can
+                apply through.
+              </p>
+            )}
+            <div className="flex flex-wrap items-center gap-3">
+              <SearchInput
+                value={search}
+                onChange={setSearch}
+                placeholder="Search applicants…"
+                className="min-w-[200px] flex-1"
               />
-            ))}
-          </div>
+              <Segmented
+                value={boardView}
+                onChange={setBoardView}
+                options={[
+                  { value: 'board', label: 'Board', icon: 'view_kanban' },
+                  { value: 'list', label: 'List', icon: 'table_rows' },
+                ]}
+              />
+              <span
+                className="flex items-center gap-1.5 text-[11px] text-neutral-500"
+                title={
+                  lastSync
+                    ? `Last checked ${lastSync.toLocaleTimeString()}`
+                    : undefined
+                }
+              >
+                <span className="relative flex size-2">
+                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                  <span className="relative inline-flex size-2 rounded-full bg-emerald-400" />
+                </span>
+                Live
+              </span>
+            </div>
 
-          {opening && (
-            <div className="flex min-w-0 flex-col gap-4">
-              <Panel className="flex flex-col gap-4 p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="text-lg font-semibold text-white">
-                        {opening.title}
-                      </h2>
-                      <Pill tone={status?.tone}>{status?.label}</Pill>
-                    </div>
-                    <p className="mt-0.5 text-xs text-neutral-500">
-                      {[
-                        opening.department,
-                        opening.location,
-                        opening.employmentType,
-                        `${opening.fields?.length ?? 0} questions`,
-                      ]
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {canEdit && opening.status !== JOB_OPENING_STATUS.OPEN && (
-                      <AdminButton
-                        size="sm"
-                        tone="primary"
-                        icon="rocket_launch"
-                        loading={busy}
-                        onClick={() =>
-                          setOpeningStatus(JOB_OPENING_STATUS.OPEN)
-                        }
-                      >
-                        {opening.status === JOB_OPENING_STATUS.DRAFT
-                          ? 'Publish'
-                          : 'Reopen'}
-                      </AdminButton>
-                    )}
-                    {canEdit && opening.status === JOB_OPENING_STATUS.OPEN && (
-                      <AdminButton
-                        size="sm"
-                        icon="lock"
-                        loading={busy}
-                        onClick={() =>
-                          setOpeningStatus(JOB_OPENING_STATUS.CLOSED)
-                        }
-                      >
-                        Close
-                      </AdminButton>
-                    )}
-                    {canEdit && (
-                      <IconAction
-                        icon="upload_file"
-                        label="Import applicants from a sheet"
-                        onClick={() => setImportOpen(true)}
-                      />
-                    )}
-                    {canEdit && (
-                      <IconAction
-                        icon="edit"
-                        label="Edit opening and form"
-                        onClick={() => {
-                          setEditing(opening);
-                          setEditorOpen(true);
-                        }}
-                      />
-                    )}
-                    {can(companyId, 'hiring:delete') && (
-                      <IconAction
-                        icon="archive"
-                        label="Archive opening"
-                        tone="danger"
-                        onClick={() => setArchiving(opening)}
-                      />
-                    )}
-                  </div>
-                </div>
-
-                {opening.status !== JOB_OPENING_STATUS.DRAFT ? (
-                  <div className="flex items-center gap-2 rounded-lg border border-white/[0.07] bg-neutral-900/60 px-3 py-2">
-                    <Icon
-                      name="link"
-                      className="text-[18px] text-neutral-500"
-                    />
-                    <span className="min-w-0 flex-1 truncate font-mono text-xs text-neutral-300">
-                      {applyUrl(opening.slug)}
-                    </span>
-                    <CopyButton
-                      value={applyUrl(opening.slug)}
-                      label="Copy link"
-                    />
-                    <IconAction
-                      icon="open_in_new"
-                      label="Open apply page"
-                      onClick={() =>
-                        window.open(applyUrl(opening.slug), '_blank')
-                      }
-                    />
-                  </div>
-                ) : (
-                  <p className="flex items-center gap-2 text-xs text-neutral-500">
-                    <Icon name="info" className="text-[16px]" />
-                    Publish the opening to get a link candidates can apply
-                    through.
-                  </p>
-                )}
-
-                {opening.task ? (
-                  <div className="flex items-center gap-2 rounded-lg border border-white/[0.07] bg-neutral-900/60 px-3 py-2">
-                    <Icon
-                      name="assignment"
-                      className="text-[18px] text-neutral-500"
-                    />
-                    <span className="shrink-0 text-xs text-neutral-400">
-                      Task page
-                      {opening.task.page && TASK_PAGES[opening.task.page]
-                        ? ` · ${TASK_PAGES[opening.task.page].name}`
-                        : ''}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate font-mono text-xs text-neutral-300">
-                      {taskPreviewUrl(opening.id)}
-                    </span>
-                    <CopyButton
-                      value={taskPreviewUrl(opening.id)}
-                      label="Copy preview link"
-                    />
-                    <IconAction
-                      icon="open_in_new"
-                      label="Preview task page"
-                      onClick={() =>
-                        window.open(taskPreviewUrl(opening.id), '_blank')
-                      }
-                    />
-                  </div>
-                ) : (
-                  <p className="flex items-center gap-2 text-xs text-neutral-500">
-                    <Icon name="info" className="text-[16px]" />
-                    No take-home task yet. Add one in Edit, under Task, to
-                    preview its page here.
-                  </p>
-                )}
-              </Panel>
-
-              <div className="flex flex-wrap items-center gap-3">
-                <SearchInput
-                  value={search}
-                  onChange={setSearch}
-                  placeholder="Search applicants…"
-                  className="min-w-[200px] flex-1"
-                />
-                <Segmented
-                  value={view}
-                  onChange={setView}
-                  options={[
-                    { value: 'board', label: 'Board', icon: 'view_kanban' },
-                    { value: 'list', label: 'List', icon: 'table_rows' },
-                  ]}
-                />
-                <span
-                  className="flex items-center gap-1.5 text-[11px] text-neutral-500"
-                  title={
-                    lastSync
-                      ? `Last checked ${lastSync.toLocaleTimeString()}`
-                      : undefined
+            {selected.size > 0 && canEdit && (
+              <div className="flex flex-wrap items-center gap-3 rounded-xl border border-white/15 bg-white/[0.05] px-3 py-2">
+                <span className="text-sm text-neutral-200">
+                  {selected.size} selected
+                </span>
+                <NativeSelect
+                  aria-label="Move selected to"
+                  value={bulkStage}
+                  onChange={(e) =>
+                    setBulkStage(e.target.value as APPLICATION_STAGE)
+                  }
+                  className="h-8 w-44 text-xs"
+                >
+                  <option value="">Move to…</option>
+                  {APPLICATION_STAGES.map((s) => (
+                    <option key={s} value={s}>
+                      {STAGE_META[s].label}
+                    </option>
+                  ))}
+                </NativeSelect>
+                <AdminButton
+                  size="sm"
+                  tone="primary"
+                  disabled={!bulkStage}
+                  loading={busy}
+                  onClick={() =>
+                    bulkStage && moveMany(Array.from(selected), bulkStage)
                   }
                 >
-                  <span className="relative flex size-2">
-                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-                    <span className="relative inline-flex size-2 rounded-full bg-emerald-400" />
-                  </span>
-                  Live
-                </span>
+                  Move
+                </AdminButton>
+                <span className="h-5 w-px bg-white/10" />
+                <AdminButton
+                  size="sm"
+                  icon="mail"
+                  onClick={() => {
+                    setComposeTemplate(null);
+                    setComposeIds(Array.from(selected));
+                  }}
+                >
+                  Email
+                </AdminButton>
+                <AdminButton
+                  size="sm"
+                  tone="ghost"
+                  onClick={() => setSelected(new Set())}
+                >
+                  Clear
+                </AdminButton>
               </div>
+            )}
 
-              {selected.size > 0 && canEdit && (
-                <div className="flex flex-wrap items-center gap-3 rounded-xl border border-white/15 bg-white/[0.05] px-3 py-2">
-                  <span className="text-sm text-neutral-200">
-                    {selected.size} selected
-                  </span>
-                  <NativeSelect
-                    aria-label="Move selected to"
-                    value={bulkStage}
-                    onChange={(e) =>
-                      setBulkStage(e.target.value as APPLICATION_STAGE)
-                    }
-                    className="h-8 w-44 text-xs"
-                  >
-                    <option value="">Move to…</option>
-                    {APPLICATION_STAGES.map((s) => (
-                      <option key={s} value={s}>
-                        {STAGE_META[s].label}
-                      </option>
-                    ))}
-                  </NativeSelect>
-                  <AdminButton
-                    size="sm"
-                    tone="primary"
-                    disabled={!bulkStage}
-                    loading={busy}
-                    onClick={() =>
-                      bulkStage && moveMany(Array.from(selected), bulkStage)
-                    }
-                  >
-                    Move
-                  </AdminButton>
-                  <span className="h-5 w-px bg-white/10" />
-                  <AdminButton
-                    size="sm"
-                    icon="mail"
-                    onClick={() => {
-                      setComposeTemplate(null);
-                      setComposeIds(Array.from(selected));
-                    }}
-                  >
-                    Email
-                  </AdminButton>
-                  <AdminButton
-                    size="sm"
-                    tone="ghost"
-                    onClick={() => setSelected(new Set())}
-                  >
-                    Clear
-                  </AdminButton>
-                </div>
-              )}
-
-              {applicationsLoading && !applications.length ? (
-                <Panel>
-                  <SkeletonRows rows={4} />
-                </Panel>
-              ) : applications.length === 0 ? (
-                <Panel>
-                  <EmptyState
-                    icon="person_search"
-                    title="No applicants yet"
-                    description={
-                      opening.status === JOB_OPENING_STATUS.OPEN
-                        ? 'Share the apply link. New applicants appear here on their own.'
-                        : 'Publish the opening and share its link to start receiving applications.'
-                    }
-                    action={
-                      canEdit && (
-                        <AdminButton
-                          size="sm"
-                          icon="upload_file"
-                          onClick={() => setImportOpen(true)}
-                        >
-                          Import from a sheet
-                        </AdminButton>
-                      )
-                    }
-                  />
-                </Panel>
-              ) : view === 'board' ? (
-                <div className="custom-scrollbar -mx-1 flex gap-3 overflow-x-auto px-1 pb-2">
-                  {APPLICATION_STAGES.map((stage) => {
-                    const meta = STAGE_META[stage];
-                    const rows = searched.filter((a) => a.stage === stage);
-                    return (
-                      <div
-                        key={stage}
-                        onDragOver={(e) => canEdit && e.preventDefault()}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          const id = e.dataTransfer.getData('text/plain');
-                          if (!id || !canEdit) return;
-                          moveMany(
-                            selected.has(id) ? Array.from(selected) : [id],
-                            stage,
-                          );
-                        }}
-                        className="flex w-60 shrink-0 flex-col gap-2 rounded-xl border border-white/[0.07] bg-white/[0.02] p-2"
+            {applicationsLoading && !applications.length ? (
+              <Panel>
+                <SkeletonRows rows={4} />
+              </Panel>
+            ) : applications.length === 0 ? (
+              <Panel>
+                <EmptyState
+                  icon="person_search"
+                  title="No applicants yet"
+                  description={
+                    opening.status === JOB_OPENING_STATUS.OPEN
+                      ? 'Share the apply link. New applicants appear here on their own.'
+                      : 'Publish the opening and share its link to start receiving applications.'
+                  }
+                  action={
+                    canEdit && (
+                      <AdminButton
+                        size="sm"
+                        icon="upload_file"
+                        onClick={() => setImportOpen(true)}
                       >
-                        <div className="flex items-center gap-2 p-1">
-                          {canEdit && rows.length > 0 ? (
+                        Import from a sheet
+                      </AdminButton>
+                    )
+                  }
+                />
+              </Panel>
+            ) : boardView === 'board' ? (
+              <div className="custom-scrollbar -mx-1 flex gap-3 overflow-x-auto px-1 pb-2">
+                {APPLICATION_STAGES.map((stage) => {
+                  const meta = STAGE_META[stage];
+                  const rows = searched.filter((a) => a.stage === stage);
+                  return (
+                    <div
+                      key={stage}
+                      onDragOver={(e) => canEdit && e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const id = e.dataTransfer.getData('text/plain');
+                        if (!id || !canEdit) return;
+                        moveMany(
+                          selected.has(id) ? Array.from(selected) : [id],
+                          stage,
+                        );
+                      }}
+                      className="flex w-60 shrink-0 flex-col gap-2 rounded-xl border border-white/[0.07] bg-white/[0.02] p-2"
+                    >
+                      <div className="flex items-center gap-2 p-1">
+                        {canEdit && rows.length > 0 ? (
+                          <button
+                            type="button"
+                            aria-label={`Select everyone in ${meta.label}`}
+                            title={`Select everyone in ${meta.label}`}
+                            onClick={() =>
+                              setSelected((current) => {
+                                const next = new Set(current);
+                                const all = rows.every((a) => next.has(a.id));
+                                rows.forEach((a) =>
+                                  all ? next.delete(a.id) : next.add(a.id),
+                                );
+                                return next;
+                              })
+                            }
+                          >
+                            <CheckBox
+                              size="sm"
+                              checked={rows.every((a) => selected.has(a.id))}
+                            />
+                          </button>
+                        ) : null}
+                        <span
+                          className="size-2 rounded-full"
+                          style={{ backgroundColor: meta.color }}
+                        />
+                        <span className="flex-1 text-xs font-medium text-neutral-300">
+                          {meta.label}
+                        </span>
+                        <span className="text-[11px] text-neutral-500">
+                          {rows.length}
+                        </span>
+                      </div>
+                      <div className="custom-scrollbar flex max-h-[60vh] min-h-[80px] flex-col gap-2 overflow-y-auto">
+                        {stage === APPLICATION_STAGE.TASK
+                          ? TASK_SETS.map((set) => {
+                              const inSet = rows.filter(
+                                (a) => taskSetOf(a, opening.task) === set.value,
+                              );
+                              if (!inSet.length) return null;
+                              return (
+                                <div
+                                  key={set.value}
+                                  className="flex flex-col gap-2"
+                                >
+                                  <p
+                                    title={set.hint}
+                                    className="flex items-center gap-1.5 px-1 pt-1 text-[10px] font-medium uppercase tracking-wide text-neutral-500"
+                                  >
+                                    <span style={{ color: set.color }}>
+                                      <Icon
+                                        name={set.icon}
+                                        className="text-[13px]"
+                                      />
+                                    </span>
+                                    <span className="flex-1">{set.label}</span>
+                                    {inSet.length}
+                                  </p>
+                                  {inSet.map((a) => (
+                                    <ApplicantCard
+                                      key={a.id}
+                                      application={a}
+                                      selected={selected.has(a.id)}
+                                      canEdit={canEdit}
+                                      onToggle={() => toggle(a.id)}
+                                      onOpen={() => setDetailId(a.id)}
+                                    />
+                                  ))}
+                                </div>
+                              );
+                            })
+                          : rows.map((a) => (
+                              <ApplicantCard
+                                key={a.id}
+                                application={a}
+                                selected={selected.has(a.id)}
+                                canEdit={canEdit}
+                                onToggle={() => toggle(a.id)}
+                                onOpen={() => setDetailId(a.id)}
+                              />
+                            ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <Panel className="overflow-hidden">
+                <div className="border-b border-white/[0.07] p-3">
+                  <Segmented
+                    value={stageFilter}
+                    onChange={setStageFilter}
+                    className="max-w-full overflow-x-auto"
+                    options={[
+                      { value: 'ALL', label: 'All', count: searched.length },
+                      ...APPLICATION_STAGES.map((s) => ({
+                        value: s,
+                        label: STAGE_META[s].label,
+                        count: stageCounts[s],
+                      })),
+                    ]}
+                  />
+                  {stageFilter === APPLICATION_STAGE.TASK && (
+                    <Segmented
+                      value={taskSet}
+                      onChange={setTaskSet}
+                      className="mt-2 max-w-full overflow-x-auto"
+                      options={[
+                        {
+                          value: 'ALL',
+                          label: 'Every task',
+                          count: stageCounts.TASK,
+                        },
+                        ...TASK_SETS.map((t) => ({
+                          value: t.value,
+                          label: t.label,
+                          icon: t.icon,
+                          count: taskSetCounts[t.value],
+                        })),
+                      ]}
+                    />
+                  )}
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[640px] text-left text-sm">
+                    <thead className="text-[11px] uppercase tracking-wider text-neutral-500">
+                      <tr className="border-b border-white/[0.07]">
+                        {canEdit && (
+                          <th className="w-10 px-3 py-2">
                             <button
                               type="button"
-                              aria-label={`Select everyone in ${meta.label}`}
-                              title={`Select everyone in ${meta.label}`}
+                              aria-label="Select all"
                               onClick={() =>
-                                setSelected((current) => {
-                                  const next = new Set(current);
-                                  const all = rows.every((a) => next.has(a.id));
-                                  rows.forEach((a) =>
-                                    all ? next.delete(a.id) : next.add(a.id),
-                                  );
-                                  return next;
-                                })
+                                setSelected(
+                                  visible.every((a) => selected.has(a.id))
+                                    ? new Set()
+                                    : new Set(visible.map((a) => a.id)),
+                                )
                               }
                             >
                               <CheckBox
                                 size="sm"
-                                checked={rows.every((a) => selected.has(a.id))}
+                                checked={
+                                  visible.length > 0 &&
+                                  visible.every((a) => selected.has(a.id))
+                                }
                               />
                             </button>
-                          ) : null}
-                          <span
-                            className="size-2 rounded-full"
-                            style={{ backgroundColor: meta.color }}
-                          />
-                          <span className="flex-1 text-xs font-medium text-neutral-300">
-                            {meta.label}
-                          </span>
-                          <span className="text-[11px] text-neutral-500">
-                            {rows.length}
-                          </span>
-                        </div>
-                        <div className="custom-scrollbar flex max-h-[60vh] min-h-[80px] flex-col gap-2 overflow-y-auto">
-                          {stage === APPLICATION_STAGE.TASK
-                            ? TASK_SETS.map((set) => {
-                                const inSet = rows.filter(
-                                  (a) =>
-                                    taskSetOf(a, opening.task) === set.value,
-                                );
-                                if (!inSet.length) return null;
-                                return (
-                                  <div
-                                    key={set.value}
-                                    className="flex flex-col gap-2"
-                                  >
-                                    <p
-                                      title={set.hint}
-                                      className="flex items-center gap-1.5 px-1 pt-1 text-[10px] font-medium uppercase tracking-wide text-neutral-500"
-                                    >
-                                      <span style={{ color: set.color }}>
-                                        <Icon
-                                          name={set.icon}
-                                          className="text-[13px]"
-                                        />
-                                      </span>
-                                      <span className="flex-1">
-                                        {set.label}
-                                      </span>
-                                      {inSet.length}
-                                    </p>
-                                    {inSet.map((a) => (
-                                      <ApplicantCard
-                                        key={a.id}
-                                        application={a}
-                                        selected={selected.has(a.id)}
-                                        canEdit={canEdit}
-                                        onToggle={() => toggle(a.id)}
-                                        onOpen={() => setDetailId(a.id)}
-                                      />
-                                    ))}
-                                  </div>
-                                );
-                              })
-                            : rows.map((a) => (
-                                <ApplicantCard
-                                  key={a.id}
-                                  application={a}
-                                  selected={selected.has(a.id)}
-                                  canEdit={canEdit}
-                                  onToggle={() => toggle(a.id)}
-                                  onOpen={() => setDetailId(a.id)}
-                                />
-                              ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <Panel className="overflow-hidden">
-                  <div className="border-b border-white/[0.07] p-3">
-                    <Segmented
-                      value={stageFilter}
-                      onChange={setStageFilter}
-                      className="max-w-full overflow-x-auto"
-                      options={[
-                        { value: 'ALL', label: 'All', count: searched.length },
-                        ...APPLICATION_STAGES.map((s) => ({
-                          value: s,
-                          label: STAGE_META[s].label,
-                          count: stageCounts[s],
-                        })),
-                      ]}
-                    />
-                    {stageFilter === APPLICATION_STAGE.TASK && (
-                      <Segmented
-                        value={taskSet}
-                        onChange={setTaskSet}
-                        className="mt-2 max-w-full overflow-x-auto"
-                        options={[
-                          {
-                            value: 'ALL',
-                            label: 'Every task',
-                            count: stageCounts.TASK,
-                          },
-                          ...TASK_SETS.map((t) => ({
-                            value: t.value,
-                            label: t.label,
-                            icon: t.icon,
-                            count: taskSetCounts[t.value],
-                          })),
-                        ]}
-                      />
-                    )}
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[640px] text-left text-sm">
-                      <thead className="text-[11px] uppercase tracking-wider text-neutral-500">
-                        <tr className="border-b border-white/[0.07]">
-                          {canEdit && (
-                            <th className="w-10 px-3 py-2">
-                              <button
-                                type="button"
-                                aria-label="Select all"
-                                onClick={() =>
-                                  setSelected(
-                                    visible.every((a) => selected.has(a.id))
-                                      ? new Set()
-                                      : new Set(visible.map((a) => a.id)),
-                                  )
-                                }
-                              >
-                                <CheckBox
-                                  size="sm"
-                                  checked={
-                                    visible.length > 0 &&
-                                    visible.every((a) => selected.has(a.id))
-                                  }
-                                />
-                              </button>
-                            </th>
-                          )}
-                          <th className="px-3 py-2 font-medium">Applicant</th>
-                          <th className="px-3 py-2 font-medium">Stage</th>
-                          {listFields.map((f) => (
-                            <th key={f.id} className="px-3 py-2 font-medium">
-                              {f.label}
-                            </th>
-                          ))}
-                          <th className="px-3 py-2 font-medium">Applied</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {visible.map((a) => {
-                          const meta = STAGE_META[a.stage];
-                          return (
-                            <tr
-                              key={a.id}
-                              onClick={() => setDetailId(a.id)}
-                              className="cursor-pointer border-b border-white/[0.05] last:border-b-0 hover:bg-white/[0.03]"
-                            >
-                              {canEdit && (
-                                <td className="px-3 py-2.5">
-                                  <button
-                                    type="button"
-                                    aria-label="Select"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      toggle(a.id);
-                                    }}
-                                  >
-                                    <CheckBox
-                                      size="sm"
-                                      checked={selected.has(a.id)}
-                                    />
-                                  </button>
-                                </td>
-                              )}
+                          </th>
+                        )}
+                        <th className="px-3 py-2 font-medium">Applicant</th>
+                        <th className="px-3 py-2 font-medium">Stage</th>
+                        {listFields.map((f) => (
+                          <th key={f.id} className="px-3 py-2 font-medium">
+                            {f.label}
+                          </th>
+                        ))}
+                        <th className="px-3 py-2 font-medium">Applied</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {visible.map((a) => {
+                        const meta = STAGE_META[a.stage];
+                        return (
+                          <tr
+                            key={a.id}
+                            onClick={() => setDetailId(a.id)}
+                            className="cursor-pointer border-b border-white/[0.05] last:border-b-0 hover:bg-white/[0.03]"
+                          >
+                            {canEdit && (
                               <td className="px-3 py-2.5">
-                                <p className="text-neutral-100">{a.name}</p>
-                                <p className="text-xs text-neutral-500">
-                                  {a.email}
-                                </p>
-                              </td>
-                              <td className="px-3 py-2.5">
-                                <Pill tone={meta.tone}>{meta.label}</Pill>
-                              </td>
-                              {listFields.map((f) => (
-                                <td
-                                  key={f.id}
-                                  className="max-w-[220px] truncate px-3 py-2.5 text-neutral-300"
+                                <button
+                                  type="button"
+                                  aria-label="Select"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggle(a.id);
+                                  }}
                                 >
-                                  {answerText(a.answers?.[f.id]) || '—'}
-                                </td>
-                              ))}
-                              <td className="whitespace-nowrap px-3 py-2.5 text-xs text-neutral-500">
-                                {timeAgo(a.submittedAt)}
+                                  <CheckBox
+                                    size="sm"
+                                    checked={selected.has(a.id)}
+                                  />
+                                </button>
                               </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                    {visible.length === 0 && (
-                      <p className="px-4 py-8 text-center text-sm text-neutral-500">
-                        Nobody here yet.
-                      </p>
-                    )}
-                  </div>
-                </Panel>
-              )}
-            </div>
-          )}
-        </div>
+                            )}
+                            <td className="px-3 py-2.5">
+                              <p className="text-neutral-100">{a.name}</p>
+                              <p className="text-xs text-neutral-500">
+                                {a.email}
+                              </p>
+                            </td>
+                            <td className="px-3 py-2.5">
+                              <Pill tone={meta.tone}>{meta.label}</Pill>
+                            </td>
+                            {listFields.map((f) => (
+                              <td
+                                key={f.id}
+                                className="max-w-[220px] truncate px-3 py-2.5 text-neutral-300"
+                              >
+                                {answerText(a.answers?.[f.id]) || '—'}
+                              </td>
+                            ))}
+                            <td className="whitespace-nowrap px-3 py-2.5 text-xs text-neutral-500">
+                              {timeAgo(a.submittedAt)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  {visible.length === 0 && (
+                    <p className="px-4 py-8 text-center text-sm text-neutral-500">
+                      Nobody here yet.
+                    </p>
+                  )}
+                </div>
+              </Panel>
+            )}
+          </div>
+        )
       )}
 
       {companyId && (
@@ -1298,6 +1546,7 @@ export const AdminHiring = ({
           onOpenChange={setEditorOpen}
           companyId={companyId}
           opening={editing}
+          initialSection={editorSection}
           users={users}
           onSaved={(saved) => {
             setOpenings((rows) =>
@@ -1453,6 +1702,6 @@ export const AdminHiring = ({
         loading={busy}
         onConfirm={archive}
       />
-    </div>
+    </HiringLayout>
   );
 };

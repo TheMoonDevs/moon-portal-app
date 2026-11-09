@@ -139,8 +139,7 @@ export function extendedDueAt(
   if (due <= now)
     return { dueAt: null, error: 'The new due date has to be in the future.' };
   if (
-    due >
-    endOfUtcDay(new Date(now.getTime() + MAX_EXTENSION_DAYS * 86400000))
+    due > endOfUtcDay(new Date(now.getTime() + MAX_EXTENSION_DAYS * 86400000))
   )
     return {
       dueAt: null,

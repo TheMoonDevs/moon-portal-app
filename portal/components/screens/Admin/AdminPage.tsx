@@ -14,9 +14,6 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { AdminUsers } from './AdminUsers';
 import { AdminBadges } from './Badges/AdminBadges';
-import { AdminCourses } from './Courses/AdminCourses';
-import { AdminHiring } from './Hiring/AdminHiring';
-import { AdminOnboarding } from './Onboarding/AdminOnboarding';
 import { AdminOverview } from './Overview/AdminOverview';
 import SendNotifications from './SendNotifications';
 import { AdminCommandPalette } from './shared/AdminCommandPalette';
@@ -26,6 +23,7 @@ import {
   ADMIN_TABS,
   DEFAULT_ADMIN_TAB,
   getAdminTab,
+  MOVED_TO_HIRING,
 } from './shared/adminNav';
 import { AdminButton, Icon, IconAction, UserAvatar } from './shared/AdminUI';
 import { AdminCompanies } from './Workspace/AdminCompanies';
@@ -72,6 +70,15 @@ export const AdminPage = () => {
     [isAdmin, canPortal, workspace.workCompanies, hiringOnly],
   );
 
+  // Hiring, onboarding and courses are in their own space, linked below.
+  const canHire =
+    isAdmin ||
+    workspace.workCompanies.some(
+      (c) =>
+        hasPermission(c.permissions, 'hiring:read') ||
+        hasPermission(c.permissions, 'courses:edit'),
+    );
+
   const [users, setUsers] = useState<User[]>([]);
   // Inactive people only show up where you look for them (the Users tab).
   const activeUsers = useMemo(
@@ -96,7 +103,17 @@ export const AdminPage = () => {
   useEffect(() => {
     if (!adminUser || workspace.loading) return;
     if (!isAdmin && !workspace.canOpenAdmin) router.replace(APP_ROUTES.home);
-  }, [adminUser, isAdmin, workspace.loading, workspace.canOpenAdmin, router]);
+    // Here only for hiring: that's all in the Hiring space.
+    else if (!visibleTabs.length && canHire) router.replace(APP_ROUTES.hiring);
+  }, [
+    adminUser,
+    isAdmin,
+    workspace.loading,
+    workspace.canOpenAdmin,
+    visibleTabs.length,
+    canHire,
+    router,
+  ]);
 
   // Keep a company selected across the company tabs. A new visit opens on
   // the top company (companies come in the user's points order); a pick is
@@ -152,9 +169,20 @@ export const AdminPage = () => {
 
   useEffect(() => {
     setCollapsed(localStorage.getItem(SIDEBAR_STORAGE_KEY) === 'true');
-    const tabFromUrl = new URLSearchParams(window.location.search).get('tab');
+    const params = new URLSearchParams(window.location.search);
+    const tabFromUrl = params.get('tab');
+    // Hiring, onboarding and courses live in the Hiring space now; old
+    // links (emails, notifications) are sent on with the rest of their query.
+    const moved = tabFromUrl ? MOVED_TO_HIRING[tabFromUrl] : undefined;
+    if (moved) {
+      params.delete('tab');
+      if (!params.get('section') && !params.get('opening'))
+        params.set('view', moved);
+      router.replace(`${APP_ROUTES.hiring}?${params}`);
+      return;
+    }
     if (tabFromUrl) setActiveTabId(getAdminTab(tabFromUrl).id);
-  }, []);
+  }, [router]);
 
   const toggleCollapsed = () => {
     setCollapsed((previous) => {
@@ -246,28 +274,6 @@ export const AdminPage = () => {
             onSelectProject={setProjectId}
           />
         );
-      case 'hiring':
-        return (
-          <AdminHiring
-            users={users}
-            selectedCompanyId={companyId}
-            onSelectCompany={selectCompany}
-          />
-        );
-      case 'onboarding':
-        return (
-          <AdminOnboarding
-            selectedCompanyId={companyId}
-            onSelectCompany={selectCompany}
-          />
-        );
-      case 'courses':
-        return (
-          <AdminCourses
-            selectedCompanyId={companyId}
-            onSelectCompany={selectCompany}
-          />
-        );
       case 'roles':
         return (
           <AdminRoles
@@ -352,6 +358,19 @@ export const AdminPage = () => {
       {navigation}
 
       <div className="shrink-0 border-t border-white/[0.07] p-3">
+        {canHire && (
+          <button
+            onClick={() => router.push(APP_ROUTES.hiring)}
+            className={cn(
+              'flex h-10 w-full items-center gap-3 rounded-lg px-3 text-sm text-neutral-400 transition-colors hover:bg-white/[0.05] hover:text-neutral-100',
+              collapsed && 'justify-center px-0',
+            )}
+            title={collapsed ? 'Hiring space' : undefined}
+          >
+            <Icon name="person_search" className="text-[20px]" />
+            {!collapsed && 'Hiring space'}
+          </button>
+        )}
         <button
           onClick={() => router.push(APP_ROUTES.home)}
           className={cn(

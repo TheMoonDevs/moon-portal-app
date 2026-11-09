@@ -10,6 +10,7 @@ import {
   MAX_FIELDS,
   newFieldId,
 } from '@/lib/hiring/forms';
+import { SHARE_CHANNELS, taggedApplyUrl } from '@/lib/hiring/sources';
 import { STARTER_TASKS, TASK_PAGES } from '@/lib/hiring/taskPages';
 import { MAX_DELIVERABLES } from '@/lib/hiring/tasks';
 import { cn } from '@/lib/utils';
@@ -26,6 +27,7 @@ import {
   AdminButton,
   AdminModal,
   CheckBox,
+  CopyButton,
   Field,
   Icon,
   IconAction,
@@ -36,10 +38,102 @@ import {
 } from '../shared/AdminUI';
 import { errorText } from '../Workspace/shared';
 import {
+  applyUrl,
   OPENING_STATUS_META,
   type OpeningRow,
   QUESTION_PRESETS,
+  taskPreviewUrl,
 } from './hiringMeta';
+
+export type OpeningEditorSection = 'details' | 'form' | 'task' | 'links';
+
+/** One link with copy and open buttons. */
+const LinkRow = ({
+  icon,
+  label,
+  hint,
+  value,
+}: {
+  icon: string;
+  label: string;
+  hint?: string;
+  value: string;
+}) => (
+  <div className="flex flex-col gap-1.5">
+    <div className="flex items-center gap-2 text-xs text-neutral-400">
+      <Icon name={icon} className="text-[16px]" />
+      <span className="font-medium text-neutral-200">{label}</span>
+      {hint && <span className="text-neutral-500">{hint}</span>}
+    </div>
+    <div className="flex items-center gap-2 rounded-lg border border-white/[0.07] bg-neutral-900/60 px-3 py-1.5">
+      <span className="min-w-0 flex-1 truncate font-mono text-xs text-neutral-300">
+        {value}
+      </span>
+      <CopyButton value={value} label="Copy" />
+      <IconAction
+        icon="open_in_new"
+        label="Open"
+        onClick={() => window.open(value, '_blank')}
+      />
+    </div>
+  </div>
+);
+
+/** The opening's links: where people apply, per channel, and the task page. */
+const OpeningLinks = ({ opening }: { opening: OpeningRow }) => {
+  const live = opening.status === JOB_OPENING_STATUS.OPEN;
+  const link = applyUrl(opening.slug);
+  return (
+    <div className="flex flex-col gap-5">
+      {opening.status === JOB_OPENING_STATUS.DRAFT ? (
+        <p className="flex items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3 text-sm text-neutral-400">
+          <Icon name="info" className="text-[18px]" />
+          Publish the opening to get a link candidates can apply through.
+        </p>
+      ) : (
+        <>
+          <LinkRow
+            icon="link"
+            label="Apply link"
+            hint={live ? undefined : '· closed, so it shows a closed page'}
+            value={link}
+          />
+          <div className="flex flex-col gap-3">
+            <p className="text-xs text-neutral-500">
+              Tagged links show which channel each applicant came from, in
+              Sources.
+            </p>
+            {SHARE_CHANNELS.map((channel) => (
+              <LinkRow
+                key={channel.key}
+                icon={channel.icon}
+                label={channel.label}
+                value={taggedApplyUrl(link, channel.key)}
+              />
+            ))}
+          </div>
+        </>
+      )}
+      {opening.task ? (
+        <LinkRow
+          icon="assignment"
+          label="Task page preview"
+          hint={
+            opening.task.page && TASK_PAGES[opening.task.page]
+              ? `· ${TASK_PAGES[opening.task.page].name}`
+              : undefined
+          }
+          value={taskPreviewUrl(opening.id)}
+        />
+      ) : (
+        <p className="flex items-center gap-2 text-xs text-neutral-500">
+          <Icon name="info" className="text-[16px]" />
+          No take-home task yet. Add one under Task to preview its page here.
+        </p>
+      )}
+    </div>
+  );
+};
 
 type DraftField = FormField & { optionsText?: string };
 
@@ -505,6 +599,7 @@ export const OpeningEditor = ({
   opening,
   users,
   onSaved,
+  initialSection = 'details',
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -512,17 +607,19 @@ export const OpeningEditor = ({
   opening: OpeningRow | null;
   users: User[];
   onSaved: (opening: OpeningRow) => void;
+  /** The part to open on, e.g. Links from the opening's link button. */
+  initialSection?: OpeningEditorSection;
 }) => {
   const [draft, setDraft] = useState(emptyDraft);
-  const [section, setSection] = useState<'details' | 'form' | 'task'>(
-    'details',
-  );
+  const [section, setSection] = useState<OpeningEditorSection>('details');
   const [saving, setSaving] = useState(false);
   const [members, setMembers] = useState<LeadOption[] | null>(null);
 
   useEffect(() => {
     if (!open) return;
-    setSection('details');
+    setSection(
+      opening || initialSection !== 'links' ? initialSection : 'details',
+    );
     setDraft(
       opening
         ? {
@@ -552,6 +649,7 @@ export const OpeningEditor = ({
             ],
           },
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, opening]);
 
   // The lead is one of the company's members; without access to the member
@@ -683,6 +781,9 @@ export const OpeningEditor = ({
               count: draft.fields.length,
             },
             { value: 'task', label: 'Task', icon: 'assignment' },
+            ...(opening
+              ? [{ value: 'links' as const, label: 'Links', icon: 'link' }]
+              : []),
           ]}
         />
 
@@ -854,6 +955,8 @@ export const OpeningEditor = ({
             </div>
             <QuestionList fields={draft.fields} setFields={setFields} presets />
           </div>
+        ) : section === 'links' && opening ? (
+          <OpeningLinks opening={opening} />
         ) : (
           <TaskEditor
             task={draft.task}

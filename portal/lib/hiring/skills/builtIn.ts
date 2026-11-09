@@ -36,7 +36,7 @@ The hiring workflow Subhakar (founder, TheMoonDevs and Zone Studios) uses. It ru
 1. \`list_job_openings\` to find the opening (match the role name loosely, e.g. "AI visual artist" = "AI Concept Artist & Visual Designer (Intern)"). \`get_job_opening\` for the full description, notes, **screening requirements**, hiring lead (with their meeting link) and task.
    - If the opening has no screening requirements, ask Subhakar (or HR) what candidates must show, draft them from the job post and the preferences in step 2, and save them with \`update_job_opening\` \`screening\` once they agree.
 2. \`list_applicants\` for the opening (limit 200). Use \`get_applicant\` for anyone whose answers are cut short.
-3. Note each applicant's \`url\`. It opens them in the Hiring panel (\`https://portal.themoondevs.com/admin?tab=hiring&application=<id>\`).
+3. Note each applicant's \`url\`. It opens them in the Hiring panel (\`https://portal.themoondevs.com/hiring?application=<id>\`).
 
 ## 2. Review them
 
