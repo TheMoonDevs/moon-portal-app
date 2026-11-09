@@ -171,6 +171,122 @@ const emptyDraft = {
   hiringLeadId: '',
   replyToLead: true,
   task: null as DraftTask | null,
+  followUps: {
+    nudgeUnopenedDays: '',
+    remindBeforeDue: false,
+    rejectNoShowDays: '',
+  },
+};
+
+type DraftFollowUps = (typeof emptyDraft)['followUps'];
+
+/** What the portal sends about the task on its own, each morning. */
+const FollowUpsEditor = ({
+  value,
+  onChange,
+  hasDueDate,
+}: {
+  value: DraftFollowUps;
+  onChange: (value: DraftFollowUps) => void;
+  hasDueDate: boolean;
+}) => {
+  const set = <K extends keyof DraftFollowUps>(
+    key: K,
+    next: DraftFollowUps[K],
+  ) => onChange({ ...value, [key]: next });
+  return (
+    <div className="flex flex-col gap-3 rounded-xl border border-white/[0.07] bg-white/[0.02] p-4">
+      <div>
+        <p className="flex items-center gap-2 text-sm font-medium text-neutral-100">
+          <Icon name="autorenew" className="text-[18px] text-neutral-400" />
+          Automatic follow-ups
+        </p>
+        <p className="mt-0.5 text-xs text-neutral-500">
+          Sent each morning from the hiring lead, once per candidate. Each shows
+          on the applicant like any other email.
+        </p>
+      </div>
+      <label className="flex flex-wrap items-center gap-2 text-sm text-neutral-300">
+        <button
+          type="button"
+          aria-pressed={!!value.nudgeUnopenedDays}
+          onClick={() =>
+            set('nudgeUnopenedDays', value.nudgeUnopenedDays ? '' : '2')
+          }
+        >
+          <CheckBox checked={!!value.nudgeUnopenedDays} size="sm" />
+        </button>
+        Check in with people who haven’t opened the task after
+        <NativeSelect
+          aria-label="Days before the check-in"
+          value={value.nudgeUnopenedDays || '2'}
+          disabled={!value.nudgeUnopenedDays}
+          onChange={(e) => set('nudgeUnopenedDays', e.target.value)}
+          className="h-8 w-24 text-xs"
+        >
+          {[1, 2, 3, 4, 5, 7].map((d) => (
+            <option key={d} value={d}>
+              {d} {d === 1 ? 'day' : 'days'}
+            </option>
+          ))}
+        </NativeSelect>
+      </label>
+      <label
+        className={cn(
+          'flex flex-wrap items-center gap-2 text-sm text-neutral-300',
+          !hasDueDate && 'opacity-50',
+        )}
+      >
+        <button
+          type="button"
+          aria-pressed={value.remindBeforeDue}
+          onClick={() =>
+            hasDueDate && set('remindBeforeDue', !value.remindBeforeDue)
+          }
+        >
+          <CheckBox checked={value.remindBeforeDue} size="sm" />
+        </button>
+        Remind them the day before the task is due
+      </label>
+      <label
+        className={cn(
+          'flex flex-wrap items-center gap-2 text-sm text-neutral-300',
+          !hasDueDate && 'opacity-50',
+        )}
+      >
+        <button
+          type="button"
+          aria-pressed={!!value.rejectNoShowDays}
+          onClick={() =>
+            hasDueDate &&
+            set('rejectNoShowDays', value.rejectNoShowDays ? '' : '2')
+          }
+        >
+          <CheckBox checked={!!value.rejectNoShowDays} size="sm" />
+        </button>
+        Close applications with no task
+        <NativeSelect
+          aria-label="Days after the due date"
+          value={value.rejectNoShowDays || '2'}
+          disabled={!value.rejectNoShowDays}
+          onChange={(e) => set('rejectNoShowDays', e.target.value)}
+          className="h-8 w-24 text-xs"
+        >
+          {[1, 2, 3, 5, 7, 14].map((d) => (
+            <option key={d} value={d}>
+              {d} {d === 1 ? 'day' : 'days'}
+            </option>
+          ))}
+        </NativeSelect>
+        after the due date, with the “task not sent” email
+      </label>
+      {!hasDueDate && (
+        <p className="text-xs text-neutral-500">
+          Set “Due after (days)” above to remind people or close no-shows.
+        </p>
+      )}
+    </div>
+  );
 };
 
 /** Turns the editor's questions back into form fields. */
@@ -636,6 +752,15 @@ export const OpeningEditor = ({
             hiringLeadId: opening.hiringLeadId ?? '',
             replyToLead: opening.replyToLead ?? true,
             task: opening.task ? toDraftTask(opening.task) : null,
+            followUps: {
+              nudgeUnopenedDays: opening.followUps?.nudgeUnopenedDays
+                ? String(opening.followUps.nudgeUnopenedDays)
+                : '',
+              remindBeforeDue: !!opening.followUps?.remindBeforeDue,
+              rejectNoShowDays: opening.followUps?.rejectNoShowDays
+                ? String(opening.followUps.rejectNoShowDays)
+                : '',
+            },
           }
         : {
             ...emptyDraft,
@@ -720,10 +845,21 @@ export const OpeningEditor = ({
 
     setSaving(true);
     try {
+      const hasDue = !!task?.dueDays;
       const payload = {
         ...draft,
         fields,
         task,
+        followUps: task
+          ? {
+              nudgeUnopenedDays:
+                Number(draft.followUps.nudgeUnopenedDays) || null,
+              remindBeforeDue: hasDue && draft.followUps.remindBeforeDue,
+              rejectNoShowDays: hasDue
+                ? Number(draft.followUps.rejectNoShowDays) || null
+                : null,
+            }
+          : null,
         hiringLeadId: draft.hiringLeadId || null,
       };
       const res = opening
@@ -958,10 +1094,19 @@ export const OpeningEditor = ({
         ) : section === 'links' && opening ? (
           <OpeningLinks opening={opening} />
         ) : (
-          <TaskEditor
-            task={draft.task}
-            onChange={(task) => set('task', task)}
-          />
+          <div className="flex flex-col gap-4">
+            <TaskEditor
+              task={draft.task}
+              onChange={(task) => set('task', task)}
+            />
+            {draft.task && (
+              <FollowUpsEditor
+                value={draft.followUps}
+                onChange={(followUps) => set('followUps', followUps)}
+                hasDueDate={!!Number(draft.task.dueDays)}
+              />
+            )}
+          </div>
         )}
       </div>
     </AdminModal>

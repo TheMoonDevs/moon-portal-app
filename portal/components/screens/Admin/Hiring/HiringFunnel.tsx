@@ -122,7 +122,7 @@ const FunnelCard = ({
                 type="button"
                 onClick={() => onOpenStage(s.stage)}
                 title={`Open ${meta.label} in this opening`}
-                className="grid grid-cols-[96px_minmax(0,1fr)_56px_72px] items-center gap-3 rounded-lg px-1 py-1 text-left transition-colors hover:bg-white/[0.04] sm:grid-cols-[110px_minmax(0,1fr)_64px_80px_80px]"
+                className="grid grid-cols-[96px_minmax(0,1fr)_56px_72px] items-center gap-3 rounded-lg p-1 text-left transition-colors hover:bg-white/[0.04] sm:grid-cols-[110px_minmax(0,1fr)_64px_80px_80px]"
               >
                 <span className="flex items-center gap-2 truncate text-xs text-neutral-300">
                   <span

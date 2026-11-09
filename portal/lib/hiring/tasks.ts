@@ -4,6 +4,7 @@
  * task page and the API share one set of rules.
  */
 import type { JobApplication, JobTask, TaskDeliverable } from '@/models/hiring';
+import { HIRING_EMAIL_STATUS } from '@/models/hiring';
 
 import {
   MAX_DESCRIPTION_LENGTH,
@@ -165,3 +166,31 @@ export function canSubmitTask(
   const due = applicationDueAt(task, application);
   return !!due && now < due;
 }
+
+const OPENED_STATUSES = [
+  HIRING_EMAIL_STATUS.OPENED,
+  HIRING_EMAIL_STATUS.CLICKED,
+];
+
+const timeOf = (value: unknown) => {
+  const t = new Date(String(value ?? '')).getTime();
+  return Number.isFinite(t) ? t : null;
+};
+
+/**
+ * Whether the candidate shows any sign of having seen their task: they
+ * opened the task page, sent it, or opened an email sent since the task
+ * email (usually the task email itself).
+ */
+export const taskSeen = (
+  a: Pick<
+    JobApplication,
+    'taskOpens' | 'taskSubmission' | 'lastEmail' | 'taskSentAt'
+  >,
+) =>
+  !!a.taskOpens?.count ||
+  !!a.taskSubmission ||
+  (!!a.lastEmail &&
+    OPENED_STATUSES.includes(a.lastEmail.status) &&
+    (timeOf(a.lastEmail.at) ?? 0) >=
+      (timeOf(a.taskSentAt) ?? Infinity) - 60_000);
