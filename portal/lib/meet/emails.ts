@@ -9,7 +9,7 @@ import { emailHtml } from '@/lib/hiring/emailTemplates';
 import type { MeetBooking, MeetProfile } from '@/models/meet';
 
 import { buildInvite, googleCalendarLink } from './ics';
-import { hostName, manageLink } from './server';
+import { hostName, joinLink, manageLink } from './server';
 import { formatRange } from './time';
 
 /*
@@ -79,8 +79,17 @@ const shortDate = (iso: string, tz: string) =>
 const lines = (...parts: Array<string | null | false | undefined>) =>
   parts.filter((p): p is string => typeof p === 'string').join('\n\n');
 
-function invite(ctx: MeetEmailContext, method: 'REQUEST' | 'CANCEL') {
+/** Where each side joins: the portal's join link, which notes who came. */
+const joinUrl = (ctx: MeetEmailContext, side: 'host' | 'guest') =>
+  ctx.booking.meetingUrl ? joinLink(ctx.origin, ctx.booking, side) : null;
+
+function invite(
+  ctx: MeetEmailContext,
+  method: 'REQUEST' | 'CANCEL',
+  side: 'host' | 'guest',
+) {
   const { booking } = ctx;
+  const join = joinUrl(ctx, side);
   const organizerEmail =
     ctx.host.email || senderAddress(MEET_SENDER) || 'meet@localhost';
   const content = buildInvite({
@@ -91,13 +100,13 @@ function invite(ctx: MeetEmailContext, method: 'REQUEST' | 'CANCEL') {
     end: booking.end,
     summary: meetingTitle(ctx),
     description: lines(
-      booking.meetingUrl && `Join: ${booking.meetingUrl}`,
+      join && `Join: ${join}`,
       booking.guestNote &&
         `Note from ${booking.guestName}: ${booking.guestNote}`,
       `Change or cancel: ${manageLink(ctx.origin, booking.token)}`,
     ),
-    location: booking.meetingUrl,
-    url: booking.meetingUrl,
+    location: join,
+    url: join,
     organizer: { name: hostName(ctx.host), email: organizerEmail },
     attendee: { name: booking.guestName, email: booking.guestEmail },
   });
@@ -154,8 +163,8 @@ export function meetEmails(
     start: booking.start,
     end: booking.end,
     summary: meetingTitle(ctx),
-    details: booking.meetingUrl ? `Join: ${booking.meetingUrl}` : '',
-    location: booking.meetingUrl,
+    details: joinUrl(ctx, 'guest') ? `Join: ${joinUrl(ctx, 'guest')}` : '',
+    location: joinUrl(ctx, 'guest'),
   });
   const applicant = ctx.role ? `Applicant for ${ctx.role}.` : null;
   const out: Array<OutgoingEmail | null | false | undefined> = [];
@@ -186,12 +195,12 @@ export function meetEmails(
           lines(
             `Hi ${firstName(booking.guestName)},`,
             `Your meeting with ${host} is confirmed.`,
-            `When: ${when(ctx, guestTz)}\nWhere: ${booking.meetingUrl}`,
+            `When: ${when(ctx, guestTz)}\nWhere: ${joinUrl(ctx, 'guest')}`,
             reason,
             `The calendar invite is attached. If your mail app doesn't show it, add it to Google Calendar: ${calendar}`,
             `Can't make it? Cancel here: ${manage}`,
           ),
-          invite(ctx, 'REQUEST'),
+          invite(ctx, 'REQUEST', 'guest'),
         ),
         message(
           ctx,
@@ -199,12 +208,12 @@ export function meetEmails(
           `Confirmed: ${booking.guestName}, ${shortDate(booking.start, hostTz)}`,
           lines(
             `Your meeting with ${booking.guestName} (${booking.guestEmail}) is confirmed.`,
-            `When: ${when(ctx, hostTz)}\nWhere: ${booking.meetingUrl}`,
+            `When: ${when(ctx, hostTz)}\nWhere: ${joinUrl(ctx, 'host')}`,
             applicant,
             booking.guestNote && `Their note: “${booking.guestNote}”`,
             `The calendar invite is attached. All your meetings: ${ctx.origin}/meet`,
           ),
-          invite(ctx, 'REQUEST'),
+          invite(ctx, 'REQUEST', 'host'),
         ),
       );
       break;
@@ -243,7 +252,9 @@ export function meetEmails(
       break;
 
     case 'cancelled-by-host': {
-      const cancel = ctx.wasConfirmed ? invite(ctx, 'CANCEL') : undefined;
+      const cancel = ctx.wasConfirmed
+        ? invite(ctx, 'CANCEL', 'guest')
+        : undefined;
       out.push(
         message(
           ctx,
@@ -270,7 +281,9 @@ export function meetEmails(
     }
 
     case 'cancelled-by-guest': {
-      const cancel = ctx.wasConfirmed ? invite(ctx, 'CANCEL') : undefined;
+      const cancel = ctx.wasConfirmed
+        ? invite(ctx, 'CANCEL', 'guest')
+        : undefined;
       out.push(
         message(
           ctx,

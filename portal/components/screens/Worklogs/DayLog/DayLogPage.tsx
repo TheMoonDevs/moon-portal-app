@@ -289,7 +289,9 @@ export const DayLogPage = ({
   // The sheet's parts for the view picked in the header.
   const fromBefore = (t: DayTask) =>
     !t.draft && !!t.forDate && t.forDate < date;
-  const byClaude = (t: DayTask) => !!t.madeBy && t.madeBy !== 'person';
+  // Meetings (made by Meet) are the person's own to tick, so they stay mine.
+  const byClaude = (t: DayTask) =>
+    !!t.madeBy && t.madeBy !== 'person' && t.madeBy !== 'meet';
   const dayName = date === today ? 'Today' : heading.name;
   const beforeName = date === today ? 'Pending from before' : 'From before';
   const addHere = { place: null };

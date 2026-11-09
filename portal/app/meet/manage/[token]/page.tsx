@@ -5,7 +5,12 @@ import {
   type GuestBooking,
   ManageBookingPage,
 } from '@/components/screens/Meet/ManageBookingPage';
-import { hostName, isBookingToken, loadHost } from '@/lib/meet/server';
+import {
+  hostName,
+  isBookingToken,
+  joinLink,
+  loadHost,
+} from '@/lib/meet/server';
 import { db } from '@/lib/mongodb/db-client';
 import type { MeetBooking, MeetProfile } from '@/models/meet';
 
@@ -45,7 +50,8 @@ export default async function ManageBooking({ params }: Props) {
     requestedStart: booking.requestedStart,
     status: booking.status,
     reason: booking.reason ?? null,
-    meetingUrl: booking.meetingUrl ?? null,
+    // Through the portal, which notes that they joined.
+    meetingUrl: booking.meetingUrl ? joinLink('', booking, 'guest') : null,
     bookAgainUrl:
       profile?.isActive && profile.code ? `/meet/${profile.code}` : null,
   };

@@ -303,7 +303,7 @@ export const BookingPage = ({ profile }: { profile: PublicMeetProfile }) => {
                 target="_blank"
                 rel="noreferrer"
               >
-                {done.meetingUrl}
+                Join the call
               </a>
             )}
             <a

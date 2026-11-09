@@ -87,6 +87,8 @@ export const meetLink = (origin: string, code: string) =>
 export const manageLink = (origin: string, token: string) =>
   `${origin}/meet/manage/${token}`;
 
+export { joinLink } from './links';
+
 /* ---------------------------------- slots -------------------------------- */
 
 /** Times the host already has, from now on, except `exceptId`. */

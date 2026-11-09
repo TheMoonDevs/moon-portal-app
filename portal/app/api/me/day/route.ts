@@ -1,5 +1,6 @@
 import { mergeCopies } from '@/lib/daywork/duplicates';
 import { isDay, loadDay } from '@/lib/daywork/server';
+import { syncMeetingTasks } from '@/lib/meet/meetingTasks';
 import { db } from '@/lib/mongodb/db-client';
 import { linkCandidates } from '@/lib/worklogs/linker';
 import { fail, ok, requireUser } from '@/lib/workspace/server';
@@ -43,6 +44,8 @@ export async function GET(request: Request) {
 
   // Copies of one task (left by the old carry-over) become one task first.
   await mergeCopies(user.id).catch(() => 0);
+  // Confirmed meetings around today are tasks on their days.
+  await syncMeetingTasks(user);
   const [day, candidates] = await Promise.all([
     loadDay(user.id, date),
     linkCandidates(user),

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import { joinLink } from '@/lib/meet/links';
 import { MAX_REASON } from '@/lib/meet/rules';
 import { dateIn, formatDay, formatRange, formatTime } from '@/lib/meet/time';
 import { cn } from '@/lib/utils';
@@ -198,9 +199,10 @@ const BookingRow = ({
           booking.meetingUrl &&
           !past && (
             <a
-              href={booking.meetingUrl}
+              href={joinLink('', booking, 'host')}
               target="_blank"
               rel="noreferrer"
+              title={booking.meetingUrl}
               className="mt-1 inline-flex items-center gap-1 text-xs text-sky-300 underline auto-light:text-sky-700"
             >
               <Icon name="videocam" className="text-[14px]" />

@@ -6,6 +6,7 @@ import { MAX_NOTE } from '@/lib/meet/rules';
 import {
   isBookingRateLimited,
   isMeetCode,
+  joinLink,
   manageLink,
   slotsFor,
   toSlot,
@@ -88,7 +89,9 @@ export async function POST(request: Request, { params }: Params) {
       status: booking.status,
       start: booking.start,
       end: booking.end,
-      meetingUrl: booking.meetingUrl ?? null,
+      meetingUrl: booking.meetingUrl
+        ? joinLink(originOf(request), booking, 'guest')
+        : null,
       manageUrl: manageLink(originOf(request), booking.token),
     });
   } catch (err) {

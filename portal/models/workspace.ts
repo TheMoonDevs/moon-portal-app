@@ -279,6 +279,11 @@ export type Task = Loose<
     goalPartId?: Nullable<string>;
     /** Set when a schedule created the task. */
     scheduleId?: Nullable<string>;
+    /**
+     * The meeting this task is for (lib/meet/meetingTasks): one per person
+     * per confirmed meeting, ticked done once it has happened.
+     */
+    meetBookingId?: Nullable<string>;
     /** Set when the task was made from a step of a plan. */
     planId?: Nullable<string>;
     /** The worklog line this task was made from; it follows that line. */

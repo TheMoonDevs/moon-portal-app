@@ -1,7 +1,7 @@
 import { originOf } from '@/lib/mcp/tokens';
 import { acceptProposal, cancelBooking, MeetError } from '@/lib/meet/bookings';
 import { MAX_REASON } from '@/lib/meet/rules';
-import { isBookingToken } from '@/lib/meet/server';
+import { isBookingToken, joinLink } from '@/lib/meet/server';
 import { db } from '@/lib/mongodb/db-client';
 import { fail, ok } from '@/lib/workspace/server';
 import type { MeetBooking } from '@/models/meet';
@@ -33,7 +33,10 @@ export async function POST(request: Request, { params }: Params) {
           ? await cancelBooking(booking, 'GUEST', reason, origin)
           : null;
     if (!updated) return fail(400, 'Unknown action.');
-    return ok({ status: updated.status, meetingUrl: updated.meetingUrl });
+    return ok({
+      status: updated.status,
+      meetingUrl: updated.meetingUrl ? joinLink('', updated, 'guest') : null,
+    });
   } catch (err) {
     if (err instanceof MeetError) return fail(err.status, err.message);
     throw err;
