@@ -401,7 +401,7 @@ const SkillEditor = ({
   );
 };
 
-/** The Skills section of the Hiring tab. */
+/** The Skills page of the Hiring space. */
 export const HiringSkills = ({
   companyId,
   canEdit,

@@ -6,20 +6,26 @@ import {
   JOB_OPENING_STATUS,
 } from '@/models/hiring';
 
-import { applicationDueAt } from './tasks';
+import { applicationDueAt, taskSeen } from './tasks';
 
 /*
  * The review queue: everything across a company's openings that waits on a
  * person. It is the hiring digest as a page: tasks that came back, people
- * still unscreened after a few days, tasks past their due date and emails
- * that didn't arrive.
+ * still unscreened after a few days, tasks past their due date, task
+ * emails nobody opened and emails that didn't arrive.
  */
 
-export type QueueKind = 'REVIEW' | 'UNSCREENED' | 'PAST_DUE' | 'BOUNCED';
+export type QueueKind =
+  | 'REVIEW'
+  | 'UNSCREENED'
+  | 'PAST_DUE'
+  | 'NOT_OPENED'
+  | 'BOUNCED';
 
 export const QUEUE_KINDS: QueueKind[] = [
   'REVIEW',
   'PAST_DUE',
+  'NOT_OPENED',
   'BOUNCED',
   'UNSCREENED',
 ];
@@ -27,6 +33,8 @@ export const QUEUE_KINDS: QueueKind[] = [
 const DAY_MS = 86400000;
 export const DEFAULT_UNSCREENED_DAYS = 3;
 export const MAX_UNSCREENED_DAYS = 60;
+/** A task email unopened for this long shows up as Not opened. */
+export const NOT_OPENED_DAYS = 1;
 
 const UNDELIVERED = [
   HIRING_EMAIL_STATUS.BOUNCED,
@@ -100,6 +108,19 @@ export async function buildReviewQueue(
           application: a,
           since: due.toISOString(),
           dueAt: due.toISOString(),
+        });
+      else if (
+        a.taskSentAt &&
+        time(a.taskSentAt) < now.getTime() - NOT_OPENED_DAYS * DAY_MS &&
+        !taskSeen(a) &&
+        // A bounce shows as its own row.
+        !(a.lastEmail && UNDELIVERED.includes(a.lastEmail.status))
+      )
+        items.push({
+          kind: 'NOT_OPENED',
+          application: a,
+          since: String(a.taskSentAt),
+          dueAt: due?.toISOString() ?? null,
         });
     }
     if (!rejected && a.lastEmail && UNDELIVERED.includes(a.lastEmail.status))

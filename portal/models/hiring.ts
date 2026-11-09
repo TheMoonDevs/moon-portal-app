@@ -205,6 +205,32 @@ export interface JobTask {
   fields: FormField[];
 }
 
+/**
+ * Task follow-ups the portal sends by itself each morning, from the hiring
+ * lead (or whoever made the opening). Each one goes once per candidate.
+ */
+export interface JobFollowUps {
+  /**
+   * Days after the task email with no open of the email or the task page
+   * before a "did you see it?" check-in. Null or 0 sends none.
+   */
+  nudgeUnopenedDays?: Nullable<number>;
+  /** A reminder on the day before the task is due. */
+  remindBeforeDue?: Nullable<boolean>;
+  /**
+   * Days after the due date before people who sent nothing are moved to
+   * Rejected with the "task not sent" email. Null or 0 never does.
+   */
+  rejectNoShowDays?: Nullable<number>;
+}
+
+/** Which follow-ups an applicant already got, and when. */
+export interface ApplicationFollowUps {
+  nudgedAt?: Nullable<string>;
+  remindedAt?: Nullable<string>;
+  rejectedAt?: Nullable<string>;
+}
+
 /** What a candidate sent back from their task page. */
 export interface TaskSubmission {
   answers: Record<string, ApplicationAnswer>;
@@ -246,6 +272,8 @@ export type JobOpening = Loose<
      * still choose otherwise.
      */
     replyToLead?: Nullable<boolean>;
+    /** Emails the portal sends on its own about the task, see JobFollowUps. */
+    followUps?: Nullable<JobFollowUps>;
     createdById: string;
     publishedAt?: Nullable<DateValue>;
     closedAt?: Nullable<DateValue>;
@@ -290,6 +318,8 @@ export type JobApplication = Loose<
     onboardingId?: Nullable<string>;
     /** The application they were added from, out of the talent pool. */
     pooledFromId?: Nullable<string>;
+    /** Automatic task follow-ups already sent to them. */
+    followUps?: Nullable<ApplicationFollowUps>;
   }
 >;
 

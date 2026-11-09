@@ -60,7 +60,7 @@ const NAVIGATION_OPTIONS: NavOption[] = [
   { name: 'World', path: APP_ROUTES.world, icon: 'public', group: 'social' },
   {
     name: 'Hiring',
-    path: `${APP_ROUTES.admin}?tab=hiring`,
+    path: APP_ROUTES.hiring,
     icon: 'person_search',
     group: 'manage',
   },
@@ -185,7 +185,14 @@ export const Bottombar = ({
   const { unreadNotificationsCount } = useNotifications();
   const { unread: unreadMessages } = useChat();
   const badges = { Messages: unreadMessages };
-  const { canOpenAdmin, hiringCompanies } = useWorkspace();
+  const {
+    hiringCompanies,
+    workCompanies,
+    can,
+    isSuperAdmin,
+    managesPortal,
+    managedCompanies,
+  } = useWorkspace();
   const { user } = useUser();
 
   const matchesVisibleOnlyOn = useMediaQuery(visibleOnlyOn ?? media.default);
@@ -201,11 +208,18 @@ export const Bottombar = ({
   if (!visible && !visibleOnlyOn) return null;
   if (visibleOnlyOn && !matchesVisibleOnlyOn) return null;
 
-  // The admin console (and the hiring board inside it) is desktop-only.
+  // The admin console is desktop-only; the Hiring space works on phones too.
   const isDesktop = !isMobile && !isTablet;
-  const canSeeAdmin = canOpenAdmin && isDesktop;
+  const canSeeAdmin =
+    (!!user?.isAdmin ||
+      isSuperAdmin ||
+      managesPortal ||
+      managedCompanies.length > 0) &&
+    isDesktop;
   const canSeeHiring =
-    (!!user?.isAdmin || hiringCompanies.length > 0) && isDesktop;
+    !!user?.isAdmin ||
+    hiringCompanies.length > 0 ||
+    workCompanies.some((c) => can(c.company.id, 'courses:edit'));
   const options = NAVIGATION_OPTIONS.filter((option) => {
     if (option.name === 'Admin') return canSeeAdmin;
     if (option.name === 'Hiring') return canSeeHiring;

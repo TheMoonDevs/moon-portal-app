@@ -14,6 +14,7 @@ import type {
   ApplicationEvent,
   ApplicationFile,
   JobApplication,
+  JobFollowUps,
   JobOpening,
 } from '@/models/hiring';
 import { APPLICATION_STAGE, JOB_OPENING_STATUS } from '@/models/hiring';
@@ -265,8 +266,30 @@ export function parseOpeningInput(body: Record<string, unknown>): {
         ? body.hiringLeadId.trim().slice(0, 64)
         : null;
   if ('replyToLead' in body) data.replyToLead = body.replyToLead !== false;
+  if ('followUps' in body) data.followUps = sanitizeFollowUps(body.followUps);
 
   return { data, error: null };
+}
+
+const dayCount = (value: unknown, max: number) => {
+  const n = Math.round(Number(value));
+  return Number.isFinite(n) && n > 0 ? Math.min(n, max) : null;
+};
+
+/** Task follow-ups from an untrusted body; null when none is on. */
+export function sanitizeFollowUps(input: unknown): JobFollowUps | null {
+  if (!input || typeof input !== 'object') return null;
+  const raw = input as Record<string, unknown>;
+  const followUps: JobFollowUps = {
+    nudgeUnopenedDays: dayCount(raw.nudgeUnopenedDays, 30),
+    remindBeforeDue: raw.remindBeforeDue === true,
+    rejectNoShowDays: dayCount(raw.rejectNoShowDays, 60),
+  };
+  return followUps.nudgeUnopenedDays ||
+    followUps.remindBeforeDue ||
+    followUps.rejectNoShowDays
+    ? followUps
+    : null;
 }
 
 /** Null when `userId` is an active member of the company, else why not. */
@@ -347,6 +370,10 @@ export async function extendTaskDeadline(
     where: { id: application.id },
     data: {
       taskDueOverride: dueAt.toISOString(),
+      // A new due date earns a new day-before reminder.
+      ...(application.followUps?.remindedAt && {
+        followUps: { ...application.followUps, remindedAt: null },
+      }),
       updatedAt: at,
       history: { push: event },
     },

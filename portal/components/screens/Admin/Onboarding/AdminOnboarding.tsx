@@ -50,7 +50,11 @@ const COLUMN_HINT: Record<string, string> = {
   [ONBOARDING_STEP.OFFER]: 'Offer letter to sign',
 };
 
-type View = 'board' | 'hired' | 'ended' | 'documents';
+export type OnboardingView = 'board' | 'hired' | 'ended' | 'documents';
+type View = OnboardingView;
+
+/** Counts the Hiring space's sidebar shows beside Onboarding. */
+export type OnboardingCounts = { live: number; hired: number };
 
 const EMPTY: BoardData = {
   hires: [],
@@ -136,9 +140,19 @@ const HireCard = ({ hire, onOpen }: { hire: Hire; onOpen: () => void }) => {
 export const AdminOnboarding = ({
   selectedCompanyId,
   onSelectCompany,
+  embedded,
+  view: controlledView,
+  onCounts,
 }: {
   selectedCompanyId: string | null;
   onSelectCompany: (companyId: string) => void;
+  /**
+   * Inside the Hiring space: the sidebar picks the company and the view, so
+   * the picker and the view switch are left out.
+   */
+  embedded?: boolean;
+  view?: OnboardingView;
+  onCounts?: (counts: OnboardingCounts) => void;
 }) => {
   const { hiringCompanies, can } = useWorkspace();
   const companyId = hiringCompanies.some(
@@ -150,7 +164,8 @@ export const AdminOnboarding = ({
 
   const [board, setBoard] = useState<BoardData>(EMPTY);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<View>('board');
+  const [ownView, setView] = useState<View>('board');
+  const view = controlledView ?? ownView;
   const [openId, setOpenId] = useState<string | null>(null);
   const [startOpen, setStartOpen] = useState(false);
   const [preset, setPreset] = useState<ReadyApplicant | null>(null);
@@ -234,6 +249,10 @@ export const AdminOnboarding = ({
   const hired = board.hires.filter((h) => h.step === ONBOARDING_STEP.HIRED);
   const ended = board.hires.filter((h) => h.step === ONBOARDING_STEP.ENDED);
   const yourMove = live.filter((h) => hireNext(h).who === 'you');
+
+  useEffect(() => {
+    onCounts?.({ live: live.length, hired: hired.length });
+  }, [onCounts, live.length, hired.length]);
   const open = board.hires.find((h) => h.id === openId) ?? null;
 
   if (!companyId)
@@ -244,11 +263,13 @@ export const AdminOnboarding = ({
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center gap-3">
-        <CompanyPicker
-          companies={hiringCompanies}
-          value={companyId}
-          onChange={onSelectCompany}
-        />
+        {!embedded && (
+          <CompanyPicker
+            companies={hiringCompanies}
+            value={companyId}
+            onChange={onSelectCompany}
+          />
+        )}
         <div className="flex-1" />
         {canEdit && (
           <AdminButton
@@ -264,7 +285,12 @@ export const AdminOnboarding = ({
         )}
       </div>
 
-      <div className="custom-scrollbar -mx-1 overflow-x-auto px-1 pb-1">
+      <div
+        className={cn(
+          'custom-scrollbar -mx-1 overflow-x-auto px-1 pb-1',
+          embedded && 'hidden',
+        )}
+      >
         <Segmented
           value={view}
           onChange={setView}

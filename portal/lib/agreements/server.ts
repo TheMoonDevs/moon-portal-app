@@ -1011,7 +1011,7 @@ async function onboardingRows(
             signUrl: `${origin}/join/${o.token}`,
           },
         ],
-        link: `${origin}/admin?tab=onboarding&companyId=${companyId}&hire=${o.id}`,
+        link: `${origin}/hiring?view=onboarding&company=${companyId}&hire=${o.id}`,
       };
     }),
   );

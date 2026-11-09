@@ -54,7 +54,7 @@ const AnswerLink = ({ href, label }: { href: string; label?: string }) => (
   </a>
 );
 
-const Answer = ({
+export const Answer = ({
   field,
   application,
   fromTask = false,
@@ -733,8 +733,8 @@ export const ApplicantDetail = ({
           <a
             href={
               application.onboardingId
-                ? `/admin?tab=onboarding&companyId=${application.companyId}&hire=${application.onboardingId}`
-                : `/admin?tab=onboarding&companyId=${application.companyId}&start=${application.id}`
+                ? `/hiring?view=onboarding&company=${application.companyId}&hire=${application.onboardingId}`
+                : `/hiring?view=onboarding&company=${application.companyId}&start=${application.id}`
             }
             className="flex items-center gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] px-4 py-3 transition-colors hover:border-emerald-400/40"
           >
@@ -747,7 +747,7 @@ export const ApplicantDetail = ({
               </span>
               <span className="block text-xs text-neutral-400">
                 {application.onboardingId
-                  ? 'Their details, agreements and trial are in the Onboarding tab.'
+                  ? 'Their details, agreements and trial are under Onboarding in the Hiring space.'
                   : 'Send them the details form to set up their portal account.'}
               </span>
             </span>
