@@ -82,6 +82,9 @@ export const DEFAULT_COMPANY_ROLES: CompanyRoleDefinition[] = [
       'tasks:create',
       'tasks:edit',
       'tasks:delete',
+      'agreements:read',
+      'agreements:create',
+      'agreements:edit',
     ],
   },
   {

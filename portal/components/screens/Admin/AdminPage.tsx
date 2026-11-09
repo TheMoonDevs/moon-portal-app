@@ -12,6 +12,7 @@ import { useUser } from '@/utils/hooks/useUser';
 import { useWorkspace } from '@/utils/hooks/useWorkspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
+import { AdminAgreements } from './Agreements/AdminAgreements';
 import { AdminUsers } from './AdminUsers';
 import { AdminBadges } from './Badges/AdminBadges';
 import { AdminCourses } from './Courses/AdminCourses';
@@ -264,6 +265,13 @@ export const AdminPage = () => {
       case 'courses':
         return (
           <AdminCourses
+            selectedCompanyId={companyId}
+            onSelectCompany={selectCompany}
+          />
+        );
+      case 'agreements':
+        return (
+          <AdminAgreements
             selectedCompanyId={companyId}
             onSelectCompany={selectCompany}
           />

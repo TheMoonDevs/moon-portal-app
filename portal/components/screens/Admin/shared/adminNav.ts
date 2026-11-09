@@ -9,7 +9,8 @@ export type AdminTabId =
   | 'roles'
   | 'hiring'
   | 'onboarding'
-  | 'courses';
+  | 'courses'
+  | 'agreements';
 
 export type AdminNavGroup = 'Workspace' | 'Companies' | 'Community';
 
@@ -118,6 +119,17 @@ export const ADMIN_TABS: AdminTab[] = [
     group: 'Companies',
     access: 'company',
     permission: 'courses:edit',
+  },
+  {
+    id: 'agreements',
+    label: 'Agreements',
+    icon: 'signature',
+    title: 'Agreements',
+    description:
+      'Send any agreement to sign, follow who has signed, and keep the signed copy with its audit trail.',
+    group: 'Companies',
+    access: 'company',
+    permission: 'agreements:read',
   },
   {
     id: 'roles',

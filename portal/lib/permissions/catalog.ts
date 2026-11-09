@@ -88,6 +88,14 @@ export const PERMISSION_RESOURCES: ResourceDefinition[] = [
     scope: 'company',
   },
   {
+    key: 'agreements',
+    label: 'Agreements',
+    description:
+      'Agreements the company sends out to be signed (NDAs, contractor and client agreements, policies) and their templates. `read` sees them and their audit trail; `create` sends new ones; `edit` reminds, withdraws and edits templates.',
+    actions: ['read', 'create', 'edit', 'delete'],
+    scope: 'company',
+  },
+  {
     key: 'courses',
     label: 'Courses',
     description:

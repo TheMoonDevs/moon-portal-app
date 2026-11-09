@@ -27,6 +27,7 @@ import {
 } from '@/models/workspace';
 
 import type { TidyInput } from './daywork';
+import { AGREEMENT_TOOLS } from './agreements';
 import { logWork, tidyTasks, todayTasks } from './daywork';
 import { HIRING_TOOLS } from './hiring';
 import { ONBOARDING_TOOLS } from './onboarding';
@@ -622,6 +623,7 @@ export const TOOLS: Tool[] = [
   ...SCHEDULE_TOOLS,
   ...HIRING_TOOLS,
   ...ONBOARDING_TOOLS,
+  ...AGREEMENT_TOOLS,
 ];
 
 /** What tools/list returns: the tools this person can use. */
