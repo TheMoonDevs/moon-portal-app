@@ -365,7 +365,7 @@ const SendDialog = ({
             ))}
           <p className="text-xs text-neutral-500">
             Starter drafts are not legal advice. Have them checked before the
-            first real use, then save your own wording under Templates.
+            first real use, then save your own wording in Agreement templates.
           </p>
         </div>
       )}
@@ -1302,17 +1302,15 @@ const TemplatesView = ({
   );
 };
 
-/* ---------------------------------- tab ---------------------------------- */
+/* ---------------------------------- tabs --------------------------------- */
 
-type View = 'documents' | 'people' | 'templates' | 'rules';
-
-export const AdminAgreements = ({
-  selectedCompanyId,
-  onSelectCompany,
-}: {
+type CompanyTabProps = {
   selectedCompanyId: string | null;
   onSelectCompany: (companyId: string) => void;
-}) => {
+};
+
+/** The companies whose agreements someone can see, and the one picked. */
+const useAgreementCompany = (selectedCompanyId: string | null) => {
   const { workCompanies: companies, can } = useWorkspace();
   const readable = companies.filter((c) =>
     can(c.company.id, 'agreements:read'),
@@ -1323,6 +1321,97 @@ export const AdminAgreements = ({
   const companyName =
     readable.find((c) => c.company.id === companyId)?.company.name ??
     'the company';
+  return { readable, companyId, companyName, can };
+};
+
+const NEEDS_COMPANY = 'Agreements are sent by company owners, HR and managers.';
+
+/** Admin > Administration > Signing rules. */
+export const AdminSigningRules = ({
+  selectedCompanyId,
+  onSelectCompany,
+}: CompanyTabProps) => {
+  const { readable, companyId, can } = useAgreementCompany(selectedCompanyId);
+  const [settings, setSettings] = useState<SettingsView | null>(null);
+
+  useEffect(() => {
+    if (!companyId) return;
+    setSettings(null);
+    PortalSdk.getData(`/api/agreements/settings?companyId=${companyId}`, null)
+      .then((res) => setSettings(res?.data?.settings ?? null))
+      .catch((err) => toast.error(errorText(err)));
+  }, [companyId]);
+
+  if (!companyId) return <NeedsCompany text={NEEDS_COMPANY} />;
+  return (
+    <div className="flex flex-col gap-5">
+      <CompanyPicker
+        companies={readable}
+        value={companyId}
+        onChange={onSelectCompany}
+      />
+      <SigningRulesView
+        companyId={companyId}
+        settings={settings}
+        canEdit={can(companyId, 'agreements:edit')}
+        onSaved={setSettings}
+      />
+    </div>
+  );
+};
+
+/** Admin > Administration > Agreement templates. */
+export const AdminAgreementTemplates = ({
+  selectedCompanyId,
+  onSelectCompany,
+}: CompanyTabProps) => {
+  const { readable, companyId, can } = useAgreementCompany(selectedCompanyId);
+  const [templates, setTemplates] = useState<TemplateView[]>([]);
+
+  const load = useCallback(async () => {
+    if (!companyId) return;
+    try {
+      const res = await PortalSdk.getData(
+        `/api/agreements/templates?companyId=${companyId}`,
+        null,
+      );
+      setTemplates(res?.data?.templates ?? []);
+    } catch (err) {
+      toast.error(errorText(err));
+    }
+  }, [companyId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  if (!companyId) return <NeedsCompany text={NEEDS_COMPANY} />;
+  return (
+    <div className="flex flex-col gap-5">
+      <CompanyPicker
+        companies={readable}
+        value={companyId}
+        onChange={onSelectCompany}
+      />
+      <TemplatesView
+        companyId={companyId}
+        templates={templates}
+        canEdit={can(companyId, 'agreements:edit')}
+        onChanged={load}
+      />
+    </div>
+  );
+};
+
+type View = 'documents' | 'people';
+
+/** Admin > Companies > Agreements: the documents, and each person's file. */
+export const AdminAgreements = ({
+  selectedCompanyId,
+  onSelectCompany,
+}: CompanyTabProps) => {
+  const { readable, companyId, companyName, can } =
+    useAgreementCompany(selectedCompanyId);
 
   const [view, setView] = useState<View>('documents');
   const [templates, setTemplates] = useState<TemplateView[]>([]);
@@ -1361,13 +1450,12 @@ export const AdminAgreements = ({
     load();
   }, [load]);
 
-  // Opened from an email or a link: ?agreement=<id>, or ?view=rules.
+  // Opened from an email or a link: ?agreement=<id>, or ?view=people.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('agreement');
     if (id && /^[a-f0-9]{24}$/i.test(id)) setOpenId(id);
-    const v = params.get('view');
-    if (v === 'people' || v === 'templates' || v === 'rules') setView(v);
+    if (params.get('view') === 'people') setView('people');
   }, []);
 
   const closeDetail = useCallback(() => setOpenId(null), []);
@@ -1380,10 +1468,7 @@ export const AdminAgreements = ({
     setOpenId(row.id);
   }, []);
 
-  if (!companyId)
-    return (
-      <NeedsCompany text="Agreements are sent by company owners, HR and managers." />
-    );
+  if (!companyId) return <NeedsCompany text={NEEDS_COMPANY} />;
 
   const canCreate = can(companyId, 'agreements:create');
   const canEdit = can(companyId, 'agreements:edit');
@@ -1403,8 +1488,6 @@ export const AdminAgreements = ({
           options={[
             { value: 'documents', label: 'Documents', icon: 'folder_open' },
             { value: 'people', label: 'People', icon: 'folder_shared' },
-            { value: 'templates', label: 'Templates', icon: 'description' },
-            { value: 'rules', label: 'Signing rules', icon: 'approval' },
           ]}
         />
         <div className="flex-1" />
@@ -1420,21 +1503,7 @@ export const AdminAgreements = ({
         )}
       </div>
 
-      {view === 'templates' ? (
-        <TemplatesView
-          companyId={companyId}
-          templates={templates}
-          canEdit={canEdit}
-          onChanged={load}
-        />
-      ) : view === 'rules' ? (
-        <SigningRulesView
-          companyId={companyId}
-          settings={settings}
-          canEdit={canEdit}
-          onSaved={setSettings}
-        />
-      ) : view === 'people' ? (
+      {view === 'people' ? (
         <PeopleView
           companyId={companyId}
           refreshKey={refreshKey}
