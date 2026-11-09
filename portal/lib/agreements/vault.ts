@@ -4,11 +4,12 @@ import { db } from '@/lib/mongodb/db-client';
 import type { SessionUser } from '@/lib/permissions/server';
 import {
   type Agreement,
+  AGREEMENT_CATEGORY,
   AGREEMENT_STATUS,
+  type RequiredDocument,
   SIGNER_STATUS,
 } from '@/models/agreements';
 import type { Onboarding } from '@/models/onboarding';
-import { ONBOARDING_DOC_KIND } from '@/models/onboarding';
 import {
   type CompanyMember,
   MEMBER_STATUS,
@@ -17,8 +18,21 @@ import {
 
 import { onboardingDocPdf } from './countersign';
 import { onboardingTypeKey } from './docTypes';
+import {
+  companyImports,
+  findImport,
+  importPdf,
+  importView,
+  parseImportRef,
+} from './imports';
 import { canReadOwn } from './mine';
 import { pdfFileName } from './pdf';
+import {
+  appliesTo,
+  isSendable,
+  meets,
+  type RequirementState,
+} from './required';
 import {
   AgreementError,
   agreementPdf,
@@ -31,6 +45,7 @@ import {
   seesConfidential,
 } from './server';
 import { getSettings } from './signers';
+import { signedReadUrl } from './storage';
 
 /*
  * The document vault: every signed (or out-for-signing) document of a
@@ -52,17 +67,18 @@ async function allRows(
   origin: string,
   confidential: boolean,
 ): Promise<RowWithBody[]> {
-  const [agreements, hires]: [Agreement[], Onboarding[]] = await Promise.all([
+  const [agreements, hires, imported] = await Promise.all([
     db.agreement.findMany({
       where: { companyId },
       orderBy: { sentAt: 'desc' },
       take: 2000,
-    }),
+    }) as Promise<Agreement[]>,
     db.onboarding.findMany({
       where: { companyId },
       orderBy: { updatedAt: 'desc' },
       take: 1000,
-    }),
+    }) as Promise<Onboarding[]>,
+    companyImports(companyId),
   ]);
   const fresh = await Promise.all(agreements.map(expireIfDue));
   const own = await Promise.all(
@@ -80,7 +96,12 @@ async function allRows(
           ?.projectId ?? null,
     }),
   );
-  return [...own, ...onboarding]
+  const past = imported.map((d) => ({
+    ...importView(d),
+    body: [d.title, d.note].filter(Boolean).join('\n'),
+    projectId: null as string | null,
+  }));
+  return [...own, ...onboarding, ...past]
     .filter((r) => confidential || !r.confidential)
     .map((r) => ({
       ...r,
@@ -302,32 +323,37 @@ export async function personFile(
   const visible = theirs.filter((r) => confidential || !r.confidential);
   const hidden = theirs.length - visible.length;
 
-  // What a member should have on file: an NDA, and once hired, the offer
-  // and work agreement. Per-role requirements come later.
-  const signedTypes = new Set(
-    theirs
-      .filter(
-        (r) =>
-          r.status === AGREEMENT_STATUS.COMPLETED ||
-          r.signers.some(
-            (s) =>
-              !s.company &&
-              (s.userId === userId || emails.includes(s.email.toLowerCase())) &&
-              s.signedAt,
-          ),
-      )
-      .map((r) => r.typeKey),
-  );
-  const hasNda =
-    signedTypes.has('NDA') ||
-    signedTypes.has(onboardingTypeKey(ONBOARDING_DOC_KIND.NDA));
-  const missing: Array<{ key: string; label: string; why: string }> = [];
-  if (!hasNda)
-    missing.push({
-      key: 'NDA',
-      label: 'Non-Disclosure Agreement',
-      why: 'No signed NDA on file.',
+  // What their roles must have on file, and where each stands.
+  const settings = await getSettings(companyId);
+  const isThem = (s: VaultRow['signers'][number]) =>
+    s.userId === userId || emails.includes(s.email.toLowerCase());
+  const requirements = settings.required
+    .filter((req) => appliesTo(req, member.roleKeys ?? []))
+    .map((req) => {
+      const r = requirementState(req, theirs, isThem);
+      return {
+        id: req.id,
+        label: req.label,
+        state: r.state,
+        // A confidential one only by name for people who can't open it.
+        ref: r.row && (confidential || !r.row.confidential) ? r.row.id : null,
+        blocking: req.blocking,
+        sendable: isSendable(req),
+        templateId: req.templateId ?? null,
+        rolloutId: req.rolloutId ?? null,
+        category: categoryOf(req),
+      };
     });
+  const missing = requirements
+    .filter((r) => r.state === 'missing')
+    .map((r) => ({
+      key: r.id,
+      label: r.label,
+      why: `No signed ${r.label} on file.`,
+      sendable: r.sendable,
+      templateId: r.templateId,
+      category: r.category,
+    }));
   const waitingOnThem = visible.filter(
     (r) =>
       r.status === AGREEMENT_STATUS.SENT &&
@@ -349,10 +375,135 @@ export async function personFile(
     },
     documents: visible.map(({ body: _b, ...r }) => r),
     hiddenConfidential: hidden,
+    requirements,
     missing,
     waitingOnThem: waitingOnThem.map((r) => r.id),
   };
 }
+
+/* ------------------------------ requirements ------------------------------ */
+
+const categoryOf = (req: RequiredDocument) =>
+  req.typeKey &&
+  (Object.values(AGREEMENT_CATEGORY) as string[]).includes(req.typeKey)
+    ? (req.typeKey as AGREEMENT_CATEGORY)
+    : null;
+
+/**
+ * Where one requirement stands for one person: signed when a matching
+ * document carries their signature (the company's countersignature can still
+ * be on its way), waiting when one is out for them, otherwise missing.
+ */
+function requirementState(
+  req: RequiredDocument,
+  rows: VaultRow[],
+  isThem: (s: VaultRow['signers'][number]) => boolean,
+): { state: RequirementState; row: VaultRow | null } {
+  const theirs = rows.filter(
+    (r) => meets(req, r) && r.signers.some((s) => !s.company && isThem(s)),
+  );
+  const signed = theirs.find(
+    (r) =>
+      r.status === AGREEMENT_STATUS.COMPLETED ||
+      (r.status === AGREEMENT_STATUS.SENT &&
+        r.signers.some((s) => !s.company && isThem(s) && s.signedAt)),
+  );
+  if (signed) return { state: 'signed', row: signed };
+  const open = theirs.find((r) => r.status === AGREEMENT_STATUS.SENT);
+  if (open) return { state: 'waiting', row: open };
+  return { state: 'missing', row: null };
+}
+
+/**
+ * Everyone against what their roles must have signed: the checklist of
+ * who's missing what.
+ */
+export async function requiredChecklist(
+  actor: SessionUser,
+  companyId: string,
+  origin: string,
+) {
+  await requireAgreements(actor, companyId, 'agreements:read');
+  const confidential = await seesConfidential(actor, companyId);
+  const [settings, rows, members]: [
+    Awaited<ReturnType<typeof getSettings>>,
+    RowWithBody[],
+    CompanyMember[],
+  ] = await Promise.all([
+    getSettings(companyId),
+    allRows(companyId, origin, true),
+    db.companyMember.findMany({
+      where: { companyId, status: MEMBER_STATUS.ACTIVE },
+    }),
+  ]);
+  const users = members.length
+    ? await db.user.findMany({
+        where: { id: { in: members.map((m) => m.userId) } },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          avatar: true,
+          linkedEmails: true,
+        },
+      })
+    : [];
+  const people = members
+    .map((m) => {
+      const u = users.find((x: { id: string }) => x.id === m.userId);
+      if (!u) return null;
+      const emails = [u.email, ...(u.linkedEmails ?? [])]
+        .filter(Boolean)
+        .map((e: string) => e.toLowerCase());
+      const isThem = (s: VaultRow['signers'][number]) =>
+        s.userId === u.id || emails.includes(s.email.toLowerCase());
+      const items: Record<
+        string,
+        { state: RequirementState; ref: string | null } | null
+      > = {};
+      for (const req of settings.required) {
+        if (!appliesTo(req, m.roleKeys ?? [])) {
+          items[req.id] = null;
+          continue;
+        }
+        const r = requirementState(req, rows, isThem);
+        items[req.id] = {
+          state: r.state,
+          ref: r.row && (confidential || !r.row.confidential) ? r.row.id : null,
+        };
+      }
+      const states = Object.values(items).filter(Boolean) as Array<{
+        state: RequirementState;
+      }>;
+      return {
+        userId: u.id as string,
+        name: (u.name as string) || 'Someone',
+        email: (u.email as string) ?? null,
+        avatar: (u.avatar as string) ?? null,
+        roleKeys: m.roleKeys ?? [],
+        items,
+        missing: states.filter((x) => x.state === 'missing').length,
+        waiting: states.filter((x) => x.state === 'waiting').length,
+      };
+    })
+    .filter(<T>(x: T | null): x is T => !!x)
+    .sort((a, b) => b.missing - a.missing || a.name.localeCompare(b.name));
+  return {
+    requirements: settings.required.map((req) => ({
+      ...req,
+      sendable: isSendable(req),
+      category: categoryOf(req),
+      signed: people.filter((p) => p.items[req.id]?.state === 'signed').length,
+      waiting: people.filter((p) => p.items[req.id]?.state === 'waiting')
+        .length,
+      missing: people.filter((p) => p.items[req.id]?.state === 'missing')
+        .length,
+    })),
+    people,
+  };
+}
+
+export type RequiredChecklist = Awaited<ReturnType<typeof requiredChecklist>>;
 
 /* --------------------------------- exports -------------------------------- */
 
@@ -403,6 +554,12 @@ export function vaultCsv(rows: VaultRow[]) {
 
 /** The PDF bytes of one row, by its reference. */
 export async function pdfForRef(ref: string) {
+  const imported = parseImportRef(ref);
+  if (imported) {
+    const d = await findImport(imported);
+    const bytes = d ? await importPdf(d) : null;
+    return d && bytes ? { title: d.title, bytes, original: true } : null;
+  }
   const ob = parseOnboardingRef(ref);
   if (ob) {
     const o: Onboarding | null = await db.onboarding.findFirst({
@@ -424,6 +581,13 @@ export async function pdfForRef(ref: string) {
 
 /** Which company a document belongs to, and whether it is confidential. */
 async function refInfo(ref: string) {
+  const imported = parseImportRef(ref);
+  if (imported) {
+    const d = await findImport(imported);
+    return d
+      ? { companyId: d.companyId, confidential: !!d.confidential, ready: true }
+      : null;
+  }
   const ob = parseOnboardingRef(ref);
   if (ob) {
     const o: Onboarding | null = await db.onboarding.findFirst({
@@ -455,7 +619,7 @@ async function refInfo(ref: string) {
  * One document's PDF for someone: the people who signed it, or the team
  * with `agreements:read` (and `confidential:read` for confidential ones).
  */
-export async function documentPdfFor(actor: SessionUser, ref: string) {
+export async function checkDocumentAccess(actor: SessionUser, ref: string) {
   const info = await refInfo(ref);
   if (!info) throw new AgreementError(404, 'Document not found.');
   if (!(await canReadOwn(actor, ref))) {
@@ -465,6 +629,25 @@ export async function documentPdfFor(actor: SessionUser, ref: string) {
   }
   if (!info.ready)
     throw new AgreementError(409, 'The PDF is ready once it is signed.');
+  return info;
+}
+
+/** An imported PDF, read straight from storage (they can be large). */
+export async function importedPdfLink(
+  actor: SessionUser,
+  ref: string,
+  inline: boolean,
+) {
+  const id = parseImportRef(ref);
+  if (!id) return null;
+  await checkDocumentAccess(actor, ref);
+  const d = await findImport(id);
+  if (!d) throw new AgreementError(404, 'Document not found.');
+  return signedReadUrl(d.fileKey, d.fileName || `${d.title}.pdf`, inline);
+}
+
+export async function documentPdfFor(actor: SessionUser, ref: string) {
+  await checkDocumentAccess(actor, ref);
   const pdf = await pdfForRef(ref);
   if (!pdf) throw new AgreementError(404, 'Document not found.');
   return pdf;

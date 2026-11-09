@@ -9,7 +9,8 @@ export type AdminTabId =
   | 'roles'
   | 'agreements'
   | 'signing-rules'
-  | 'agreement-templates';
+  | 'agreement-templates'
+  | 'required-documents';
 
 /** Tabs that moved to the Hiring space, and the page each opens there. */
 export const MOVED_TO_HIRING: Record<string, string> = {
@@ -127,6 +128,17 @@ export const ADMIN_TABS: AdminTab[] = [
     title: 'Agreement templates',
     description:
       'The company’s own wording for agreements, with blanks to fill in when sending.',
+    group: 'Administration',
+    access: 'company',
+    permission: 'agreements:read',
+  },
+  {
+    id: 'required-documents',
+    label: 'Required documents',
+    icon: 'checklist',
+    title: 'Required documents',
+    description:
+      'What each role must have signed, who is missing what, and one button to send the missing ones.',
     group: 'Administration',
     access: 'company',
     permission: 'agreements:read',

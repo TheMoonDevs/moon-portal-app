@@ -208,6 +208,35 @@ export const PeopleView = ({
               )}
             </div>
 
+            {file.requirements.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 border-b border-white/[0.07] px-4 py-3">
+                <span className="mr-1 text-[11px] font-medium uppercase tracking-wide text-neutral-500">
+                  Required
+                </span>
+                {file.requirements.map((q) => (
+                  <Pill
+                    key={q.id}
+                    tone={
+                      q.state === 'signed'
+                        ? 'positive'
+                        : q.state === 'waiting'
+                          ? 'warning'
+                          : 'danger'
+                    }
+                    icon={
+                      q.state === 'signed'
+                        ? 'task_alt'
+                        : q.state === 'waiting'
+                          ? 'pending'
+                          : 'error'
+                    }
+                  >
+                    {q.label}
+                  </Pill>
+                ))}
+              </div>
+            )}
+
             {(file.missing.length > 0 || file.hiddenConfidential > 0) && (
               <div className="flex flex-col gap-2 border-b border-white/[0.07] p-4">
                 {file.missing.map((m) => (
@@ -220,7 +249,12 @@ export const PeopleView = ({
                       className="text-[18px] text-amber-300"
                     />
                     <span className="flex-1">{m.why}</span>
-                    {canCreate && file.person.email && (
+                    {!m.sendable && (
+                      <span className="text-xs text-amber-200/60">
+                        Sent through onboarding
+                      </span>
+                    )}
+                    {canCreate && file.person.email && m.sendable && (
                       <AdminButton
                         size="sm"
                         tone="secondary"
@@ -230,11 +264,13 @@ export const PeopleView = ({
                               name: file.person.name,
                               email: file.person.email!,
                             },
-                            m.key as AGREEMENT_CATEGORY,
+                            (m.category ?? undefined) as
+                              | AGREEMENT_CATEGORY
+                              | undefined,
                           )
                         }
                       >
-                        Send {m.key === 'NDA' ? 'an NDA' : 'it'}
+                        Send it
                       </AdminButton>
                     )}
                   </div>

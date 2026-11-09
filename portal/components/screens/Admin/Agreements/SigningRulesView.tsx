@@ -52,6 +52,7 @@ export const SigningRulesView = ({
   const [types, setTypes] = useState<Record<string, DocumentTypeSettings>>({});
   const [signatoryId, setSignatoryId] = useState('');
   const [autoReminders, setAutoReminders] = useState(true);
+  const [endAlerts, setEndAlerts] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -59,6 +60,7 @@ export const SigningRulesView = ({
     setTypes(settings.types);
     setSignatoryId(settings.signatory?.id ?? '');
     setAutoReminders(settings.autoReminders);
+    setEndAlerts(settings.endAlerts);
   }, [settings]);
 
   if (!settings)
@@ -71,6 +73,7 @@ export const SigningRulesView = ({
   const dirty =
     signatoryId !== (settings.signatory?.id ?? '') ||
     autoReminders !== settings.autoReminders ||
+    endAlerts !== settings.endAlerts ||
     DOC_TYPES.some(
       (t) =>
         types[t.key]?.signer !== settings.types[t.key]?.signer ||
@@ -87,6 +90,7 @@ export const SigningRulesView = ({
         companyId,
         signatoryId: signatoryId || null,
         autoReminders,
+        endAlerts,
         types,
       });
       onSaved(res.data.settings);
@@ -162,6 +166,13 @@ export const SigningRulesView = ({
           disabled={!canEdit}
           label="Remind signers automatically"
           description="Two and five days after it was sent, and the day before it's due. Never more than one email a day."
+        />
+        <ToggleSwitch
+          checked={endAlerts}
+          onChange={setEndAlerts}
+          disabled={!canEdit}
+          label="Warn before agreements end"
+          description="The signatory and the sender hear 30 and 7 days before a signed agreement's end date, so it can be renewed."
         />
       </Panel>
 

@@ -1,3 +1,4 @@
+import { handOver } from '@/lib/agreements/corrections';
 import {
   agreementByToken,
   agreementFailure,
@@ -40,9 +41,11 @@ export async function GET(_request: Request, { params }: Params) {
 
 /**
  * `{ action: 'view' }` notes that the signer opened it;
- * `{ action: 'sign', name, agree, image?, hash, save? }` signs (and, signed
- * in as the signer, saves the signature for next time);
- * `{ action: 'approve' }` signs with the saved signature, signed in;
+ * `{ action: 'sign', name, agree, image?, hash, save?, values? }` signs (and,
+ * signed in as the signer, saves the signature for next time), with what
+ * they filled in;
+ * `{ action: 'approve', values? }` signs with the saved signature, signed in;
+ * `{ action: 'handover', name, email, reason? }` passes it to a colleague;
  * `{ action: 'decline', reason? }` declines.
  */
 export async function PUT(request: Request, { params }: Params) {
@@ -67,6 +70,7 @@ export async function PUT(request: Request, { params }: Params) {
           image: body.image,
           hash: body.hash,
           save: body.save,
+          values: body.values,
         },
         meta,
         origin,
@@ -83,7 +87,17 @@ export async function PUT(request: Request, { params }: Params) {
         meta,
         origin,
         found.signer.id,
+        body.values ?? {},
       );
+    } else if (body.action === 'handover') {
+      const res = await handOver(
+        params.token,
+        { name: body.name, email: body.email, reason: body.reason },
+        meta,
+        origin,
+      );
+      // Their link is replaced: the page shows that it was handed over.
+      return ok({ handedOver: { to: res.to } });
     } else if (body.action === 'decline')
       updated = await declineAgreement(params.token, body.reason, meta, origin);
     else return fail(400, 'Unknown action.');

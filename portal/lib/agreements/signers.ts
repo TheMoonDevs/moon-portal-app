@@ -13,6 +13,7 @@ import {
 } from '@/models/workspace';
 
 import { DOC_TYPE_KEYS, isSignerRule, mergeTypes } from './docTypes';
+import { DEFAULT_REQUIRED, parseRequired } from './required';
 
 /*
  * Who signs for the company, and saved signatures.
@@ -43,6 +44,11 @@ export async function getSettings(companyId: string) {
     signatoryId: (own?.signatoryId as string | null) ?? null,
     types: mergeTypes(own?.types),
     autoReminders: own?.autoReminders !== false,
+    /** What each role must have signed. An NDA for everyone until set. */
+    required: Array.isArray(own?.required)
+      ? parseRequired(own!.required)
+      : DEFAULT_REQUIRED,
+    endAlerts: own?.endAlerts !== false,
   };
 }
 
@@ -172,6 +178,11 @@ export async function saveSettings(
       typeof raw?.autoReminders === 'boolean'
         ? raw.autoReminders
         : current.autoReminders,
+    endAlerts:
+      typeof raw?.endAlerts === 'boolean' ? raw.endAlerts : current.endAlerts,
+    required: Array.isArray(raw?.required)
+      ? parseRequired(raw.required)
+      : current.required,
     updatedById: actor.id,
     updatedAt: nowIso(),
   };
@@ -187,9 +198,18 @@ export async function saveSettings(
 
 /** The rules, with the owners to choose the signatory from. */
 export async function settingsView(companyId: string) {
-  const [settings, owners] = await Promise.all([
+  const [settings, owners, roles, projects] = await Promise.all([
     getSettings(companyId),
     companyOwners(companyId),
+    db.companyRole.findMany({
+      where: { companyId },
+      select: { key: true, name: true },
+    }),
+    db.project.findMany({
+      where: { companyId, status: { in: ['PLANNING', 'ACTIVE', 'ON_HOLD'] } },
+      select: { id: true, name: true },
+      take: 200,
+    }),
   ]);
   const signatory = await signatoryFor(companyId, settings);
   const saved = signatory ? await getSavedSignature(signatory.id) : null;
@@ -197,6 +217,15 @@ export async function settingsView(companyId: string) {
     ...settings,
     owners,
     signatory: signatory ? { ...signatory, hasSavedSignature: !!saved } : null,
+    /** For required documents and rollouts: who they're for. */
+    roles: (roles as Array<{ key: string; name: string }>).map((r) => ({
+      key: r.key,
+      name: r.name,
+    })),
+    projects: (projects as Array<{ id: string; name: string }>).map((p) => ({
+      id: p.id,
+      name: p.name,
+    })),
   };
 }
 

@@ -8,7 +8,7 @@
  * The starter templates are drafts written for the portal, not legal advice:
  * have them checked by whoever handles the company's legal terms first.
  */
-import { AGREEMENT_CATEGORY } from '@/models/agreements';
+import { AGREEMENT_CATEGORY, type AgreementField } from '@/models/agreements';
 
 export const MAX_AGREEMENT_TITLE = 160;
 export const MAX_AGREEMENT_BODY = 60000;
@@ -41,6 +41,45 @@ export const AUTO_PLACEHOLDERS: Array<{ key: string; label: string }> = [
   ]),
 ];
 
+/**
+ * What the Portal knows about a signer, filled from their account and
+ * onboarding (lib/agreements/autofill): `{{signer1Title}}`, … They are blanks
+ * like any other, filled in for the sender, who can change them.
+ */
+export const PERSON_KEYS = [
+  'LegalName',
+  'Title',
+  'Address',
+  'Phone',
+  'DateOfBirth',
+  'EmergencyContact',
+  'JoiningDate',
+  'Pay',
+] as const;
+
+export type PersonKey = (typeof PERSON_KEYS)[number];
+
+const PERSON_LABEL: Record<PersonKey, string> = {
+  LegalName: 'legal name',
+  Title: 'job title',
+  Address: 'address',
+  Phone: 'phone',
+  DateOfBirth: 'date of birth',
+  EmergencyContact: 'emergency contact',
+  JoiningDate: 'joining date',
+  Pay: 'pay',
+};
+
+export const PERSON_PLACEHOLDERS = PERSON_KEYS.map((k) => ({
+  key: `signer1${k}`,
+  label: `Signer 1: ${PERSON_LABEL[k]}`,
+}));
+
+const PERSON_KEY = new RegExp(`^signer(\\d+)(${PERSON_KEYS.join('|')})$`);
+
+/** Whether a blank is filled from what the Portal knows about a signer. */
+export const isPersonKey = (key: string) => PERSON_KEY.test(key);
+
 const AUTO_KEYS = new Set(AUTO_PLACEHOLDERS.map((p) => p.key));
 const SIGNER_KEY = /^signer\d+(Name|Email|Role)$/;
 const isAutoKey = (key: string) => AUTO_KEYS.has(key) || SIGNER_KEY.test(key);
@@ -57,8 +96,11 @@ export const templateFields = (...texts: string[]) =>
     ),
   ).filter((key) => !isAutoKey(key));
 
-/** "effectiveDate" → "Effective date". */
+/** "effectiveDate" → "Effective date"; "signer1Address" → "Signer 1: address". */
 export const fieldLabel = (key: string) => {
+  const person = PERSON_KEY.exec(key);
+  if (person)
+    return `Signer ${person[1]}: ${PERSON_LABEL[person[2] as PersonKey]}`;
   const words = key
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
     .replace(/_/g, ' ')
@@ -92,6 +134,7 @@ export interface StarterTemplate {
   title: string;
   body: string;
   signerRoles: string[];
+  fields?: AgreementField[];
 }
 
 export const STARTER_TEMPLATES: StarterTemplate[] = [
@@ -141,7 +184,7 @@ Signed electronically by the parties below.`,
     signerRoles: ['Contractor'],
     body: `# Independent Contractor Agreement
 
-This agreement is made on {{today}} between **{{companyName}}** (the "Company") and **{{signer1Name}}** ({{signer1Email}}) (the "Contractor").
+This agreement is made on {{today}} between **{{companyName}}** (the "Company") and **{{signer1Name}}** ({{signer1Email}}), of {{signer1Address}} (the "Contractor").
 
 ## 1. Services
 The Contractor will provide the following services: {{services}}.
@@ -222,6 +265,61 @@ Signed electronically by the parties below.`,
 
 ## Acknowledgement
 By signing below, I, {{signer1Name}}, confirm that I have read and understood the {{policyName}} and agree to follow it.`,
+  },
+  {
+    key: 'personal-details',
+    name: 'Personal and bank details',
+    category: AGREEMENT_CATEGORY.EMPLOYMENT,
+    title: 'Personal and bank details: {{signer1Name}}',
+    signerRoles: ['Team member'],
+    body: `# Personal and bank details
+
+**{{companyName}}** · {{today}}
+
+{{companyName}} needs these details to pay {{signer1Name}} ({{signer1Title}}) and to reach someone in an emergency. They are kept confidential: only HR and the company's owners see them.
+
+Fill them in below, then sign to confirm they are correct. Tell HR straight away if any of them change.
+
+## Confirmation
+I, {{signer1Name}}, confirm that the details I filled in are true and complete, and that {{companyName}} may use them to pay me and to contact the person I named in an emergency.`,
+    fields: [
+      {
+        id: 'address',
+        label: 'Home address',
+        kind: 'longtext',
+        required: true,
+        signer: 1,
+      },
+      {
+        id: 'pan',
+        label: 'PAN',
+        kind: 'text',
+        required: true,
+        signer: 1,
+        hint: 'As on your PAN card, e.g. ABCDE1234F',
+      },
+      {
+        id: 'bankAccount',
+        label: 'Bank account number',
+        kind: 'text',
+        required: true,
+        signer: 1,
+      },
+      {
+        id: 'ifsc',
+        label: 'IFSC code',
+        kind: 'text',
+        required: true,
+        signer: 1,
+      },
+      {
+        id: 'emergencyContact',
+        label: 'Emergency contact (name and phone)',
+        kind: 'text',
+        required: true,
+        signer: 1,
+      },
+    ],
   },
   {
     key: 'blank',

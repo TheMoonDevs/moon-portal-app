@@ -389,6 +389,7 @@ const ToSignRow = ({
     doc.as === 'company' ? `For ${doc.companyName}` : doc.companyName,
     doc.others.length ? `with ${doc.others.join(', ')}` : null,
     doc.expiresOn ? `by ${day(doc.expiresOn)}` : null,
+    doc.blocking ? 'needed before using the Portal' : null,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -707,6 +708,9 @@ export const DocumentsPanel = ({ theme = 'dark' }: { theme?: Theme }) => {
                     <p className={cn('mt-0.5 truncate text-xs', t.muted)}>
                       {d.typeLabel} · {d.companyName}
                       {d.as === 'company' ? ' · for the company' : ''}
+                      {d.source === 'imported'
+                        ? ' · signed outside the Portal'
+                        : ''}
                       {d.signedAt
                         ? ` · signed ${day(d.signedAt)}`
                         : ` · sent ${day(d.sentAt)}`}
