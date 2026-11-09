@@ -50,8 +50,8 @@ export interface MyDoc {
   typeLabel: string;
   companyId: string;
   companyName: string;
-  /** Signs as a party, or for the company. */
-  as: 'party' | 'company';
+  /** Signs as a party, or for the company; or a letter issued to them. */
+  as: 'party' | 'company' | 'recipient';
   status: MyDocStatus;
   from: string;
   others: string[];
@@ -99,6 +99,8 @@ export async function myDocuments(user: SessionUser) {
         OR: [
           { 'signers.userId': user.id },
           ...(emails.length ? [{ 'signers.email': { in: emails } }] : []),
+          // Letters issued to them.
+          { forUserId: user.id },
         ],
       },
       orderBy: { sentAt: 'desc' },
@@ -143,6 +145,32 @@ export async function myDocuments(user: SessionUser) {
         me = s;
         break;
       }
+    if (!me && a.forUserId === user.id) {
+      // A letter for them: theirs once signed. Until then it shows with
+      // their letter requests.
+      if (a.status !== AGREEMENT_STATUS.COMPLETED) continue;
+      docs.push({
+        ref: a.id,
+        source: 'portal',
+        title: a.title,
+        typeLabel: docTypeLabel(a.category),
+        companyId: a.companyId,
+        companyName: companyOf(a.companyId),
+        as: 'recipient',
+        status: 'COMPLETED',
+        from: senderOf(a.createdById),
+        others: a.signers.map((s) => s.name),
+        sentAt: a.sentAt,
+        signedAt: null,
+        completedAt: a.completedAt ?? null,
+        expiresOn: null,
+        signUrl: null,
+        canApprove: false,
+        blocking: false,
+        pdfUrl: pdfUrlFor(a.id),
+      });
+      continue;
+    }
     if (!me) continue;
     const up = signersUp(a).some((s) => s.id === me!.id);
     const status: MyDocStatus =
@@ -381,6 +409,7 @@ export async function canReadOwn(user: SessionUser, ref: string) {
     where: { id: ref },
   });
   if (!a) return null;
+  if (a.forUserId === user.id) return a.companyId;
   for (const s of a.signers)
     if (await isSignerUser(user, s)) return a.companyId;
   return null;

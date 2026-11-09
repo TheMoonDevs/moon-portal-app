@@ -39,7 +39,7 @@ export async function GET(request: Request) {
           'Cache-Control': 'private, no-store',
         },
       });
-    const zip = await vaultZip(rows);
+    const zip = await vaultZip(rows, originOf(request));
     return new Response(Buffer.from(zip), {
       headers: {
         'Content-Type': 'application/zip',

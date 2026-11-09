@@ -6,6 +6,18 @@ import {
 import { agreementsDashboard } from '@/lib/agreements/dashboard';
 import { DOC_TYPES } from '@/lib/agreements/docTypes';
 import { FIELD_PRESETS } from '@/lib/agreements/fields';
+import {
+  approveLetter,
+  cancelLetter,
+  companyLetters,
+  declineLetter,
+  draftLetter,
+  LETTER_KEYS,
+  myLetters,
+  previewLetterText,
+  requestLetter,
+  startLetter,
+} from '@/lib/agreements/letters';
 import { myDocuments } from '@/lib/agreements/mine';
 import {
   closeRollout,
@@ -18,6 +30,7 @@ import {
   sendMissing,
   syncRollout,
 } from '@/lib/agreements/rollouts';
+import { verifyDocument } from '@/lib/agreements/seal';
 import {
   agreementByToken,
   agreementDetail,
@@ -333,6 +346,11 @@ export const AGREEMENT_TOOLS: Tool[] = [
           description:
             'They must sign it before using the Portal (for required policies).',
         },
+        emailCode: {
+          type: 'boolean',
+          description:
+            'Each signer enters a 6-digit code emailed to them before the document opens (signed in to the Portal, they skip it). For sensitive documents.',
+        },
         preview: {
           type: 'boolean',
           description: 'Return the text without sending.',
@@ -393,6 +411,7 @@ export const AGREEMENT_TOOLS: Tool[] = [
           companySigner: args?.companySigner,
           companyFirst: args?.companyFirst === true,
           confidential: args?.confidential,
+          emailCode: args?.emailCode === true,
         });
         if (args?.preview) {
           const r = await renderAgreement(input, {
@@ -980,7 +999,12 @@ export const AGREEMENT_TOOLS: Tool[] = [
         const row = (d: (typeof mine.documents)[number]) => ({
           title: d.title,
           company: d.companyName,
-          as: d.as === 'company' ? 'for the company' : 'party',
+          as:
+            d.as === 'company'
+              ? 'for the company'
+              : d.as === 'recipient'
+                ? 'issued to them'
+                : 'party',
           status: d.status,
           sentAt: d.sentAt,
           signedAt: d.signedAt,
@@ -994,5 +1018,274 @@ export const AGREEMENT_TOOLS: Tool[] = [
           profile: `${context.origin}/user?tab=documents`,
         };
       }),
+  },
+  {
+    name: 'request_letter',
+    title: 'Ask HR for a letter',
+    description:
+      "The person's own letter requests: an experience, relieving, salary or address letter, or an employment certificate. Without kind, lists what they asked for (with status and the PDF once it's signed) and the letters they can ask for. With kind, asks HR for one: HR checks the draft from their record, the company signs it, and the signed PDF comes to their documents and email. Confirm the letter and its purpose with the person before asking. With cancel, withdraws a request HR hasn't acted on.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        company: {
+          type: 'string',
+          description: 'Which company, when they are in more than one.',
+        },
+        kind: { type: 'string', enum: LETTER_KEYS },
+        purpose: {
+          type: 'string',
+          description: 'What it is for, e.g. a visa application.',
+        },
+        addressedTo: {
+          type: 'string',
+          description: 'Who it is addressed to, e.g. a bank or embassy.',
+        },
+        neededBy: { type: 'string', description: 'YYYY-MM-DD.' },
+        note: { type: 'string', description: 'A note for HR.' },
+        cancel: {
+          type: 'string',
+          description: 'The id of a request to withdraw.',
+        },
+      },
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    run: async (user, args, context) =>
+      attempt(async () => {
+        if (typeof args?.cancel === 'string' && args.cancel) {
+          await cancelLetter(user, args.cancel);
+          return { withdrawn: true, id: args.cancel };
+        }
+        const mine = await myLetters(user);
+        const row = (r: (typeof mine.requests)[number]) => ({
+          id: r.id,
+          letter: r.label,
+          company: r.companyName,
+          status: r.status,
+          purpose: r.purpose,
+          requestedAt: r.requestedAt,
+          waitingOn: r.waitingOn,
+          declineReason: r.declineReason,
+          pdf: r.pdfUrl ? `${context.origin}${r.pdfUrl}` : null,
+        });
+        if (!args?.kind)
+          return {
+            requests: mine.requests.map(row),
+            canAskFor: mine.kinds,
+            companies: mine.companies.map((c) => c.name),
+            documents: `${context.origin}/user?tab=documents`,
+          };
+        const wanted =
+          typeof args?.company === 'string'
+            ? args.company.trim().toLowerCase()
+            : '';
+        const company = wanted
+          ? mine.companies.find(
+              (c) => c.id === args.company || c.name.toLowerCase() === wanted,
+            )
+          : mine.companies.length === 1
+            ? mine.companies[0]
+            : null;
+        if (!company)
+          throw new ToolError(
+            mine.companies.length
+              ? `Say which company: ${mine.companies.map((c) => c.name).join(', ')}.`
+              : 'They are not a member of any company yet.',
+          );
+        const request = await requestLetter(
+          user,
+          {
+            companyId: company.id,
+            kind: args.kind,
+            purpose: args.purpose,
+            addressedTo: args.addressedTo,
+            neededBy: args.neededBy,
+            note: args.note,
+          },
+          context.origin,
+        );
+        return {
+          asked: true,
+          request: row(request),
+          next: 'HR and the owners were told. The signed letter comes to their documents and email.',
+        };
+      }),
+  },
+  {
+    name: 'letter_requests',
+    title: 'Letter requests (HR)',
+    description:
+      "For HR and owners: the letters people asked for (experience, relieving, salary, address, employment certificate) and where each one is. With id, the draft as it would go out: each blank filled from the person's record (role, joining date, pay, address) and the full text, for the person to check before handle_letter_request.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        company: { type: 'string' },
+        id: { type: 'string', description: 'A request id, for its draft.' },
+        all: {
+          type: 'boolean',
+          description: 'Include finished ones, not only those still open.',
+        },
+      },
+    },
+    annotations: { readOnlyHint: true },
+    visible: canRead,
+    run: async (user, args, context) =>
+      attempt(async () => {
+        if (typeof args?.id === 'string' && args.id) {
+          const d = await draftLetter(user, args.id);
+          const values = Object.fromEntries(
+            d.blanks.map((b) => [b.key, b.value]),
+          );
+          return {
+            request: d.request,
+            letter: d.title,
+            confidential: d.confidential,
+            blanks: d.blanks,
+            text: previewLetterText(d.body, values),
+            signedBy: d.signatory?.name ?? null,
+            link: `${context.origin}/admin?tab=agreements&companyId=${d.request.companyId}&view=letters&letter=${d.request.id}`,
+          };
+        }
+        const company = await findCompany(
+          user,
+          args?.company,
+          'agreements:create',
+        );
+        const data = await companyLetters(user, company.id);
+        const open = ['REQUESTED', 'SIGNING', 'NOT_SIGNED'];
+        return {
+          company: company.name,
+          toReview: data.open,
+          requests: data.requests
+            .filter((r) => args?.all === true || open.includes(r.status))
+            .map((r) => ({
+              id: r.id,
+              letter: r.label,
+              for: r.person.name,
+              status: r.status,
+              purpose: r.purpose,
+              addressedTo: r.addressedTo,
+              neededBy: r.neededBy,
+              note: r.note,
+              requestedAt: r.requestedAt,
+              waitingOn: r.waitingOn,
+              pdf: r.pdfUrl ? `${context.origin}${r.pdfUrl}` : null,
+            })),
+          link: `${context.origin}/admin?tab=agreements&companyId=${company.id}&view=letters`,
+        };
+      }),
+  },
+  {
+    name: 'handle_letter_request',
+    title: 'Approve or decline a letter request (HR)',
+    description:
+      "For HR and owners. approve sends the letter for the company's signature: its blanks come from the person's record unless values change them (keys as letter_requests gives them), and text replaces the wording. The signatory signs it in the Portal (Claude never signs), and the person gets the signed PDF. decline tells the person why, with reason. start writes a letter for someone who asked outside the Portal (userId, kind) and returns its draft. Show the person the draft and get their yes before approving or declining.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        action: { type: 'string', enum: ['approve', 'decline', 'start'] },
+        id: {
+          type: 'string',
+          description: 'The request, for approve or decline.',
+        },
+        values: {
+          type: 'object',
+          additionalProperties: { type: 'string' },
+          description: 'Changed blanks, e.g. { title: "Senior Engineer" }.',
+        },
+        text: {
+          type: 'string',
+          description: 'Different wording, in Markdown with the same blanks.',
+        },
+        reason: { type: 'string', description: 'Why it is declined.' },
+        company: { type: 'string', description: 'For start.' },
+        userId: { type: 'string', description: 'For start: who it is for.' },
+        kind: { type: 'string', enum: LETTER_KEYS, description: 'For start.' },
+        purpose: { type: 'string', description: 'For start.' },
+        addressedTo: { type: 'string', description: 'For start.' },
+      },
+      required: ['action'],
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    visible: canRead,
+    run: async (user, args, context) =>
+      attempt(async () => {
+        if (args?.action === 'start') {
+          const company = await findCompany(
+            user,
+            args?.company,
+            'agreements:create',
+          );
+          const d = await startLetter(user, {
+            companyId: company.id,
+            userId: args.userId,
+            kind: args.kind,
+            purpose: args.purpose,
+            addressedTo: args.addressedTo,
+          });
+          return {
+            started: true,
+            id: d.request.id,
+            blanks: d.blanks,
+            text: previewLetterText(
+              d.body,
+              Object.fromEntries(d.blanks.map((b) => [b.key, b.value])),
+            ),
+          };
+        }
+        const id = typeof args?.id === 'string' ? args.id : '';
+        if (args?.action === 'decline') {
+          const request = await declineLetter(
+            user,
+            id,
+            args?.reason,
+            context.origin,
+          );
+          return { declined: true, request };
+        }
+        if (args?.action !== 'approve')
+          throw new ToolError('action is approve, decline or start.');
+        const draft = await draftLetter(user, id);
+        const values = {
+          ...Object.fromEntries(draft.blanks.map((b) => [b.key, b.value])),
+          ...(args?.values && typeof args.values === 'object'
+            ? args.values
+            : {}),
+        };
+        const res = await approveLetter(
+          user,
+          id,
+          { values, body: args?.text, sign: false },
+          { ip: null, userAgent: 'Portal assistant' },
+          context.origin,
+        );
+        return {
+          approved: true,
+          request: res.request,
+          agreementId: res.agreementId,
+          next: `${draft.signatory?.name ?? 'The signatory'} signs it in the Portal; then ${res.request.person.name} gets the PDF.`,
+        };
+      }),
+  },
+  {
+    name: 'verify_document',
+    title: 'Check a signed PDF',
+    description:
+      'Checks a document signed in the Portal: by the SHA-256 of the PDF file (the exact issued copy shows its title, company and who signed when) and/or its Envelope ID (printed at the top of each page). Anyone can also check a file at /verify, where the fingerprint is worked out in their browser.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        envelopeId: { type: 'string' },
+        sha256: { type: 'string', description: 'The file’s SHA-256, in hex.' },
+      },
+    },
+    annotations: { readOnlyHint: true },
+    run: async (_user, args, context) =>
+      attempt(async () => ({
+        result: await verifyDocument({
+          id: args?.envelopeId,
+          hash: args?.sha256,
+        }),
+        page: `${context.origin}/verify`,
+      })),
   },
 ];

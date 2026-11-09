@@ -1,11 +1,11 @@
 'use client';
 
-import { Caveat } from 'next/font/google';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { errorText } from '@/components/screens/Admin/Workspace/shared';
+import { signHand } from '@/components/screens/Sign/fonts';
 import { SignaturePad } from '@/components/shared/SignaturePad';
 import {
   Dialog,
@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import type { LetterStatus, myLetters } from '@/lib/agreements/letters';
 import type { MyDoc, MyDocuments } from '@/lib/agreements/mine';
 import type { SavedSignatureView } from '@/lib/agreements/signers';
 import { cn } from '@/lib/utils';
@@ -27,8 +28,6 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
  * company), everything they signed, and their saved signature. The Home
  * card (light) and the Documents tab of their page (dark) both use these.
  */
-
-const hand = Caveat({ subsets: ['latin'], weight: ['600'] });
 
 const day = (iso?: string | null) =>
   iso
@@ -234,7 +233,7 @@ export const SignatureDialog = ({
           <div className="flex h-20 items-end rounded-xl bg-white px-4 pb-3">
             <span
               className={cn(
-                hand.className,
+                signHand.className,
                 'w-full border-b border-neutral-300 pb-1 text-[38px] leading-none',
                 name ? 'text-neutral-900' : 'text-neutral-300',
               )}
@@ -289,7 +288,7 @@ export const SignatureMark = ({
     ) : (
       <span
         className={cn(
-          hand.className,
+          signHand.className,
           'text-[32px] leading-none text-neutral-900',
         )}
       >
@@ -570,6 +569,352 @@ export const ToSignSection = () => {
 
 /* ---------------------------- documents tab ------------------------------ */
 
+/* -------------------------------- letters --------------------------------- */
+
+type LettersData = Awaited<ReturnType<typeof myLetters>>;
+
+const LETTER_STATUS: Record<
+  LetterStatus,
+  { label: string; tone: 'amber' | 'sky' | 'emerald' | 'rose' | 'neutral' }
+> = {
+  REQUESTED: { label: 'Asked', tone: 'amber' },
+  SIGNING: { label: 'Being signed', tone: 'sky' },
+  READY: { label: 'Ready', tone: 'emerald' },
+  NOT_SIGNED: { label: 'With HR', tone: 'amber' },
+  DECLINED: { label: 'Declined', tone: 'rose' },
+  CANCELLED: { label: 'Withdrawn', tone: 'neutral' },
+};
+
+const LETTER_TONES = {
+  light: {
+    amber: 'bg-amber-50 text-amber-700',
+    sky: 'bg-sky-50 text-sky-700',
+    emerald: 'bg-emerald-50 text-emerald-700',
+    rose: 'bg-rose-50 text-rose-700',
+    neutral: 'bg-neutral-100 text-neutral-600',
+  },
+  dark: {
+    amber: 'bg-amber-400/10 text-amber-300',
+    sky: 'bg-sky-400/10 text-sky-300',
+    emerald: 'bg-emerald-400/10 text-emerald-300',
+    rose: 'bg-rose-400/10 text-rose-300',
+    neutral: 'bg-white/[0.06] text-neutral-400',
+  },
+};
+
+const RequestLetterDialog = ({
+  open,
+  onOpenChange,
+  data,
+  onAsked,
+  theme,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  data: LettersData;
+  onAsked: () => void;
+  theme: Theme;
+}) => {
+  const t = THEMES[theme];
+  const [companyId, setCompanyId] = useState('');
+  const [kind, setKind] = useState('');
+  const [purpose, setPurpose] = useState('');
+  const [addressedTo, setAddressedTo] = useState('');
+  const [neededBy, setNeededBy] = useState('');
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setCompanyId(data.companies[0]?.id ?? '');
+    setKind(data.kinds[0]?.kind ?? '');
+    setPurpose('');
+    setAddressedTo('');
+    setNeededBy('');
+    setNote('');
+  }, [open, data]);
+
+  const ask = async () => {
+    setBusy(true);
+    try {
+      await PortalSdk.postData('/api/me/letters', {
+        companyId,
+        kind,
+        purpose,
+        addressedTo,
+        neededBy: neededBy || null,
+        note,
+      });
+      toast.success(
+        'Asked. HR checks it, and the signed letter comes here and to your email.',
+      );
+      onOpenChange(false);
+      onAsked();
+    } catch (err) {
+      toast.error(errorText(err, 'Could not ask for it.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const input = cn(
+    'h-10 w-full rounded-lg border px-3 text-sm outline-none',
+    t.input,
+  );
+  const label = cn('text-xs font-medium', t.muted);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className={cn('max-w-lg', t.dialog)}>
+        <DialogHeader>
+          <DialogTitle>Ask for a letter</DialogTitle>
+          <DialogDescription className={t.muted}>
+            HR checks the details from your record, the company signs it, and
+            the signed PDF comes to your documents and your email.
+          </DialogDescription>
+        </DialogHeader>
+        {data.companies.length > 1 && (
+          <label className="flex flex-col gap-1.5">
+            <span className={label}>From</span>
+            <select
+              value={companyId}
+              onChange={(e) => setCompanyId(e.target.value)}
+              className={input}
+            >
+              {data.companies.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        <div className="flex flex-col gap-1.5">
+          <span className={label}>Which letter</span>
+          <div className="grid gap-1.5 sm:grid-cols-2">
+            {data.kinds.map((k) => (
+              <button
+                key={k.kind}
+                type="button"
+                onClick={() => setKind(k.kind)}
+                className={cn(
+                  'flex flex-col items-start gap-0.5 rounded-lg border px-3 py-2 text-left',
+                  kind === k.kind
+                    ? theme === 'light'
+                      ? 'border-neutral-900 bg-neutral-50'
+                      : 'border-white/40 bg-white/[0.06]'
+                    : theme === 'light'
+                      ? 'border-neutral-200 hover:border-neutral-300'
+                      : 'border-white/10 hover:border-white/20',
+                )}
+              >
+                <span className={cn('text-sm font-medium', t.title)}>
+                  {k.label}
+                </span>
+                <span className={cn('text-[11px] leading-snug', t.muted)}>
+                  {k.hint}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="flex flex-col gap-1.5">
+            <span className={label}>What it’s for (optional)</span>
+            <input
+              value={purpose}
+              onChange={(e) => setPurpose(e.target.value)}
+              placeholder="A visa application"
+              className={input}
+            />
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className={label}>Addressed to (optional)</span>
+            <input
+              value={addressedTo}
+              onChange={(e) => setAddressedTo(e.target.value)}
+              placeholder="To whom it may concern"
+              className={input}
+            />
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className={label}>Needed by (optional)</span>
+            <input
+              type="date"
+              value={neededBy}
+              onChange={(e) => setNeededBy(e.target.value)}
+              className={input}
+            />
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className={label}>Note for HR (optional)</span>
+            <input
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              className={input}
+            />
+          </label>
+        </div>
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className={cn('h-10 rounded-lg px-4 text-sm font-medium', t.ghost)}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={busy || !companyId || !kind}
+            onClick={ask}
+            className={cn(
+              'h-10 rounded-lg px-4 text-sm font-semibold disabled:opacity-40',
+              t.primary,
+            )}
+          >
+            {busy ? 'Asking…' : 'Ask HR'}
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+/** Letters someone asked for: where each one is, and the PDF once ready. */
+const LettersSection = ({ theme }: { theme: Theme }) => {
+  const t = THEMES[theme];
+  const [data, setData] = useState<LettersData | null>(null);
+  const [asking, setAsking] = useState(false);
+
+  const load = useCallback(() => {
+    PortalSdk.getData('/api/me/letters', null)
+      .then((res) => setData(res?.data ?? null))
+      .catch(() => setData(null));
+  }, []);
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const cancel = async (id: string) => {
+    try {
+      await PortalSdk.putData('/api/me/letters', { id, action: 'cancel' });
+      toast.success('Request withdrawn');
+      load();
+    } catch (err) {
+      toast.error(errorText(err, 'Could not withdraw it.'));
+    }
+  };
+
+  if (!data || !data.companies.length) return null;
+  const shown = data.requests.filter((r) => r.status !== 'CANCELLED');
+
+  return (
+    <section>
+      <div className="mb-2 flex items-center gap-2">
+        <h3 className={cn('mr-auto text-sm font-semibold', t.title)}>
+          Letters
+        </h3>
+        <button
+          type="button"
+          onClick={() => setAsking(true)}
+          className={cn(
+            'inline-flex h-8 items-center gap-1 rounded-lg px-3 text-xs font-semibold',
+            t.ghost,
+          )}
+        >
+          <Icon name="add" className="text-[15px]" />
+          Ask for a letter
+        </button>
+      </div>
+      <div className={cn('overflow-hidden rounded-xl', t.card)}>
+        {!shown.length ? (
+          <p className={cn('p-4 text-sm', t.muted)}>
+            Need an experience, relieving, salary or address letter? Ask here,
+            and the signed letter comes to you.
+          </p>
+        ) : (
+          <ul className={cn('divide-y', t.divide)}>
+            {shown.map((r) => {
+              const meta = LETTER_STATUS[r.status];
+              return (
+                <li
+                  key={r.id}
+                  className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className={cn(
+                        'flex flex-wrap items-center gap-2 text-sm font-medium',
+                        t.title,
+                      )}
+                    >
+                      <span className="truncate">{r.label}</span>
+                      <span
+                        className={cn(
+                          'rounded-full px-2 py-0.5 text-[11px] font-semibold',
+                          LETTER_TONES[theme][meta.tone],
+                        )}
+                      >
+                        {meta.label}
+                      </span>
+                    </p>
+                    <p className={cn('mt-0.5 truncate text-xs', t.muted)}>
+                      {[
+                        r.companyName,
+                        r.purpose,
+                        `asked ${day(r.requestedAt)}`,
+                        r.status === 'SIGNING' &&
+                          r.waitingOn &&
+                          `waiting on ${r.waitingOn}’s signature`,
+                        r.status === 'DECLINED' && r.declineReason,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 gap-2">
+                    {r.status === 'REQUESTED' && (
+                      <button
+                        type="button"
+                        onClick={() => cancel(r.id)}
+                        className={cn(
+                          'inline-flex h-8 items-center rounded-lg px-3 text-xs font-semibold',
+                          t.ghost,
+                        )}
+                      >
+                        Withdraw
+                      </button>
+                    )}
+                    {r.pdfUrl && (
+                      <a
+                        href={r.pdfUrl}
+                        className={cn(
+                          'inline-flex h-8 items-center gap-1 rounded-lg px-3 text-xs font-semibold',
+                          t.ghost,
+                        )}
+                      >
+                        <Icon name="download" className="text-[15px]" />
+                        PDF
+                      </a>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+      <RequestLetterDialog
+        open={asking}
+        onOpenChange={setAsking}
+        data={data}
+        onAsked={load}
+        theme={theme}
+      />
+    </section>
+  );
+};
+
 type DocFilter = 'all' | 'signed' | 'open' | 'company';
 
 const FILTERS: Array<[DocFilter, string]> = [
@@ -707,7 +1052,11 @@ export const DocumentsPanel = ({ theme = 'dark' }: { theme?: Theme }) => {
                     </p>
                     <p className={cn('mt-0.5 truncate text-xs', t.muted)}>
                       {d.typeLabel} · {d.companyName}
-                      {d.as === 'company' ? ' · for the company' : ''}
+                      {d.as === 'company'
+                        ? ' · for the company'
+                        : d.as === 'recipient'
+                          ? ' · issued to you'
+                          : ''}
                       {d.source === 'imported'
                         ? ' · signed outside the Portal'
                         : ''}
@@ -747,6 +1096,8 @@ export const DocumentsPanel = ({ theme = 'dark' }: { theme?: Theme }) => {
           )}
         </div>
       </section>
+
+      <LettersSection theme={theme} />
 
       <section>
         <h3 className={cn('mb-2 text-sm font-semibold', t.title)}>

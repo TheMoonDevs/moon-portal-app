@@ -1,6 +1,8 @@
 import { pdfFileName } from '@/lib/agreements/pdf';
+import { pdfResponse } from '@/lib/agreements/seal';
 import { agreementFailure } from '@/lib/agreements/server';
 import { documentPdfFor, importedPdfLink } from '@/lib/agreements/vault';
+import { originOf } from '@/lib/mcp/tokens';
 import { getSessionUser } from '@/lib/permissions/server';
 import { fail } from '@/lib/workspace/server';
 
@@ -24,14 +26,13 @@ export async function GET(request: Request) {
       params.get('inline') === '1',
     );
     if (imported) return Response.redirect(imported, 302);
-    const pdf = await documentPdfFor(actor, ref);
-    return new Response(Buffer.from(pdf.bytes), {
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `${params.get('inline') === '1' ? 'inline' : 'attachment'}; filename="${pdfFileName(pdf.title)}"`,
-        'Cache-Control': 'private, no-store',
-      },
-    });
+    const pdf = await documentPdfFor(actor, ref, originOf(request));
+    return pdfResponse(
+      pdf.bytes,
+      'sealed' in pdf ? (pdf.sealed ?? null) : null,
+      pdfFileName(pdf.title),
+      params.get('inline') === '1',
+    );
   } catch (e) {
     return agreementFailure(e);
   }

@@ -26,6 +26,7 @@ import type { Company } from '@/models/workspace';
 
 import { signerFacts } from './autofill';
 import { docTypeLabel, isSignerRule, onboardingTypeKey } from './docTypes';
+import { codeNeeded, maskEmail } from './emailCode';
 import {
   type AgreementEmailContext,
   type AgreementEmailKind,
@@ -48,6 +49,14 @@ import {
   saveSignature,
   SignerError,
 } from './signers';
+import {
+  initialsOf,
+  inspectSource,
+  parsePlacements,
+  placementOwners,
+  placementsFor,
+  sourceBytes,
+} from './source';
 import {
   fieldLabel,
   fillAgreement,
@@ -320,6 +329,15 @@ export interface AgreementInput {
   linkKind: 'renewal' | 'amendment' | 'resend' | null;
   /** The signers can't use the Portal until they sign it. */
   blocking: boolean;
+  /** An uploaded PDF to sign as it is: its storage key and name. */
+  source: { key: string; name: string | null } | null;
+  /** The boxes on the uploaded PDF's pages, still unchecked. */
+  placements: unknown;
+  /** Signers enter a code sent to their email before opening it. */
+  emailCode: boolean;
+  /** A letter issued to this person, who doesn't sign it. */
+  forUserId: string | null;
+  letterRequestId: string | null;
 }
 
 const LINK_KINDS = ['renewal', 'amendment', 'resend'] as const;
@@ -331,7 +349,10 @@ export function parseAgreementInput(raw: any): AgreementInput {
   const title = text(raw?.title, MAX_AGREEMENT_TITLE);
   const body =
     typeof raw?.body === 'string' ? raw.body.slice(0, MAX_AGREEMENT_BODY) : '';
-  if (!title || !body.trim())
+  // An uploaded PDF carries its own text; `body` is then what was read from
+  // it, for search.
+  const sourceKey = text(raw?.source?.key, 300);
+  if (!title || (!body.trim() && !sourceKey))
     throw new AgreementError(400, 'Add a title and the agreement text.');
   const ordered = raw?.ordered === true;
   const expiresOn = isDay(raw?.expiresOn) ? raw.expiresOn : null;
@@ -386,6 +407,13 @@ export function parseAgreementInput(raw: any): AgreementInput {
     ccEmails: ccEmails as string[],
     values,
     companyName: text(raw?.companyName, 120) || null,
+    source: sourceKey
+      ? { key: sourceKey, name: text(raw?.source?.name, 160) || null }
+      : null,
+    placements: raw?.placements,
+    emailCode: raw?.emailCode === true,
+    forUserId: null,
+    letterRequestId: null,
   };
 }
 
@@ -401,6 +429,15 @@ export async function renderAgreement(
   const company: Company | null = await db.company.findFirst({
     where: { id: input.companyId },
   });
+  // An uploaded PDF goes as it is: its text has no blanks to fill.
+  if (input.source)
+    return {
+      title: input.title.trim(),
+      body: input.body.trim(),
+      missing: [] as Array<{ key: string; label: string }>,
+      filled: [] as string[],
+      company,
+    };
   const blanks = templateFields(input.title, input.body);
   const known = blanks.some((k) => isPersonKey(k) && !input.values[k])
     ? await signerFacts(input.companyId, input.signers, opts)
@@ -615,9 +652,10 @@ export async function notifySigners(
 }
 
 /** The signed PDF of a completed agreement, as an email attachment. */
-async function pdfAttachment(agreement: Agreement) {
+async function pdfAttachment(agreement: Agreement, origin: string) {
   try {
-    const bytes = await agreementPdf(agreement);
+    const { sealedPdf } = await import('./seal');
+    const { bytes } = await sealedPdf(agreement, origin);
     return {
       filename: pdfFileName(agreement.title),
       base64: Buffer.from(bytes).toString('base64'),
@@ -628,8 +666,28 @@ async function pdfAttachment(agreement: Agreement) {
   }
 }
 
-export async function agreementPdf(agreement: Agreement) {
+/**
+ * The signed copy, built from the record: the text typeset, or the
+ * uploaded PDF with the signatures drawn into its boxes; then the
+ * certificate. See `sealedPdf` for the copy as it was issued.
+ */
+export async function agreementPdf(
+  agreement: Agreement,
+  opts: { verifyUrl?: string | null } = {},
+) {
   const company = await companyOf(agreement.companyId);
+  const signers = agreement.signers.slice().sort((a, b) => a.order - b.order);
+  const source = agreement.document
+    ? {
+        bytes: await sourceBytes(agreement.document),
+        placements: placementOwners(agreement)
+          .map(({ signerId, ...p }) => ({
+            ...p,
+            signer: signers.findIndex((s) => s.id === signerId),
+          }))
+          .filter((p) => p.signer >= 0),
+      }
+    : null;
   return buildAgreementPdf({
     reference: agreement.id,
     title: agreement.title,
@@ -639,33 +697,34 @@ export async function agreementPdf(agreement: Agreement) {
     sentAt: agreement.sentAt,
     completedAt: agreement.completedAt ?? null,
     status: agreement.status,
-    signers: agreement.signers
-      .slice()
-      .sort((a, b) => a.order - b.order)
-      .map((s) => ({
-        name: s.name,
-        email: s.email,
-        role: s.role ?? null,
-        company: !!s.company,
-        status: s.status,
-        signature: s.signature
-          ? {
-              name: s.signature.name,
-              method: s.signature.method,
-              image: s.signature.image ?? null,
-              at: s.signature.at,
-              ip: s.signature.ip ?? null,
-              saved: !!s.signature.saved,
-              signatureId: signatureIdOf(agreement.id, s.id, s.signature.at),
-            }
-          : null,
-        details: s.signature
-          ? fieldsFor(agreement.fields, agreement.signers, s.id).map((f) => ({
-              label: f.label,
-              text: fieldText(f, s.values?.[f.id]),
-            }))
-          : [],
-      })),
+    source,
+    verifyUrl: opts.verifyUrl ?? null,
+    signers: signers.map((s) => ({
+      name: s.name,
+      email: s.email,
+      role: s.role ?? null,
+      company: !!s.company,
+      status: s.status,
+      signature: s.signature
+        ? {
+            name: s.signature.name,
+            method: s.signature.method,
+            image: s.signature.image ?? null,
+            at: s.signature.at,
+            ip: s.signature.ip ?? null,
+            saved: !!s.signature.saved,
+            initials: s.signature.initials ?? null,
+            verified: s.signature.verified ?? null,
+            signatureId: signatureIdOf(agreement.id, s.id, s.signature.at),
+          }
+        : null,
+      details: s.signature
+        ? fieldsFor(agreement.fields, agreement.signers, s.id).map((f) => ({
+            label: f.label,
+            text: fieldText(f, s.values?.[f.id]),
+          }))
+        : [],
+    })),
     history: agreement.history.map((e) => ({
       at: e.at,
       text: e.text,
@@ -793,7 +852,21 @@ export async function sendAgreement(
       input.fields.some(isSensitiveField));
   const countersigner = signers.find((s) => s.company);
   const partyCount = partiesOf(signers).length;
+  if (!partyCount && !(input.forUserId && countersigner))
+    throw new AgreementError(400, 'Add at least one person to sign.');
   const fields = input.fields.filter((f) => f.signer <= partyCount);
+  // An uploaded PDF: checked, measured and fingerprinted, with a box for
+  // each person's signature.
+  const document = input.source
+    ? await inspectSource(input.companyId, input.source.key, input.source.name)
+    : null;
+  const placements = document
+    ? parsePlacements(input.placements, {
+        pages: document.pages.length,
+        parties: partiesOf(signers).map((s) => s.name),
+        company: countersigner?.name ?? null,
+      })
+    : [];
   const linkText = previous
     ? `. ${
         input.linkKind === 'amendment'
@@ -810,7 +883,12 @@ export async function sendAgreement(
       title: rendered.title || input.title,
       category: input.category,
       body: rendered.body,
-      hash: sha256(rendered.body),
+      hash: document ? document.hash : sha256(rendered.body),
+      document,
+      placements,
+      emailCode: input.emailCode,
+      forUserId: input.forUserId,
+      letterRequestId: input.letterRequestId,
       message: input.message,
       templateId: input.templateId,
       ordered: input.ordered,
@@ -836,16 +914,26 @@ export async function sendAgreement(
         {
           at,
           byUserId: actor.id,
-          text: `${actor.name || 'Someone'} sent it to ${signers
-            .filter((s) => !s.company)
-            .map((s) => s.name)
-            .join(', ')} to sign${input.ordered ? ', in order' : ''}${
-            countersigner ? `; ${countersigner.name} signs for the company` : ''
+          text: `${actor.name || 'Someone'} sent it ${
+            partyCount
+              ? `to ${signers
+                  .filter((s) => !s.company)
+                  .map((s) => s.name)
+                  .join(', ')} to sign${input.ordered ? ', in order' : ''}${
+                  countersigner
+                    ? `; ${countersigner.name} signs for the company`
+                    : ''
+                }`
+              : `to ${countersigner!.name} to sign for the company`
           }${confidential ? '. Marked confidential' : ''}${linkText}${
             templateVersion && template
               ? `. From the template “${template.name}”, version ${templateVersion}`
               : ''
-          }`,
+          }${
+            document
+              ? `. Uploaded PDF “${document.fileName}”, ${document.pages.length} ${document.pages.length === 1 ? 'page' : 'pages'}, SHA-256 ${document.hash.slice(0, 12)}…`
+              : ''
+          }${input.emailCode ? '. Signers enter a code sent to their email before opening it' : ''}`,
         },
       ],
       revision: 0,
@@ -896,6 +984,8 @@ export async function signingState(
   agreement: Agreement,
   token: string,
   viewer?: { id: string } | null,
+  /** The proof from an email code, when the document asks for one. */
+  proof?: string | null,
 ) {
   const signer = agreement.signers.find((s) => s.token === token)!;
   const [company, sender] = await Promise.all([
@@ -924,11 +1014,41 @@ export async function signingState(
           text: fieldText(f, s.values?.[f.id]),
         }))
       : [];
-  return {
+  // Asks for an email code first: until then only what the email said.
+  const locked = codeNeeded(agreement, signer, { proof, signedIn: isMe });
+  const owners = new Map(
+    placementOwners(agreement).map((p) => [p.id, p.signerId]),
+  );
+  const state = {
     token,
     reference: agreement.id,
     title: agreement.title,
     body: agreement.body,
+    /** An uploaded PDF signed as it is, and the boxes on its pages. */
+    document: agreement.document
+      ? {
+          fileName: agreement.document.fileName,
+          pages: agreement.document.pages,
+          url: `/api/sign/${token}/document`,
+        }
+      : null,
+    placements: (agreement.placements ?? []).map((p) => ({
+      id: p.id,
+      kind: p.kind,
+      page: p.page,
+      x: p.x,
+      y: p.y,
+      w: p.w,
+      h: p.h,
+      signerId: owners.get(p.id) ?? null,
+    })),
+    locked: locked
+      ? {
+          email: maskEmail(signer.email),
+          codeSentAt: signer.emailCode?.sent?.at(-1) ?? null,
+        }
+      : null,
+    emailCode: !!agreement.emailCode,
     hash: agreement.hash,
     message: agreement.message ?? null,
     status: agreement.status,
@@ -948,6 +1068,7 @@ export async function signingState(
                 name: saved.name,
                 method: saved.method,
                 image: saved.image ?? null,
+                initials: saved.initials ?? null,
               }
             : null,
         }
@@ -960,6 +1081,10 @@ export async function signingState(
       company: !!signer.company,
       status: signer.status,
       canSign: myTurn,
+      /** Initials boxes of theirs on the uploaded PDF. */
+      initialsBoxes: placementsFor(agreement, signer).filter(
+        (p) => p.kind === 'initials',
+      ).length,
       /** What they fill in before signing. */
       fields: fieldsFor(fields, agreement.signers, signer.id),
       values: signer.values ?? {},
@@ -991,6 +1116,8 @@ export async function signingState(
               saved: !!s.signature.saved,
               ip: done ? (s.signature.ip ?? null) : null,
               signatureId: signatureIdOf(agreement.id, s.id, s.signature.at),
+              initials: s.signature.initials || initialsOf(s.signature.name),
+              verified: s.signature.verified ?? null,
             }
           : null,
         declinedAt: s.declinedAt ?? null,
@@ -1001,6 +1128,19 @@ export async function signingState(
     history: done
       ? agreement.history.map((e) => ({ at: e.at, text: e.text, ip: e.ip }))
       : [],
+  };
+  if (!locked) return state;
+  return {
+    ...state,
+    body: '',
+    hash: '',
+    message: null,
+    document: null,
+    placements: [],
+    pdfUrl: null,
+    signers: [],
+    history: [],
+    you: { ...state.you, fields: [], values: {}, waitingOn: [] },
   };
 }
 
@@ -1065,7 +1205,8 @@ async function recordSignature(
     if (s.signature) throw new AgreementError(409, 'You already signed.');
     if (!signersUp(a).some((x) => x.id === s.id))
       throw new AgreementError(409, 'It isn’t your turn to sign yet.');
-    if (a.hash !== sha256(a.body) || (check.hash && check.hash !== a.hash))
+    const fingerprint = a.document ? a.document.hash : sha256(a.body);
+    if (a.hash !== fingerprint || (check.hash && check.hash !== a.hash))
       throw new AgreementError(409, 'This agreement changed. Reload the page.');
     if (
       check.typed !== undefined &&
@@ -1156,9 +1297,16 @@ async function recordSignature(
   });
 
   if (updated.status === AGREEMENT_STATUS.COMPLETED) {
-    const pdf = await pdfAttachment(updated);
+    const pdf = await pdfAttachment(updated, origin);
     await emailSigners(updated, updated.signers, 'completed', origin, { pdf });
     await emailTeam(updated, 'completed', origin, { pdf });
+    // A letter: the person it's for gets it.
+    if (updated.forUserId) {
+      const { letterSigned } = await import('./letters');
+      await letterSigned(updated, origin, pdf).catch((e) =>
+        console.error('[agreements] letter', e),
+      );
+    }
   } else {
     const nextIds = new Set(notify.map((x) => x.id));
     if (notify.length) {
@@ -1199,14 +1347,26 @@ export async function signAgreement(
     hash?: unknown;
     save?: unknown;
     values?: unknown;
+    initials?: unknown;
   },
   meta: Meta,
   origin: string,
   viewer?: { id: string } | null,
+  /** The proof from an email code, when the document asks for one. */
+  proof?: string | null,
 ) {
   const found = await agreementByToken(token);
   if (!found) throw new AgreementError(404, 'This link does not exist.');
+  const signedIn = await isSignerUser(viewer, found.signer);
+  if (codeNeeded(found.agreement, found.signer, { proof, signedIn }))
+    throw new AgreementError(
+      403,
+      'Enter the code sent to your email before signing.',
+    );
   const typed = text(input.name, 120);
+  const initials =
+    text(input.initials, 6).replace(/[^\p{L}\p{N}.]/gu, '') ||
+    initialsOf(typed);
   let image: string | null;
   try {
     image = checkSignatureImage(input.image);
@@ -1222,18 +1382,20 @@ export async function signAgreement(
       name: typed,
       method: image ? 'drawn' : 'typed',
       image,
+      initials,
+      verified: signedIn
+        ? 'portal'
+        : found.agreement.emailCode
+          ? 'email_code'
+          : null,
     },
     meta,
     origin,
     { hash: input.hash, typed, values: input.values ?? {} },
   );
-  if (
-    input.save === true &&
-    viewer &&
-    (await isSignerUser(viewer, found.signer))
-  )
-    await saveSignature(viewer.id, { name: typed, image }).catch((e) =>
-      console.error('[agreements] save signature', e),
+  if (input.save === true && viewer && signedIn)
+    await saveSignature(viewer.id, { name: typed, image, initials }).catch(
+      (e) => console.error('[agreements] save signature', e),
     );
   return updated;
 }
@@ -1275,6 +1437,8 @@ export async function approveAgreement(
       method: saved.method,
       image: saved.image ?? null,
       saved: true,
+      initials: saved.initials || initialsOf(signer.name),
+      verified: 'portal',
     },
     meta,
     origin,
@@ -1649,7 +1813,36 @@ export async function agreementDetail(agreement: Agreement, origin: string) {
       : null,
     body: agreement.body,
     hash: agreement.hash,
-    hashOk: agreement.hash === sha256(agreement.body),
+    hashOk:
+      agreement.hash ===
+      (agreement.document ? agreement.document.hash : sha256(agreement.body)),
+    document: agreement.document
+      ? {
+          fileName: agreement.document.fileName,
+          size: agreement.document.size,
+          pages: agreement.document.pages,
+          hash: agreement.document.hash,
+          /** To send the same file again (a renewal, or after a decline). */
+          key: agreement.document.fileKey,
+          url: `/api/agreements/${agreement.id}/document`,
+        }
+      : null,
+    placements: placementOwners(agreement).map((p) => ({
+      id: p.id,
+      kind: p.kind,
+      signer: p.signer,
+      page: p.page,
+      x: p.x,
+      y: p.y,
+      w: p.w,
+      h: p.h,
+      signerId: p.signerId,
+    })),
+    emailCode: !!agreement.emailCode,
+    sealed: agreement.sealed
+      ? { hash: agreement.sealed.hash, at: agreement.sealed.at }
+      : null,
+    forUserId: agreement.forUserId ?? null,
     ccEmails: agreement.ccEmails ?? [],
     signatures: agreement.signers
       .filter((s) => s.signature)
@@ -1662,6 +1855,8 @@ export async function agreementDetail(agreement: Agreement, origin: string) {
         at: s.signature!.at,
         ip: s.signature!.ip ?? null,
         userAgent: s.signature!.userAgent ?? null,
+        initials: s.signature!.initials || initialsOf(s.signature!.name),
+        verified: s.signature!.verified ?? null,
       })),
     history: agreement.history,
   };

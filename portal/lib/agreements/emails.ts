@@ -25,7 +25,15 @@ export type AgreementEmailKind =
   /** To the team: a signer handed it over to someone else. */
   | 'handedOver'
   /** To the team: it ends soon (30 or 7 days). */
-  | 'ending';
+  | 'ending'
+  /** To a signer: the one-time code to open it. */
+  | 'code'
+  /** To HR: someone asked for a letter. */
+  | 'letterRequested'
+  /** To the person: their letter is signed (PDF attached). */
+  | 'letterReady'
+  /** To the person: their letter request was declined. */
+  | 'letterDeclined';
 
 export interface AgreementEmailContext {
   kind: AgreementEmailKind;
@@ -63,6 +71,11 @@ export interface AgreementEmailContext {
   reference?: string | null;
   /** The company's logo, when it has a public https URL. */
   companyLogo?: string | null;
+  /** For `code`: the six digits. */
+  code?: string | null;
+  /** For letters: who asked, and what it's for. */
+  requestedBy?: string | null;
+  purpose?: string | null;
 }
 
 export function agreementEmail(ctx: AgreementEmailContext): {
@@ -203,6 +216,52 @@ If it should go on, renew it from the portal: the renewal starts from the same t
 
 ${ctx.signUrl}`,
       };
+    case 'code':
+      return {
+        subject: `Your code to open ${ctx.title}`,
+        text: `${hi}
+
+Use this code to open "${ctx.title}" from ${ctx.companyName}:
+
+${ctx.code}
+
+It works for 10 minutes. If you didn't ask for a code, you can ignore this email; nobody can open the document without it.`,
+      };
+    case 'letterRequested':
+      return {
+        subject: `Letter requested: ${ctx.title}`,
+        text: `${hi}
+
+${ctx.requestedBy ?? 'Someone'} asked for ${ctx.title.replace(/^./, (c) => c.toLowerCase())}${ctx.purpose ? ` (${ctx.purpose})` : ''}.${ctx.message ? `\n\n${ctx.message}` : ''}
+
+Review it, edit the wording if you need to, and approve it in the Portal. It goes to ${ctx.companyName}'s signatory to sign:
+
+${ctx.signUrl}`,
+      };
+    case 'letterReady':
+      return {
+        subject: `Your ${ctx.title.replace(/^./, (c) => c.toLowerCase())} is ready`,
+        text: `${hi}
+
+${ctx.companyName} has signed your ${ctx.title.replace(/^./, (c) => c.toLowerCase())}. It's attached to this email as a PDF, and it's in your documents in the Portal:
+
+${ctx.signUrl}
+
+${ctx.sender.name}
+${ctx.companyName}`,
+      };
+    case 'letterDeclined':
+      return {
+        subject: `About your letter request: ${ctx.title}`,
+        text: `${hi}
+
+${ctx.sender.name} couldn't issue the ${ctx.title.replace(/^./, (c) => c.toLowerCase())} you asked for.${ctx.reason ? `\n\n${ctx.reason}` : ''}
+
+Reply to this email if you'd like to talk about it.
+
+${ctx.sender.name}
+${ctx.companyName}`,
+      };
     case 'voided':
       return {
         subject: `Withdrawn: ${ctx.title}`,
@@ -297,6 +356,30 @@ function band(ctx: AgreementEmailContext): {
         headline: `${ctx.companyName} withdrew ${t}.`,
         button: null,
       };
+    case 'code':
+      return {
+        eyebrow: 'Verification code',
+        headline: 'Use this code to open your document.',
+        button: null,
+      };
+    case 'letterRequested':
+      return {
+        eyebrow: 'Letter requested',
+        headline: `${ctx.requestedBy ?? 'Someone'} asked for ${t}.`,
+        button: 'Review the request',
+      };
+    case 'letterReady':
+      return {
+        eyebrow: 'Signed and ready',
+        headline: `Your ${t} is signed and ready.`,
+        button: 'Open your documents',
+      };
+    case 'letterDeclined':
+      return {
+        eyebrow: 'Letter request',
+        headline: `Your request for ${t} wasn't approved.`,
+        button: null,
+      };
   }
 }
 
@@ -336,6 +419,9 @@ export function agreementEmailHtml(
     ctx.companyLogo && /^https:\/\//.test(ctx.companyLogo)
       ? `<img src="${esc(ctx.companyLogo)}" width="32" height="32" alt="" style="display:block;width:32px;height:32px;border-radius:6px;object-fit:cover">`
       : `<div style="width:32px;height:32px;border-radius:6px;background:#0f1f38;color:#ffffff;font:700 14px/32px ${FONT};text-align:center">${esc(ctx.companyName.slice(0, 1).toUpperCase())}</div>`;
+  const codeBox = ctx.code
+    ? `<div style="margin:24px auto 0;display:inline-block;padding:14px 26px;background:#ffffff;border-radius:6px;font:700 30px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.32em;color:#0f1f38">${esc(ctx.code)}</div><div style="margin-top:12px;font:13px ${FONT};color:#93a4bf">It works for 10 minutes.</div>`
+    : '';
   const button = b.button
     ? `<table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:26px auto 0"><tr><td style="border-radius:6px;background:#1d4ed8"><a href="${esc(ctx.signUrl)}" style="display:inline-block;padding:13px 30px;font:600 15px ${FONT};color:#ffffff;text-decoration:none;border-radius:6px">${esc(b.button)}</a></td></tr></table>`
     : '';
@@ -353,7 +439,10 @@ export function agreementEmailHtml(
   for (const para of text.trim().split(/\n\s*\n/)) {
     const kept: string[] = [];
     for (const line of para.split('\n')) {
-      if (line.trim() !== ctx.signUrl) {
+      const standIn =
+        (!!ctx.signUrl && line.trim() === ctx.signUrl) ||
+        (!!ctx.code && line.trim() === ctx.code);
+      if (!standIn) {
         kept.push(line);
         continue;
       }
@@ -392,7 +481,7 @@ export function agreementEmailHtml(
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td style="background:#0f1f38;padding:36px 32px 34px;text-align:center;border-radius:8px 8px 0 0">
 <div style="font:600 12px ${FONT};letter-spacing:.1em;text-transform:uppercase;color:#93a4bf">${esc(b.eyebrow)}</div>
 <div style="margin-top:10px;font:600 20px/1.4 ${FONT};color:#ffffff">${esc(b.headline)}</div>
-${button}
+${button}${codeBox}
 </td></tr>
 <tr><td style="padding:28px 32px 26px;font:15px/1.6 ${FONT};color:#334155">${paragraphs}${details}</td></tr></table>
 </td></tr>

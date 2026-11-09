@@ -1,9 +1,16 @@
 import { handOver } from '@/lib/agreements/corrections';
 import {
+  checkSignerCode,
+  codeNeeded,
+  proofFrom,
+  sendSignerCode,
+} from '@/lib/agreements/emailCode';
+import {
   agreementByToken,
   agreementFailure,
   approveAgreement,
   declineAgreement,
+  isSignerUser,
   markViewed,
   signAgreement,
   signingState,
@@ -30,16 +37,24 @@ const metaOf = (request: Request) => ({
  * The signer's copy. The link itself is the key; signed in as the signer,
  * it also says whether they have a saved signature to approve with.
  */
-export async function GET(_request: Request, { params }: Params) {
+export async function GET(request: Request, { params }: Params) {
   const found = await agreementByToken(params.token);
   if (!found) return fail(404, NOT_FOUND);
   const viewer = await getSessionUser().catch(() => null);
   return ok({
-    state: await signingState(found.agreement, params.token, viewer),
+    state: await signingState(
+      found.agreement,
+      params.token,
+      viewer,
+      proofFrom(request.headers.get('cookie'), found.signer.id),
+    ),
   });
 }
 
 /**
+ * `{ action: 'sendCode' }` emails a code and `{ action: 'checkCode', code }`
+ * checks it, when the document asks for one (the right code sets a cookie
+ * that opens it for 12 hours);
  * `{ action: 'view' }` notes that the signer opened it;
  * `{ action: 'sign', name, agree, image?, hash, save?, values? }` signs (and,
  * signed in as the signer, saves the signature for next time), with what
@@ -55,11 +70,34 @@ export async function PUT(request: Request, { params }: Params) {
   const meta = metaOf(request);
   try {
     const origin = originOf(request);
+    const found = await agreementByToken(params.token);
+    if (!found) return fail(404, NOT_FOUND);
+    // An email code first, when the document asks for one.
+    if (body.action === 'sendCode')
+      return ok(await sendSignerCode(params.token, meta));
+    if (body.action === 'checkCode') {
+      const { cookie, proof } = await checkSignerCode(
+        params.token,
+        body.code,
+        meta,
+      );
+      const viewer = await getSessionUser().catch(() => null);
+      const fresh = (await agreementByToken(params.token))!;
+      const res = ok({
+        state: await signingState(fresh.agreement, params.token, viewer, proof),
+      });
+      res.headers.append('Set-Cookie', cookie);
+      return res;
+    }
+    const viewer = await getSessionUser().catch(() => null);
+    const proof = proofFrom(request.headers.get('cookie'), found.signer.id);
+    const signedIn = await isSignerUser(viewer, found.signer);
+    if (codeNeeded(found.agreement, found.signer, { proof, signedIn }))
+      return fail(403, 'Enter the code sent to your email first.');
     if (body.action === 'view') {
       await markViewed(params.token, meta);
       return ok({ viewed: true });
     }
-    const viewer = await getSessionUser().catch(() => null);
     let updated;
     if (body.action === 'sign')
       updated = await signAgreement(
@@ -71,16 +109,16 @@ export async function PUT(request: Request, { params }: Params) {
           hash: body.hash,
           save: body.save,
           values: body.values,
+          initials: body.initials,
         },
         meta,
         origin,
         viewer,
+        proof,
       );
     else if (body.action === 'approve') {
       if (!viewer)
         return fail(401, 'Sign in to approve with your saved signature.');
-      const found = await agreementByToken(params.token);
-      if (!found) return fail(404, NOT_FOUND);
       updated = await approveAgreement(
         viewer,
         found.agreement,
@@ -101,7 +139,9 @@ export async function PUT(request: Request, { params }: Params) {
     } else if (body.action === 'decline')
       updated = await declineAgreement(params.token, body.reason, meta, origin);
     else return fail(400, 'Unknown action.');
-    return ok({ state: await signingState(updated, params.token, viewer) });
+    return ok({
+      state: await signingState(updated, params.token, viewer, proof),
+    });
   } catch (e) {
     return agreementFailure(e);
   }

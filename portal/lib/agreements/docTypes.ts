@@ -92,6 +92,13 @@ export const DOC_TYPES: DocTypeDef[] = [
     hint: 'A minor document.',
   },
   {
+    key: AGREEMENT_CATEGORY.LETTER,
+    label: 'Letters and certificates',
+    group: 'agreements',
+    defaults: { signer: 'owner', confidential: false },
+    hint: 'Experience, relieving and address letters. Salary certificates are always confidential.',
+  },
+  {
     key: AGREEMENT_CATEGORY.OTHER,
     label: 'Other',
     group: 'agreements',
