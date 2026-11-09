@@ -83,6 +83,16 @@ export const SIGN_TOKEN_PATTERN = /^[a-f0-9]{40}$/;
 export const sha256 = (value: string) =>
   createHash('sha256').update(value).digest('hex');
 
+/**
+ * A short id for one signature, printed beside it on the page and in the
+ * PDF so a signature can be matched to its line in the audit trail.
+ */
+export const signatureIdOf = (
+  agreementId: string,
+  signerId: string,
+  at: string,
+) => sha256(`${agreementId}:${signerId}:${at}`).slice(0, 16).toUpperCase();
+
 export const text = (value: unknown, max: number) =>
   typeof value === 'string' ? value.trim().slice(0, max) : '';
 
@@ -502,6 +512,8 @@ export async function emailSigners(
         sender,
         message: agreement.message,
         expiresOn: agreement.expiresOn,
+        reference: agreement.id,
+        companyLogo: company.logo,
         signedBy,
         partiesSigned: agreement.signers
           .filter((x) => x.signature && !x.company)
@@ -551,6 +563,8 @@ export async function emailTeam(
         title: agreement.title,
         signUrl: teamLink(origin, agreement),
         sender,
+        reference: agreement.id,
+        companyLogo: company.logo,
         signedBy: agreement.signers
           .filter((s) => s.signature)
           .map((s) => s.name),
@@ -642,6 +656,7 @@ export async function agreementPdf(agreement: Agreement) {
               at: s.signature.at,
               ip: s.signature.ip ?? null,
               saved: !!s.signature.saved,
+              signatureId: signatureIdOf(agreement.id, s.id, s.signature.at),
             }
           : null,
         details: s.signature
@@ -911,6 +926,7 @@ export async function signingState(
       : [];
   return {
     token,
+    reference: agreement.id,
     title: agreement.title,
     body: agreement.body,
     hash: agreement.hash,
@@ -974,6 +990,7 @@ export async function signingState(
               at: s.signature.at,
               saved: !!s.signature.saved,
               ip: done ? (s.signature.ip ?? null) : null,
+              signatureId: signatureIdOf(agreement.id, s.id, s.signature.at),
             }
           : null,
         declinedAt: s.declinedAt ?? null,

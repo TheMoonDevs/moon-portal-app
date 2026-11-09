@@ -81,6 +81,8 @@ async function alertFor(item: Item, origin: string) {
         endsOn: item.endsOn,
         daysLeft: left,
         forTeam: true,
+        reference: item.kind === 'agreement' ? item.id : null,
+        companyLogo: (company?.logo as string | null) ?? null,
       },
       `agreement-end-${item.id}-${item.alert}-${p.id}`,
     );

@@ -10,6 +10,7 @@ import remarkGfm from 'remark-gfm';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
 
+import { envelopeId, signatureMethod } from './envelope';
 import { CAVEAT_REGULAR, NOTO_SANS_BOLD, NOTO_SANS_REGULAR } from './pdfFonts';
 
 /*
@@ -26,6 +27,8 @@ export interface PdfSignature {
   at: string;
   ip?: string | null;
   saved?: boolean | null;
+  /** Printed beside the signature, to match it to the audit trail. */
+  signatureId?: string | null;
 }
 
 export interface PdfSigner {
@@ -59,6 +62,12 @@ const WIDTH = A4.w - M.x * 2;
 const INK = rgb(0.09, 0.09, 0.1);
 const MUTED = rgb(0.42, 0.42, 0.45);
 const RULE = rgb(0.85, 0.85, 0.87);
+const NAVY = rgb(0.059, 0.122, 0.22);
+const BLUE = rgb(0.114, 0.306, 0.847);
+const SIGN_INK = rgb(0.043, 0.165, 0.42);
+const GREEN = rgb(0.016, 0.42, 0.3);
+const FILL = rgb(0.957, 0.965, 0.976);
+const WHITE = rgb(1, 1, 1);
 
 export const formatIst = (iso: string | null | undefined) => {
   if (!iso) return '';
@@ -390,6 +399,75 @@ async function embedSignature(doc: PDFDocument, image?: string | null) {
   }
 }
 
+/**
+ * A signature in its frame: a bracket, "Signed by:", the signature, and the
+ * signature id that ties it to the audit trail. Returns the height used.
+ */
+function signatureFrame(
+  w: Writer,
+  page: PDFPage,
+  sig: PdfSignature,
+  img: PDFImage | null,
+  x: number,
+  top: number,
+  width: number,
+) {
+  const h = 60;
+  const bracket = { thickness: 1.2, color: BLUE };
+  page.drawLine({ start: { x, y: top }, end: { x, y: top - h }, ...bracket });
+  page.drawLine({
+    start: { x, y: top },
+    end: { x: x + 7, y: top },
+    ...bracket,
+  });
+  page.drawLine({
+    start: { x, y: top - h },
+    end: { x: x + 7, y: top - h },
+    ...bracket,
+  });
+  const ix = x + 9;
+  const inner = width - 12;
+  page.drawText('SIGNED BY:', {
+    x: ix,
+    y: top - 9,
+    size: 6,
+    font: w.bold,
+    color: MUTED,
+  });
+  const area = { top: top - 13, h: 34 };
+  if (img) {
+    const scale = Math.min(inner / img.width, area.h / img.height, 1);
+    page.drawImage(img, {
+      x: ix,
+      y: area.top - area.h + (area.h - img.height * scale) / 2,
+      width: img.width * scale,
+      height: img.height * scale,
+    });
+  } else {
+    const size = Math.min(
+      26,
+      (inner / Math.max(1, w.script.widthOfTextAtSize(clean(sig.name), 26))) *
+        26,
+    );
+    page.drawText(clean(sig.name), {
+      x: ix,
+      y: area.top - area.h + 8,
+      size,
+      font: w.script,
+      color: SIGN_INK,
+    });
+  }
+  if (sig.signatureId)
+    page.drawText(sig.signatureId, {
+      x: ix,
+      y: top - h + 4,
+      size: 6.5,
+      font: w.regular,
+      color: MUTED,
+    });
+  return h;
+}
+
 function signatureBlock(
   w: Writer,
   s: PdfSigner,
@@ -399,36 +477,23 @@ function signatureBlock(
   width: number,
 ) {
   const page = w.page;
-  const boxH = 54;
+  const boxH = 62;
   if (s.signature) {
-    if (img) {
-      const scale = Math.min(width / img.width, boxH / img.height, 1);
-      page.drawImage(img, {
-        x,
-        y: top - boxH + (boxH - img.height * scale) / 2,
-        width: img.width * scale,
-        height: img.height * scale,
-      });
-    } else {
-      const size = Math.min(
-        28,
-        (width /
-          Math.max(1, w.script.widthOfTextAtSize(s.signature.name, 28))) *
-          28,
-      );
-      page.drawText(clean(s.signature.name), {
-        x,
-        y: top - boxH + 14,
-        size,
-        font: w.script,
-        color: rgb(0.07, 0.15, 0.4),
-      });
-    }
+    signatureFrame(w, page, s.signature, img, x, top, width);
   } else {
-    page.drawText(s.status === 'DECLINED' ? 'Declined' : 'Not signed', {
+    page.drawRectangle({
       x,
-      y: top - boxH + 16,
-      size: 10,
+      y: top - boxH + 6,
+      width: Math.min(width, 200),
+      height: boxH - 12,
+      borderColor: RULE,
+      borderWidth: 0.8,
+      borderDashArray: [3, 2],
+    });
+    page.drawText(s.status === 'DECLINED' ? 'Declined to sign' : 'Not signed', {
+      x: x + 10,
+      y: top - boxH / 2 - 3,
+      size: 9,
       font: w.regular,
       color: MUTED,
     });
@@ -444,11 +509,8 @@ function signatureBlock(
     [s.role || (s.company ? 'For the company' : 'Signer'), w.regular, 9, MUTED],
     [s.email, w.regular, 9, MUTED],
   ];
-  if (s.signature) {
+  if (s.signature)
     lines.push([`Signed ${formatIst(s.signature.at)}`, w.regular, 8.5, MUTED]);
-    if (s.signature.saved)
-      lines.push(['Approved with a saved signature', w.regular, 8.5, MUTED]);
-  }
   let ly = top - boxH - 18;
   for (const [t, font, size, color] of lines) {
     let str = clean(t);
@@ -457,6 +519,68 @@ function signatureBlock(
     page.drawText(str, { x, y: ly, size, font, color });
     ly -= size + 4;
   }
+}
+
+/** A line of text cut to fit `width`. */
+const fit = (font: PDFFont, t: string, size: number, width: number) => {
+  let str = clean(t);
+  while (str.length > 3 && font.widthOfTextAtSize(str, size) > width)
+    str = `${str.slice(0, -2)}…`;
+  return str;
+};
+
+/** Labelled facts in columns, label above value. */
+function factGrid(w: Writer, items: Array<[string, string]>, cols = 2) {
+  const gutter = 24;
+  const colW = (WIDTH - 32 - gutter * (cols - 1)) / cols;
+  for (let i = 0; i < items.length; i += cols) {
+    w.ensure(34);
+    const rowTop = w.y;
+    let low = w.y;
+    for (let j = 0; j < cols && i + j < items.length; j++) {
+      const [k, v] = items[i + j];
+      const x = M.x + 16 + j * (colW + gutter);
+      w.page.drawText(k.toUpperCase(), {
+        x,
+        y: rowTop - 7,
+        size: 6.5,
+        font: w.bold,
+        color: MUTED,
+      });
+      w.y = rowTop - 11;
+      w.runs([{ text: v }], { x, width: colW, size: 9, leading: 12.5 });
+      low = Math.min(low, w.y);
+      w.y = rowTop;
+    }
+    w.y = low - 7;
+  }
+}
+
+/** A table's header row on a light fill. */
+function tableHead(w: Writer, cols: Array<[string, number]>) {
+  w.ensure(40);
+  w.page.drawRectangle({
+    x: M.x,
+    y: w.y - 18,
+    width: WIDTH,
+    height: 18,
+    color: FILL,
+  });
+  for (const [label, x] of cols)
+    w.page.drawText(label.toUpperCase(), {
+      x,
+      y: w.y - 12,
+      size: 6.5,
+      font: w.bold,
+      color: MUTED,
+    });
+  w.y -= 24;
+}
+
+function sectionTitle(w: Writer, t: string) {
+  w.ensure(60);
+  w.text(t, { size: 11, bold: true, leading: 16, color: NAVY });
+  w.gap(4);
 }
 
 export async function buildAgreementPdf(input: PdfInput): Promise<Uint8Array> {
@@ -475,12 +599,6 @@ export async function buildAgreementPdf(input: PdfInput): Promise<Uint8Array> {
   await w.init();
 
   // Title block.
-  w.text(input.companyName.toUpperCase(), {
-    size: 8.5,
-    color: MUTED,
-    bold: true,
-  });
-  w.gap(2);
   w.text(input.title, { size: 19, bold: true, leading: 25 });
   w.text(
     input.completedAt
@@ -581,86 +699,256 @@ export async function buildAgreementPdf(input: PdfInput): Promise<Uint8Array> {
   }
 
   // Certificate of completion.
+  const docPages = doc.getPageCount();
+  const done = input.status === 'COMPLETED';
   w.newPage();
-  w.text('Certificate of completion', { size: 17, bold: true, leading: 24 });
-  w.text(
-    'This page records how the document above was sent and signed through the Portal.',
-    { size: 9.5, color: MUTED },
-  );
-  w.gap(8);
-  const facts: Array<[string, string]> = [
-    ['Document', input.title],
-    ['Company', input.companyName],
-    ['Reference', input.reference],
-    ['Status', input.status],
-    ['Sent', formatIst(input.sentAt)],
-    ['Completed', formatIst(input.completedAt) || 'Not yet'],
-    ['SHA-256 of the text', input.hash],
-  ];
-  for (const [k, v] of facts) {
-    w.ensure(18);
-    const top = w.y;
-    w.page.drawText(k, {
+  {
+    const top = w.y + 6;
+    const bandH = 62;
+    w.page.drawRectangle({
       x: M.x,
-      y: top - 10,
-      size: 9,
-      font: w.bold,
-      color: MUTED,
+      y: top - bandH,
+      width: WIDTH,
+      height: bandH,
+      color: NAVY,
     });
-    w.runs([{ text: v }], { x: M.x + 120, size: 9.5, leading: 14 });
-    w.y = Math.min(w.y, top - 16);
+    w.page.drawText('Certificate of Completion', {
+      x: M.x + 18,
+      y: top - 29,
+      size: 16,
+      font: w.bold,
+      color: WHITE,
+    });
+    w.page.drawText(`Envelope ID: ${envelopeId(input.reference)}`, {
+      x: M.x + 18,
+      y: top - 47,
+      size: 8.5,
+      font: w.regular,
+      color: rgb(0.72, 0.78, 0.87),
+    });
+    const status = done ? 'COMPLETED' : input.status.toUpperCase();
+    const sw = w.bold.widthOfTextAtSize(status, 8);
+    w.page.drawRectangle({
+      x: M.x + WIDTH - 18 - sw - 18,
+      y: top - 40,
+      width: sw + 18,
+      height: 18,
+      color: done ? GREEN : rgb(0.4, 0.42, 0.46),
+    });
+    w.page.drawText(status, {
+      x: M.x + WIDTH - 18 - sw - 9,
+      y: top - 34,
+      size: 8,
+      font: w.bold,
+      color: WHITE,
+    });
+    w.y = top - bandH - 16;
   }
-  w.gap(8);
-  w.text('Signers', { size: 12, bold: true, leading: 18 });
-  for (const s of input.signers) {
-    w.ensure(52);
-    w.text(`${s.name}  ·  ${s.email}`, { size: 10, bold: true, leading: 15 });
+  const signed = input.signers.filter((s) => s.signature).length;
+  const summaryTop = w.y;
+  w.y -= 12;
+  factGrid(w, [
+    ['Subject', input.title],
+    ['Originator', input.companyName],
+    ['Document pages', String(docPages)],
+    ['Sent', formatIst(input.sentAt)],
+    ['Signatures', `${signed} of ${input.signers.length}`],
+    ['Completed', formatIst(input.completedAt) || 'Not yet'],
+    ['Status', done ? 'Completed' : input.status.toLowerCase()],
+    ['Time zone', 'India Standard Time (UTC+05:30)'],
+  ]);
+  factGrid(w, [['Document fingerprint (SHA-256 of the text)', input.hash]], 1);
+  w.page.drawRectangle({
+    x: M.x,
+    y: w.y,
+    width: WIDTH,
+    height: summaryTop - w.y,
+    borderColor: RULE,
+    borderWidth: 0.6,
+  });
+  w.gap(20);
+
+  // Signer events.
+  sectionTitle(w, 'Signer events');
+  const c1 = M.x + 10;
+  const c2 = M.x + 190;
+  const c3 = M.x + 376;
+  tableHead(w, [
+    ['Signer', c1],
+    ['Signature', c2],
+    ['Timestamp', c3],
+  ]);
+  for (let i = 0; i < input.signers.length; i++) {
+    const s = input.signers[i];
+    w.ensure(104);
+    const page = w.page;
+    const top = w.y;
+    let low = top;
+    const left: Array<[string, PDFFont, number, any]> = [
+      [s.name, w.bold, 9.5, INK],
+      [s.email, w.regular, 8.5, INK],
+      [
+        s.role || (s.company ? 'For the company' : 'Signer'),
+        w.regular,
+        8,
+        MUTED,
+      ],
+      ['Security level: email, personal link', w.regular, 7.5, MUTED],
+    ];
+    let ly = top - 9;
+    for (const [t, font, size, color] of left) {
+      page.drawText(fit(font, t, size, c2 - c1 - 12), {
+        x: c1,
+        y: ly,
+        size,
+        font,
+        color,
+      });
+      ly -= size + 4.5;
+    }
+    low = Math.min(low, ly);
     const sig = s.signature;
-    w.text(
-      sig
-        ? `${s.role ? `${s.role}. ` : ''}Signed ${formatIst(sig.at)} by ${
-            sig.saved
-              ? 'approving with their saved signature in the Portal'
-              : sig.method === 'drawn'
-                ? 'drawing their signature'
-                : 'typing their full name'
-          }${sig.ip ? `, from IP ${sig.ip}` : ''}.`
-        : `${s.role ? `${s.role}. ` : ''}${s.status === 'DECLINED' ? 'Declined.' : 'Not signed.'}`,
-      { size: 9, color: MUTED, leading: 13 },
-    );
-    w.gap(5);
+    if (sig) {
+      const h = signatureFrame(w, page, sig, images[i], c2, top, c3 - c2 - 16);
+      let sy = top - h - 12;
+      for (const t of [
+        `Adoption: ${signatureMethod(sig)}`,
+        ...(sig.ip ? [`Using IP address: ${sig.ip}`] : []),
+      ]) {
+        page.drawText(fit(w.regular, t, 7.5, c3 - c2 - 12), {
+          x: c2,
+          y: sy,
+          size: 7.5,
+          font: w.regular,
+          color: MUTED,
+        });
+        sy -= 11;
+      }
+      low = Math.min(low, sy);
+      page.drawText('Signed', {
+        x: c3,
+        y: top - 9,
+        size: 7.5,
+        font: w.bold,
+        color: MUTED,
+      });
+      page.drawText(formatIst(sig.at), {
+        x: c3,
+        y: top - 20,
+        size: 8.5,
+        font: w.regular,
+        color: INK,
+      });
+    } else {
+      page.drawText(s.status === 'DECLINED' ? 'Declined' : 'Not signed', {
+        x: c2,
+        y: top - 9,
+        size: 9,
+        font: w.regular,
+        color: MUTED,
+      });
+      low = Math.min(low, top - 20);
+    }
+    w.y = low - 6;
+    page.drawLine({
+      start: { x: M.x, y: w.y },
+      end: { x: A4.w - M.x, y: w.y },
+      thickness: 0.4,
+      color: RULE,
+    });
+    w.y -= 8;
   }
-  w.gap(6);
-  w.text('Audit trail', { size: 12, bold: true, leading: 18 });
-  for (const e of input.history) {
-    w.ensure(14);
+  w.gap(14);
+
+  // Audit trail.
+  sectionTitle(w, 'Audit trail');
+  const a1 = M.x + 10;
+  const a2 = M.x + 132;
+  const a3 = M.x + WIDTH - 78;
+  tableHead(w, [
+    ['Time', a1],
+    ['Event', a2],
+    ['IP address', a3],
+  ]);
+  input.history.forEach((e, i) => {
+    const lines = w.wrap([{ text: e.text }], 8.5, a3 - a2 - 12);
+    const h = lines.length * 12 + 7;
+    w.ensure(h);
+    if (i % 2)
+      w.page.drawRectangle({
+        x: M.x,
+        y: w.y - h,
+        width: WIDTH,
+        height: h,
+        color: FILL,
+      });
     const top = w.y;
     w.page.drawText(formatIst(e.at), {
-      x: M.x,
-      y: top - 9,
-      size: 8.5,
+      x: a1,
+      y: top - 11,
+      size: 7.5,
       font: w.regular,
       color: MUTED,
     });
-    w.runs([{ text: `${e.text}${e.ip ? ` (IP ${e.ip})` : ''}` }], {
-      x: M.x + 132,
-      size: 9,
-      leading: 13,
+    if (e.ip)
+      w.page.drawText(fit(w.regular, e.ip, 7.5, A4.w - M.x - a3), {
+        x: a3,
+        y: top - 11,
+        size: 7.5,
+        font: w.regular,
+        color: MUTED,
+      });
+    w.y = top - 3;
+    w.runs([{ text: e.text }], {
+      x: a2,
+      width: a3 - a2 - 12,
+      size: 8.5,
+      leading: 12,
     });
-    w.y = Math.min(w.y, top - 13);
-  }
+    w.y = top - h;
+  });
+  w.gap(18);
+  w.text(
+    `This certificate was produced by the Portal from the signed record of envelope ${envelopeId(input.reference)}. The SHA-256 fingerprint identifies the exact text that was signed; any change to the text gives a different fingerprint.`,
+    { size: 7.5, color: MUTED, leading: 11 },
+  );
 
-  // Footer on every page.
+  // Running header and footer on every page.
   const pages = doc.getPages();
+  const env = `Envelope ID: ${envelopeId(input.reference)}`;
   pages.forEach((p, i) => {
-    const footer = clean(
-      `${input.title} · ${input.reference} · Page ${i + 1} of ${pages.length}`,
-    );
-    let str = footer;
-    while (str.length > 8 && w.regular.widthOfTextAtSize(str, 7.5) > WIDTH)
-      str = `…${str.slice(2)}`;
-    p.drawText(str, {
+    const company = fit(w.bold, input.companyName.toUpperCase(), 7, WIDTH / 2);
+    p.drawText(company, {
       x: M.x,
+      y: A4.h - 36,
+      size: 7,
+      font: w.bold,
+      color: MUTED,
+    });
+    p.drawText(env, {
+      x: A4.w - M.x - w.regular.widthOfTextAtSize(env, 7),
+      y: A4.h - 36,
+      size: 7,
+      font: w.regular,
+      color: MUTED,
+    });
+    p.drawLine({
+      start: { x: M.x, y: A4.h - 44 },
+      end: { x: A4.w - M.x, y: A4.h - 44 },
+      thickness: 0.4,
+      color: RULE,
+    });
+    const pageNo = `Page ${i + 1} of ${pages.length}`;
+    const pw = w.regular.widthOfTextAtSize(pageNo, 7.5);
+    p.drawText(fit(w.regular, input.title, 7.5, WIDTH - pw - 24), {
+      x: M.x,
+      y: 34,
+      size: 7.5,
+      font: w.regular,
+      color: MUTED,
+    });
+    p.drawText(pageNo, {
+      x: A4.w - M.x - pw,
       y: 34,
       size: 7.5,
       font: w.regular,
