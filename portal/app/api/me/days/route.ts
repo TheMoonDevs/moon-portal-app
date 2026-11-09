@@ -1,4 +1,5 @@
 import { isDay, loadDays } from '@/lib/daywork/server';
+import { syncMeetingTasks } from '@/lib/meet/meetingTasks';
 import { fail, ok, requireUser } from '@/lib/workspace/server';
 
 export const dynamic = 'force-dynamic';
@@ -21,5 +22,6 @@ export async function GET(request: Request) {
     return fail(400, 'Use YYYY-MM-DD for from and to.');
   if ((Date.parse(to) - Date.parse(from)) / 86400000 > MAX_DAYS)
     return fail(400, `At most ${MAX_DAYS} days at once.`);
+  await syncMeetingTasks(user);
   return ok({ from, to, days: await loadDays(user.id, from, to) });
 }

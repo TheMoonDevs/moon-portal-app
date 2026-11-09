@@ -11,6 +11,7 @@ import {
 import { NotificationType } from '@/models/shared/enums';
 
 import { type MeetEmailKind, sendMeetEmails } from './emails';
+import { syncMeetingTask } from './meetingTasks';
 import { MAX_NOTE, MAX_REASON } from './rules';
 import {
   findApplicationFor,
@@ -328,6 +329,8 @@ async function confirm(
     },
   );
   await settleNotifications(booking.id);
+  // On both people's worklogs for the day, to tick once it has happened.
+  await syncMeetingTask(confirmed);
   await noteOnApplication(
     confirmed,
     `Interview with ${hostName(ctx.host)} booked: ${hostRange(confirmed, ctx.profile)}.`,
@@ -431,6 +434,7 @@ export async function cancelBooking(
     { type: 'CANCELLED', by, text: reason },
   );
   await settleNotifications(booking.id);
+  if (wasConfirmed) await syncMeetingTask(cancelled);
   const ctx = await contextFor(cancelled, origin);
   if (wasConfirmed)
     await noteOnApplication(

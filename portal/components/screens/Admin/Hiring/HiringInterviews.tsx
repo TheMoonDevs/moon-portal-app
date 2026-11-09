@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { verdictMeta } from '@/lib/hiring/scorecards';
+import { joinLink } from '@/lib/meet/links';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
@@ -316,7 +317,7 @@ export const HiringInterviews = ({
                               tone="primary"
                               icon="videocam"
                               onClick={() =>
-                                window.open(iv.meetingUrl!, '_blank')
+                                window.open(joinLink('', iv, 'host'), '_blank')
                               }
                             >
                               Join

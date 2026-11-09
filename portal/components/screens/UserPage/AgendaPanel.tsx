@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
+import { joinLink } from '@/lib/meet/links';
 import type { AgendaData, PagePlan, PageProject } from '@/lib/people/types';
 import { cn } from '@/lib/utils';
 import { describeSchedule } from '@/lib/workspace/projects';
@@ -270,7 +271,7 @@ const ItemRow = ({
       )}
       {item.kind === 'meeting' && item.meeting.meetingUrl && (
         <a
-          href={item.meeting.meetingUrl}
+          href={joinLink('', item.meeting, 'host')}
           target="_blank"
           rel="noreferrer"
           className="mt-0.5 shrink-0 rounded-md bg-emerald-400/10 px-2 py-0.5 text-[11px] font-medium text-emerald-300 hover:bg-emerald-400/20"

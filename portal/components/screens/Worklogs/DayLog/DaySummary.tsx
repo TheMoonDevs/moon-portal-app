@@ -52,7 +52,7 @@ const PointLine = ({ point }: { point: DayPoint }) => (
       )}
     </span>
     <span className="shrink-0 text-[11px] text-neutral-500">
-      {point.by === 'person' ? 'You' : 'Claude'}
+      {point.by === 'person' ? 'You' : point.by === 'meet' ? 'Meet' : 'Claude'}
     </span>
   </li>
 );
@@ -69,7 +69,9 @@ const TaskBlock = ({ task, day }: { task: DayTask; day: Day }) => {
     facts.push(`From ${dayjs(task.forDate).format('ddd D MMM')}`);
   if (task.forDate && task.forDate > day.date)
     facts.push(`Planned for ${dayjs(task.forDate).format('ddd D MMM')}`);
-  if (task.madeBy && task.madeBy !== 'person') facts.push('Added by Claude');
+  if (task.madeBy === 'meet') facts.push('From a meeting');
+  else if (task.madeBy && task.madeBy !== 'person')
+    facts.push('Added by Claude');
   if (task.size === 'MAJOR') facts.push('Major task');
   if (task.startedAt) facts.push(`Started ${time(task.startedAt)}`);
   if (task.status === 'DONE' && task.completedAt)

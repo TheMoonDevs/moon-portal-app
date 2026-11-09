@@ -78,7 +78,9 @@ export interface MeetBookingEvent {
     | 'PROPOSED'
     | 'ACCEPTED'
     | 'DECLINED'
-    | 'CANCELLED';
+    | 'CANCELLED'
+    /** Opened the call through the portal's join link. */
+    | 'JOINED';
   at: string;
   by: 'HOST' | 'GUEST';
   /** The time the event was about (PROPOSED: the new time). */
@@ -112,6 +114,9 @@ export type MeetBooking = Loose<
     applicationId?: Nullable<string>;
     companyId?: Nullable<string>;
     history: MeetBookingEvent[];
+    /** When each side first opened the call through its join link. */
+    hostJoinedAt?: Nullable<string>;
+    guestJoinedAt?: Nullable<string>;
     decidedAt?: Nullable<DateValue>;
   }
 >;

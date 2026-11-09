@@ -425,7 +425,9 @@ const Details = ({
     !(editable && saved && isOpen(task))
   )
     facts.push(`Planned for ${dayjs(task.forDate).format('ddd D MMM')}`);
-  if (task.madeBy && task.madeBy !== 'person') facts.push('Made by Claude');
+  if (task.madeBy === 'meet') facts.push('From a meeting');
+  else if (task.madeBy && task.madeBy !== 'person')
+    facts.push('Made by Claude');
   if (task.size === 'MAJOR') facts.push('Major task');
 
   return (
