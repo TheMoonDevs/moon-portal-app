@@ -8,7 +8,8 @@ import { applyCorsHeaders } from '@/middlewares/cors';
 // `/apply/<slug>` is where candidates fill in a job application, and
 // `/task/<token>` their take-home task, and `/join/<token>` a new hire's
 // onboarding (details form, agreements), `/sign/<token>` anyone's link to
-// sign an agreement. `/policies` is the codes we work by.
+// sign an agreement, `/verify` anyone's check of a signed PDF. `/policies`
+// is the codes we work by.
 // `/~offline` is cached by the service worker for when there's no network.
 const PUBLIC_PAGES = [
   '/login',
@@ -17,6 +18,7 @@ const PUBLIC_PAGES = [
   '/task',
   '/join',
   '/sign',
+  '/verify',
   '/policies',
   '/~offline',
 ];

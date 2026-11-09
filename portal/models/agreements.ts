@@ -41,6 +41,8 @@ export enum AGREEMENT_CATEGORY {
   CLIENT = 'CLIENT',
   VENDOR = 'VENDOR',
   POLICY = 'POLICY',
+  /** Issued by the company on request: experience, relieving, salary… */
+  LETTER = 'LETTER',
   OTHER = 'OTHER',
 }
 
@@ -62,6 +64,30 @@ export interface AgreementSignature {
    * signed in to the portal, instead of typed or drawn on the spot.
    */
   saved?: Nullable<boolean>;
+  /** Their initials, for initials boxes on an uploaded PDF. */
+  initials?: Nullable<string>;
+  /**
+   * How they proved who they were, beyond holding the link: a code sent to
+   * their email, or being signed in to the Portal.
+   */
+  verified?: Nullable<'email_code' | 'portal'>;
+}
+
+/**
+ * A one-time code emailed to a signer before they can open the document.
+ * Only hashes are kept; the proof is what their browser holds once they
+ * entered the right code.
+ */
+export interface SignerEmailCode {
+  hash?: Nullable<string>;
+  expiresAt?: Nullable<string>;
+  /** Wrong tries on the current code. */
+  tries?: number;
+  /** When codes were sent, for the hourly limit. */
+  sent?: string[];
+  proofHash?: Nullable<string>;
+  proofExpiresAt?: Nullable<string>;
+  verifiedAt?: Nullable<string>;
 }
 
 export interface AgreementSigner {
@@ -93,6 +119,52 @@ export interface AgreementSigner {
   values?: Nullable<Record<string, string>>;
   /** Someone else had it first and handed it over to them. */
   handedOverFrom?: Nullable<{ name: string; email: string; at: string }>;
+  /** The email code they need before opening it, when it asks for one. */
+  emailCode?: Nullable<SignerEmailCode>;
+}
+
+/**
+ * An uploaded PDF signed as it is (a lawyer's document), instead of text
+ * written in the Portal. The file sits in private storage; its SHA-256 is
+ * the document's fingerprint.
+ */
+export interface AgreementDocument {
+  fileKey: string;
+  fileName: string;
+  size: number;
+  /** SHA-256 of the file, hex. */
+  hash: string;
+  /** Each page as it shows (rotation applied), in PDF points. */
+  pages: Array<{ w: number; h: number }>;
+}
+
+export type PlacementKind = 'signature' | 'initials' | 'date';
+
+/**
+ * A box on an uploaded PDF where a signer's signature, initials or the day
+ * they signed goes. Positions are fractions of the page as it shows, from
+ * its top left corner.
+ */
+export interface AgreementPlacement {
+  id: string;
+  kind: PlacementKind;
+  /** The party at this position (1 is the first), or 0 for the company. */
+  signer: number;
+  /** 0 is the first page. */
+  page: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** The signed PDF as it was first issued, kept so a copy can be checked. */
+export interface SealedPdf {
+  fileKey: string;
+  /** SHA-256 of the file, hex. */
+  hash: string;
+  size: number;
+  at: string;
 }
 
 /** Something a signer fills in before they sign: an address, a PAN, a tick. */
@@ -194,6 +266,56 @@ export type Agreement = Loose<
     blocking?: Nullable<boolean>;
     /** Text or signer fixes made after it went out. */
     corrections?: AgreementCorrection[];
+    /**
+     * An uploaded PDF signed as it is; `body` then holds its text, for
+     * search, and `hash` the file's fingerprint.
+     */
+    document?: Nullable<AgreementDocument>;
+    /** Where each signature, initials and date go on the uploaded PDF. */
+    placements?: AgreementPlacement[];
+    /** Signers enter a code sent to their email before opening it. */
+    emailCode?: Nullable<boolean>;
+    /** The signed PDF as issued, once complete. */
+    sealed?: Nullable<SealedPdf>;
+    /** A letter issued to this person (they don't sign it). */
+    forUserId?: Nullable<string>;
+    /** The letter request it answers. */
+    letterRequestId?: Nullable<string>;
+  }
+>;
+
+export type LetterKind =
+  | 'experience'
+  | 'relieving'
+  | 'salary'
+  | 'address'
+  | 'employment';
+
+/**
+ * Someone asking their company for a letter: HR approves it, the company
+ * signs it, and it lands in their documents.
+ */
+export type LetterRequest = Loose<
+  BaseModel & {
+    companyId: string;
+    userId: string;
+    kind: LetterKind;
+    /** What it's for, e.g. "Visa application". */
+    purpose?: Nullable<string>;
+    /** Who it is addressed to; "To whom it may concern" when empty. */
+    addressedTo?: Nullable<string>;
+    /** The day they need it by (YYYY-MM-DD). */
+    neededBy?: Nullable<string>;
+    note?: Nullable<string>;
+    /**
+     * REQUESTED: waiting for HR. SENT: approved, out for the company's
+     * signature (see the agreement). DECLINED and CANCELLED are final.
+     */
+    status: 'REQUESTED' | 'SENT' | 'DECLINED' | 'CANCELLED';
+    agreementId?: Nullable<string>;
+    decidedById?: Nullable<string>;
+    decidedAt?: Nullable<string>;
+    declineReason?: Nullable<string>;
   }
 >;
 

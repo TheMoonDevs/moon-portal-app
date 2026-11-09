@@ -121,6 +121,9 @@ const nextConfig = {
         : ably;
     };
     config.module.rules.forEach(skipAbly);
+    // pdf.js (drawing PDF pages in the browser) names node-canvas for its
+    // Node build, which the Portal never uses.
+    config.resolve.alias = { ...config.resolve.alias, canvas: false };
     // if (config.cache && !dev) {
     //   config.cache = Object.freeze({
     //     type: 'memory',

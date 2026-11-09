@@ -33,9 +33,9 @@ import {
   meets,
   type RequirementState,
 } from './required';
+import { sealedPdf } from './seal';
 import {
   AgreementError,
-  agreementPdf,
   type AgreementView,
   agreementView,
   expireIfDue,
@@ -81,12 +81,29 @@ async function allRows(
     companyImports(companyId),
   ]);
   const fresh = await Promise.all(agreements.map(expireIfDue));
+  // Letters belong to the person they're for, who doesn't sign them.
+  const forIds = Array.from(
+    new Set(fresh.map((a) => a.forUserId).filter(Boolean) as string[]),
+  );
+  const recipients: Array<{ id: string; name?: string; email?: string }> =
+    forIds.length
+      ? await db.user.findMany({
+          where: { id: { in: forIds } },
+          select: { id: true, name: true, email: true },
+        })
+      : [];
   const own = await Promise.all(
-    fresh.map(async (a) => ({
-      ...(await agreementView(a, origin)),
-      body: a.body,
-      projectId: null as string | null,
-    })),
+    fresh.map(async (a) => {
+      const r = recipients.find((u) => u.id === a.forUserId);
+      return {
+        ...(await agreementView(a, origin)),
+        body: a.body,
+        projectId: null as string | null,
+        recipient: r
+          ? { name: r.name || '', email: r.email || '', userId: r.id }
+          : (null as VaultRow['people'][number] | null),
+      };
+    }),
   );
   const onboarding = (await onboardingRows(companyId, origin, hires)).map(
     (r) => ({
@@ -94,22 +111,27 @@ async function allRows(
       projectId:
         hires.find((o) => r.id.startsWith(`onboarding:${o.id}:`))?.terms
           ?.projectId ?? null,
+      recipient: null,
     }),
   );
   const past = imported.map((d) => ({
     ...importView(d),
     body: [d.title, d.note].filter(Boolean).join('\n'),
     projectId: null as string | null,
+    recipient: null,
   }));
   return [...own, ...onboarding, ...past]
     .filter((r) => confidential || !r.confidential)
-    .map((r) => ({
+    .map(({ recipient, ...r }) => ({
       ...r,
-      people: r.signers.map((s) => ({
-        name: s.name,
-        email: s.email,
-        userId: s.userId ?? null,
-      })),
+      people: [
+        ...r.signers.map((s) => ({
+          name: s.name,
+          email: s.email,
+          userId: s.userId ?? null,
+        })),
+        ...(recipient ? [recipient] : []),
+      ],
     }))
     .sort((a, b) => String(b.sentAt).localeCompare(String(a.sentAt)));
 }
@@ -553,7 +575,7 @@ export function vaultCsv(rows: VaultRow[]) {
 }
 
 /** The PDF bytes of one row, by its reference. */
-export async function pdfForRef(ref: string) {
+export async function pdfForRef(ref: string, origin: string) {
   const imported = parseImportRef(ref);
   if (imported) {
     const d = await findImport(imported);
@@ -576,7 +598,9 @@ export async function pdfForRef(ref: string) {
     where: { id: ref },
   });
   if (!a) return null;
-  return { title: a.title, bytes: await agreementPdf(a) };
+  // The copy as it was issued, so it can be checked on /verify.
+  const { bytes, sealed } = await sealedPdf(a, origin);
+  return { title: a.title, bytes, sealed };
 }
 
 /** Which company a document belongs to, and whether it is confidential. */
@@ -646,9 +670,13 @@ export async function importedPdfLink(
   return signedReadUrl(d.fileKey, d.fileName || `${d.title}.pdf`, inline);
 }
 
-export async function documentPdfFor(actor: SessionUser, ref: string) {
+export async function documentPdfFor(
+  actor: SessionUser,
+  ref: string,
+  origin: string,
+) {
   await checkDocumentAccess(actor, ref);
-  const pdf = await pdfForRef(ref);
+  const pdf = await pdfForRef(ref, origin);
   if (!pdf) throw new AgreementError(404, 'Document not found.');
   return pdf;
 }
@@ -656,12 +684,12 @@ export async function documentPdfFor(actor: SessionUser, ref: string) {
 export const MAX_ZIP_DOCUMENTS = 150;
 
 /** A zip of the signed PDFs among the rows, with a CSV index. */
-export async function vaultZip(rows: VaultRow[]) {
+export async function vaultZip(rows: VaultRow[], origin: string) {
   const files: Record<string, Uint8Array> = {};
   const done = rows.filter((r) => r.pdfUrl).slice(0, MAX_ZIP_DOCUMENTS);
   const used = new Set<string>();
   for (const r of done) {
-    const pdf = await pdfForRef(r.id);
+    const pdf = await pdfForRef(r.id, origin);
     if (!pdf) continue;
     const who = r.signers
       .filter((s) => !s.company)

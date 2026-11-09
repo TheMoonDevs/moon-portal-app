@@ -1,5 +1,6 @@
 import fontkit from '@pdf-lib/fontkit';
 import {
+  degrees,
   PDFDocument,
   type PDFFont,
   type PDFImage,
@@ -15,9 +16,10 @@ import { CAVEAT_REGULAR, NOTO_SANS_BOLD, NOTO_SANS_REGULAR } from './pdfFonts';
 
 /*
  * The signed copy as a PDF: the document as it was signed, every signature
- * in place, and a certificate page with the hash and the audit trail. It is
- * built from the frozen record each time, so it always matches what was
- * signed, and the same record always gives the same pages.
+ * in place, and a certificate page with the hash and the audit trail. A
+ * document written in the Portal is typeset from its text; an uploaded PDF
+ * keeps its own pages, with the signatures, initials and dates drawn into
+ * the boxes placed on them. Either way it is built from the frozen record.
  */
 
 export interface PdfSignature {
@@ -29,6 +31,21 @@ export interface PdfSignature {
   saved?: boolean | null;
   /** Printed beside the signature, to match it to the audit trail. */
   signatureId?: string | null;
+  /** For initials boxes; taken from the name when not set. */
+  initials?: string | null;
+  /** How they proved who they were, beyond the link. */
+  verified?: 'email_code' | 'portal' | null;
+}
+
+/** A box on an uploaded page, for the signer at `signer` in `signers`. */
+export interface PdfPlacement {
+  kind: 'signature' | 'initials' | 'date';
+  signer: number;
+  page: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
 }
 
 export interface PdfSigner {
@@ -54,6 +71,10 @@ export interface PdfInput {
   status: string;
   signers: PdfSigner[];
   history: Array<{ at: string; text: string; ip?: string | null }>;
+  /** An uploaded PDF signed as it is, and the boxes on its pages. */
+  source?: { bytes: Uint8Array; placements: PdfPlacement[] } | null;
+  /** Where anyone can check a copy is genuine. */
+  verifyUrl?: string | null;
 }
 
 const A4 = { w: 595.28, h: 841.89 };
@@ -106,7 +127,7 @@ class Writer {
     this.doc = doc;
   }
 
-  async init() {
+  async init(firstPage = true) {
     this.doc.registerFontkit(fontkit);
     const [regular, bold, script] = await Promise.all([
       this.doc.embedFont(Buffer.from(NOTO_SANS_REGULAR, 'base64'), {
@@ -122,7 +143,7 @@ class Writer {
     this.regular = regular;
     this.bold = bold;
     this.script = script;
-    this.newPage();
+    if (firstPage) this.newPage();
   }
 
   newPage() {
@@ -583,53 +604,9 @@ function sectionTitle(w: Writer, t: string) {
   w.gap(4);
 }
 
-export async function buildAgreementPdf(input: PdfInput): Promise<Uint8Array> {
-  const doc = await PDFDocument.create();
-  doc.setTitle(input.title);
-  doc.setAuthor(input.companyName);
-  doc.setSubject(`Signed copy, SHA-256 ${input.hash}`);
-  doc.setProducer('Portal e-signing');
-  doc.setCreator('Portal');
-  const fixed = new Date(input.completedAt || input.sentAt);
-  if (!Number.isNaN(fixed.getTime())) {
-    doc.setCreationDate(fixed);
-    doc.setModificationDate(fixed);
-  }
-  const w = new Writer(doc);
-  await w.init();
-
-  // Title block.
-  w.text(input.title, { size: 19, bold: true, leading: 25 });
-  w.text(
-    input.completedAt
-      ? `Signed by everyone on ${formatIst(input.completedAt)}`
-      : `Sent ${formatIst(input.sentAt)} · ${input.status.toLowerCase()}`,
-    { size: 9, color: MUTED },
-  );
-  w.gap(6);
-  w.rule();
-  w.gap(4);
-
-  // The text as it was signed, without a first heading that repeats the title.
-  const tree = md.parse(input.body ?? '').children as any[];
-  const first = tree[0];
-  const firstText =
-    first?.type === 'heading'
-      ? inline(first.children)
-          .map((r) => r.text)
-          .join('')
-          .trim()
-          .toLowerCase()
-      : null;
-  blocks(
-    w,
-    firstText && firstText === input.title.trim().toLowerCase()
-      ? tree.slice(1)
-      : tree,
-  );
-
-  // What each signer filled in before signing.
-  const filled = input.signers.filter((s) => s.details?.length);
+/** What each signer filled in before signing. */
+function writeDetails(w: Writer, signers: PdfSigner[]) {
+  const filled = signers.filter((s) => s.details?.length);
   if (filled.length) {
     w.gap(10);
     w.ensure(60);
@@ -673,23 +650,26 @@ export async function buildAgreementPdf(input: PdfInput): Promise<Uint8Array> {
       }
     }
   }
+}
 
-  // Signatures, two to a row.
+/** The signature blocks, two to a row, under a written document. */
+function writeSignatures(
+  w: Writer,
+  signers: PdfSigner[],
+  images: Array<PDFImage | null>,
+) {
   w.gap(10);
   w.ensure(60);
   w.text('Signatures', { size: 13.5, bold: true, leading: 20 });
   w.gap(6);
-  const images = await Promise.all(
-    input.signers.map((s) => embedSignature(doc, s.signature?.image)),
-  );
   const colW = (WIDTH - 28) / 2;
-  for (let i = 0; i < input.signers.length; i += 2) {
+  for (let i = 0; i < signers.length; i += 2) {
     w.ensure(140);
     const top = w.y;
-    for (let j = 0; j < 2 && i + j < input.signers.length; j++)
+    for (let j = 0; j < 2 && i + j < signers.length; j++)
       signatureBlock(
         w,
-        input.signers[i + j],
+        signers[i + j],
         images[i + j],
         M.x + j * (colW + 28),
         top,
@@ -697,9 +677,15 @@ export async function buildAgreementPdf(input: PdfInput): Promise<Uint8Array> {
       );
     w.y = top - 140;
   }
+}
 
-  // Certificate of completion.
-  const docPages = doc.getPageCount();
+/** The certificate of completion: summary, signer events and audit trail. */
+function writeCertificate(
+  w: Writer,
+  input: PdfInput,
+  images: Array<PDFImage | null>,
+  docPages: number,
+) {
   const done = input.status === 'COMPLETED';
   w.newPage();
   {
@@ -757,7 +743,18 @@ export async function buildAgreementPdf(input: PdfInput): Promise<Uint8Array> {
     ['Status', done ? 'Completed' : input.status.toLowerCase()],
     ['Time zone', 'India Standard Time (UTC+05:30)'],
   ]);
-  factGrid(w, [['Document fingerprint (SHA-256 of the text)', input.hash]], 1);
+  factGrid(
+    w,
+    [
+      [
+        input.source
+          ? 'Document fingerprint (SHA-256 of the original PDF)'
+          : 'Document fingerprint (SHA-256 of the text)',
+        input.hash,
+      ],
+    ],
+    1,
+  );
   w.page.drawRectangle({
     x: M.x,
     y: w.y,
@@ -793,7 +790,7 @@ export async function buildAgreementPdf(input: PdfInput): Promise<Uint8Array> {
         8,
         MUTED,
       ],
-      ['Security level: email, personal link', w.regular, 7.5, MUTED],
+      [securityLevel(s.signature), w.regular, 7.5, MUTED],
     ];
     let ly = top - 9;
     for (const [t, font, size, color] of left) {
@@ -909,14 +906,17 @@ export async function buildAgreementPdf(input: PdfInput): Promise<Uint8Array> {
   });
   w.gap(18);
   w.text(
-    `This certificate was produced by the Portal from the signed record of envelope ${envelopeId(input.reference)}. The SHA-256 fingerprint identifies the exact text that was signed; any change to the text gives a different fingerprint.`,
+    `This certificate was produced by the Portal from the signed record of envelope ${envelopeId(input.reference)}. The SHA-256 fingerprint identifies the exact ${input.source ? 'file' : 'text'} that was signed; any change to it gives a different fingerprint.${input.verifyUrl ? ` Anyone can check that a copy of this PDF is genuine and unchanged at ${input.verifyUrl}.` : ''}`,
     { size: 7.5, color: MUTED, leading: 11 },
   );
+}
 
-  // Running header and footer on every page.
-  const pages = doc.getPages();
+/** The running header and footer, on the pages the Portal wrote. */
+function runningChrome(w: Writer, input: PdfInput, from: number) {
+  const all = w.doc.getPages();
   const env = `Envelope ID: ${envelopeId(input.reference)}`;
-  pages.forEach((p, i) => {
+  all.forEach((p, i) => {
+    if (i < from) return;
     const company = fit(w.bold, input.companyName.toUpperCase(), 7, WIDTH / 2);
     p.drawText(company, {
       x: M.x,
@@ -938,7 +938,7 @@ export async function buildAgreementPdf(input: PdfInput): Promise<Uint8Array> {
       thickness: 0.4,
       color: RULE,
     });
-    const pageNo = `Page ${i + 1} of ${pages.length}`;
+    const pageNo = `Page ${i + 1} of ${all.length}`;
     const pw = w.regular.widthOfTextAtSize(pageNo, 7.5);
     p.drawText(fit(w.regular, input.title, 7.5, WIDTH - pw - 24), {
       x: M.x,
@@ -961,6 +961,285 @@ export async function buildAgreementPdf(input: PdfInput): Promise<Uint8Array> {
       color: RULE,
     });
   });
+}
+
+/** The security level line of a signer, in the certificate. */
+const securityLevel = (sig: PdfSignature | null | undefined) =>
+  sig?.verified === 'email_code'
+    ? 'Security level: email, personal link, email code'
+    : sig?.verified === 'portal'
+      ? 'Security level: email, signed in to the Portal'
+      : 'Security level: email, personal link';
+
+/* ------------------------------ uploaded PDFs ----------------------------- */
+
+type PageBox = { x0: number; y0: number; W: number; H: number; rot: number };
+
+const rotationOf = (angle: number) =>
+  (((Math.round(angle / 90) * 90) % 360) + 360) % 360;
+
+const boxOf = (page: PDFPage): PageBox => {
+  const b = page.getCropBox();
+  return {
+    x0: b.x,
+    y0: b.y,
+    W: b.width,
+    H: b.height,
+    rot: rotationOf(page.getRotation().angle),
+  };
+};
+
+/** The page as it shows: rotated pages swap width and height. */
+const shownSize = (b: PageBox) =>
+  b.rot === 90 || b.rot === 270 ? { w: b.H, h: b.W } : { w: b.W, h: b.H };
+
+/** A point on the page as it shows (from its top left) in PDF space. */
+export function shownToPdf(b: PageBox, u: number, v: number) {
+  switch (b.rot) {
+    case 90:
+      return { x: b.x0 + v, y: b.y0 + u };
+    case 180:
+      return { x: b.x0 + b.W - u, y: b.y0 + v };
+    case 270:
+      return { x: b.x0 + b.W - v, y: b.y0 + b.H - u };
+    default:
+      return { x: b.x0 + u, y: b.y0 + b.H - v };
+  }
+}
+
+/**
+ * Drawing inside one box on a page as it shows: `dx` from the box's left,
+ * `dy` up from its bottom. Text and images are turned with the page, so
+ * they read upright on a rotated page.
+ */
+function frame(
+  page: PDFPage,
+  b: PageBox,
+  rect: { u: number; v: number; w: number; h: number },
+) {
+  const at = (dx: number, dy: number) =>
+    shownToPdf(b, rect.u + dx, rect.v + rect.h - dy);
+  const rotate = degrees(b.rot);
+  return {
+    text(
+      t: string,
+      dx: number,
+      dy: number,
+      size: number,
+      font: PDFFont,
+      color = INK,
+    ) {
+      page.drawText(t, { ...at(dx, dy), size, font, color, rotate });
+    },
+    image(
+      img: PDFImage,
+      dx: number,
+      dy: number,
+      width: number,
+      height: number,
+    ) {
+      page.drawImage(img, { ...at(dx, dy), width, height, rotate });
+    },
+    line(
+      a: [number, number],
+      z: [number, number],
+      thickness: number,
+      color: any,
+    ) {
+      page.drawLine({ start: at(...a), end: at(...z), thickness, color });
+    },
+  };
+}
+
+const shortDay = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'Asia/Kolkata',
+  });
+
+/** The signatures, initials and dates, in the boxes on the uploaded pages. */
+function stampPlacements(
+  w: Writer,
+  input: PdfInput,
+  images: Array<PDFImage | null>,
+) {
+  const pages = w.doc.getPages();
+  const env = `Envelope ID: ${envelopeId(input.reference)}`;
+  pages.forEach((page) => {
+    // Like a stamp at the top of every page, so a page can't be passed off
+    // as from another document.
+    const b = boxOf(page);
+    const size = shownSize(b);
+    const f = frame(page, b, { u: 0, v: 0, w: size.w, h: size.h });
+    f.text(env, 14, size.h - 14, 6.5, w.regular, MUTED);
+  });
+  for (const p of input.source?.placements ?? []) {
+    const signer = input.signers[p.signer];
+    const sig = signer?.signature;
+    const page = pages[p.page];
+    if (!sig || !page) continue;
+    const b = boxOf(page);
+    const size = shownSize(b);
+    const rect = {
+      u: p.x * size.w,
+      v: p.y * size.h,
+      w: p.w * size.w,
+      h: p.h * size.h,
+    };
+    const f = frame(page, b, rect);
+    if (p.kind === 'date') {
+      const t = shortDay(sig.at);
+      const fs = Math.max(
+        5,
+        Math.min(
+          10,
+          rect.h * 0.6,
+          (rect.w / w.regular.widthOfTextAtSize(t, 10)) * 10,
+        ),
+      );
+      f.text(t, 2, (rect.h - fs * 0.72) / 2, fs, w.regular);
+      continue;
+    }
+    if (p.kind === 'initials') {
+      const t = clean(sig.initials || initialsFrom(sig.name)) || '·';
+      const fs = Math.max(
+        6,
+        Math.min(
+          rect.h * 0.85,
+          (rect.w / w.script.widthOfTextAtSize(t, 20)) * 20 * 0.9,
+        ),
+      );
+      const tw = w.script.widthOfTextAtSize(t, fs);
+      f.text(
+        t,
+        Math.max(1, (rect.w - tw) / 2),
+        rect.h * 0.18,
+        fs,
+        w.script,
+        SIGN_INK,
+      );
+      continue;
+    }
+    // A signature: the blue bracket, "Signed by", the signature, its id.
+    const roomy = rect.h >= 30;
+    f.line([0, 0], [0, rect.h], 1, BLUE);
+    f.line([0, rect.h], [5, rect.h], 1, BLUE);
+    f.line([0, 0], [5, 0], 1, BLUE);
+    const top = roomy ? 8 : 1;
+    const bottom = roomy && sig.signatureId ? 8 : 1;
+    if (roomy) f.text('Signed by:', 4, rect.h - 6.5, 5.5, w.bold, MUTED);
+    if (roomy && sig.signatureId)
+      f.text(sig.signatureId, 4, 1.8, 5, w.regular, MUTED);
+    const area = { w: rect.w - 7, h: Math.max(4, rect.h - top - bottom) };
+    const img = images[p.signer];
+    if (img) {
+      const scale = Math.min(area.w / img.width, area.h / img.height);
+      f.image(
+        img,
+        5,
+        bottom + (area.h - img.height * scale) / 2,
+        img.width * scale,
+        img.height * scale,
+      );
+    } else {
+      const name = clean(sig.name);
+      const fs = Math.max(
+        6,
+        Math.min(
+          area.h * 0.95,
+          (area.w / Math.max(1, w.script.widthOfTextAtSize(name, 20))) * 20,
+        ),
+      );
+      f.text(
+        name,
+        5,
+        bottom + Math.max(0, (area.h - fs * 0.7) / 2),
+        fs,
+        w.script,
+        SIGN_INK,
+      );
+    }
+  }
+}
+
+/** "Asha K. Verma" → "AKV". */
+const initialsFrom = (name: string) =>
+  name
+    .split(/\s+/)
+    .map((x) => x.replace(/[^\p{L}\p{N}]/gu, '').charAt(0))
+    .filter(Boolean)
+    .join('')
+    .toUpperCase()
+    .slice(0, 4);
+
+export async function buildAgreementPdf(input: PdfInput): Promise<Uint8Array> {
+  const doc = input.source
+    ? await PDFDocument.load(input.source.bytes, { updateMetadata: false })
+    : await PDFDocument.create();
+  doc.setTitle(input.title);
+  doc.setAuthor(input.companyName);
+  doc.setSubject(`Signed copy, SHA-256 ${input.hash}`);
+  doc.setProducer('Portal e-signing');
+  doc.setCreator('Portal');
+  const fixed = new Date(input.completedAt || input.sentAt);
+  if (!Number.isNaN(fixed.getTime())) {
+    doc.setCreationDate(fixed);
+    doc.setModificationDate(fixed);
+  }
+  const w = new Writer(doc);
+  await w.init(!input.source);
+  const images = await Promise.all(
+    input.signers.map((s) => embedSignature(doc, s.signature?.image)),
+  );
+
+  let docPages: number;
+  if (input.source) {
+    // The uploaded pages as they are, with what each signer put in the boxes.
+    stampPlacements(w, input, images);
+    docPages = doc.getPageCount();
+    if (input.signers.some((s) => s.details?.length)) {
+      w.newPage();
+      writeDetails(w, input.signers);
+    }
+  } else {
+    // Title block.
+    w.text(input.title, { size: 19, bold: true, leading: 25 });
+    w.text(
+      input.completedAt
+        ? `Signed by everyone on ${formatIst(input.completedAt)}`
+        : `Sent ${formatIst(input.sentAt)} · ${input.status.toLowerCase()}`,
+      { size: 9, color: MUTED },
+    );
+    w.gap(6);
+    w.rule();
+    w.gap(4);
+
+    // The text as it was signed, without a first heading that repeats the title.
+    const tree = md.parse(input.body ?? '').children as any[];
+    const first = tree[0];
+    const firstText =
+      first?.type === 'heading'
+        ? inline(first.children)
+            .map((r) => r.text)
+            .join('')
+            .trim()
+            .toLowerCase()
+        : null;
+    blocks(
+      w,
+      firstText && firstText === input.title.trim().toLowerCase()
+        ? tree.slice(1)
+        : tree,
+    );
+    writeDetails(w, input.signers);
+    writeSignatures(w, input.signers, images);
+    docPages = doc.getPageCount();
+  }
+
+  writeCertificate(w, input, images, docPages);
+  runningChrome(w, input, input.source ? docPages : 0);
   return doc.save({ useObjectStreams: true });
 }
 

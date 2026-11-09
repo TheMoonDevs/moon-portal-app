@@ -81,6 +81,8 @@ async function replaceSigner(
     viewedAt: next.email === s.email ? s.viewedAt : null,
     remindedAt: null,
     autoReminders: [],
+    // A new person proves who they are with their own email code.
+    emailCode: next.email === s.email ? (s.emailCode ?? null) : null,
   };
   return { before: s, after: replaced, at };
 }
@@ -240,6 +242,11 @@ export async function correctText(
   const updated = await mutate(agreement.id, (a) => {
     if (a.status !== AGREEMENT_STATUS.SENT)
       throw new AgreementError(409, 'Only an agreement out for signing.');
+    if (a.document)
+      throw new AgreementError(
+        409,
+        'An uploaded PDF can’t be edited here. Withdraw it and send the corrected PDF.',
+      );
     if (a.title === title && a.body === body)
       throw new AgreementError(400, 'Nothing changed.');
     const at = nowIso();

@@ -7,8 +7,9 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 /*
- * Imported documents (PDFs signed outside the Portal) live privately in
- * DigitalOcean Spaces under `agreements/<companyId>/`. Browsers upload
+ * Imported documents (PDFs signed outside the Portal), PDFs uploaded to be
+ * signed as they are, and each signed PDF as it was issued live privately
+ * in DigitalOcean Spaces under `agreements/<companyId>/`. Browsers upload
  * straight to Spaces with a signed link, as chat files do (Vercel refuses
  * request bodies over ~4.5 MB); the Portal reads them back after an access
  * check. The bucket's CORS rule for chat uploads covers these too.
@@ -30,6 +31,14 @@ const storage = {
 
 export const importPrefix = (companyId: string) =>
   `${storage.folder}/${companyId}/imports/`;
+
+/** PDFs uploaded to be signed as they are. */
+export const sourcePrefix = (companyId: string) =>
+  `${storage.folder}/${companyId}/sources/`;
+
+/** Signed PDFs as they were issued. */
+export const sealedPrefix = (companyId: string) =>
+  `${storage.folder}/${companyId}/signed/`;
 
 /** A signed link the browser can PUT one PDF to, valid for 30 minutes. */
 export async function presignPdfUpload(key: string, size: number) {
@@ -60,6 +69,19 @@ export async function readStored(key: string): Promise<Uint8Array | null> {
   } catch {
     return null;
   }
+}
+
+/** Stores a file the server made (a signed PDF). */
+export async function putStored(key: string, bytes: Uint8Array) {
+  await storage.client.send(
+    new PutObjectCommand({
+      Bucket: storage.bucket,
+      Key: key,
+      ACL: 'private',
+      ContentType: 'application/pdf',
+      Body: bytes,
+    }),
+  );
 }
 
 /** A link to read a stored file for ten minutes. */

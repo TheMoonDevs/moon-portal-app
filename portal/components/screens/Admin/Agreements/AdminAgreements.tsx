@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { docTypeLabel, signerRuleLabel } from '@/lib/agreements/docTypes';
@@ -28,6 +28,12 @@ import {
   type CompanySignerRule,
   SIGNER_STATUS,
 } from '@/models/agreements';
+import {
+  fetchPdf,
+  openPdf,
+  pdfText,
+  wordToText,
+} from '@/utils/helpers/pdfClient';
 import { useUser } from '@/utils/hooks/useUser';
 import { useWorkspace } from '@/utils/hooks/useWorkspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
@@ -54,9 +60,16 @@ import {
 import { CompanyPicker, errorText, NeedsCompany } from '../Workspace/shared';
 import { type FieldDraft, FieldsEditor, toDrafts } from './FieldsEditor';
 import { ImportDialog } from './ImportDialog';
+import { LettersView } from './LettersView';
 import { day, SIGNER_META, STATUS_META, when } from './meta';
 import { OverviewView } from './OverviewView';
 import { PeopleView } from './PeopleView';
+import {
+  type BoxDraft,
+  BoxesPreview,
+  type BoxRecipient,
+  PlaceBoxes,
+} from './PlaceBoxes';
 import { PoliciesView } from './PoliciesView';
 import { RequiredDocsView } from './RequiredDocsView';
 import { SigningRulesView } from './SigningRulesView';
@@ -99,6 +112,16 @@ export type SendPrefill = {
     confidential: boolean;
     signers: SignerRow[];
     fields: AgreementField[];
+    /** An uploaded PDF: the same file, with the same boxes. */
+    upload?: {
+      key: string;
+      fileName: string;
+      size: number;
+      hash: string;
+      pages: Array<{ w: number; h: number }>;
+      url: string;
+      boxes: BoxDraft[];
+    } | null;
   };
 };
 
@@ -109,6 +132,33 @@ const LINK_LABEL: Record<AgreementLinkKind, string> = {
 };
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const MAX_PDF_MB = 20;
+
+/** An uploaded PDF, signed as it is. */
+type Upload = {
+  key: string;
+  name: string;
+  data: ArrayBuffer;
+  document: {
+    fileName: string;
+    size: number;
+    hash: string;
+    pages: Array<{ w: number; h: number }>;
+  };
+};
+
+export const fileSize = (bytes: number) =>
+  bytes >= 1024 * 1024
+    ? `${(bytes / 1024 / 1024).toFixed(1)} MB`
+    : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+
+const titleFromFile = (name: string) =>
+  name
+    .replace(/\.(pdf|docx?)$/i, '')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 
 /** signer2Address → 2 and Address. */
 const personBlank = (key: string) => {
@@ -136,7 +186,16 @@ const SendDialog = ({
   onSent: () => void;
 }) => {
   const { user } = useUser();
-  const [step, setStep] = useState<'pick' | 'write' | 'preview'>('pick');
+  const [step, setStep] = useState<'pick' | 'write' | 'place' | 'preview'>(
+    'pick',
+  );
+  const [upload, setUpload] = useState<Upload | null>(null);
+  const [boxes, setBoxes] = useState<BoxDraft[]>([]);
+  const [emailCode, setEmailCode] = useState(false);
+  const [reading, setReading] = useState<'pdf' | 'word' | null>(null);
+  const [readingText, setReadingText] = useState('');
+  const pdfInput = useRef<HTMLInputElement>(null);
+  const wordInput = useRef<HTMLInputElement>(null);
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -172,6 +231,9 @@ const SendDialog = ({
     const from = prefill?.from;
     setStep(from ? 'write' : 'pick');
     setTemplateId(from?.templateId ?? null);
+    setUpload(null);
+    setBoxes([]);
+    setEmailCode(false);
     setPreview(null);
     setEditText(false);
     setValues({});
@@ -191,7 +253,27 @@ const SendDialog = ({
       setCategory(from.category);
       setSigners(from.signers.length ? from.signers : [blankSigner(1)]);
       // An amendment usually changes the words: open the text.
-      setEditText(from.linkKind === 'amendment');
+      setEditText(from.linkKind === 'amendment' && !from.upload);
+      const again = from.upload;
+      if (again) {
+        // The same file again, read back to draw its pages.
+        setBoxes(again.boxes);
+        fetchPdf(again.url)
+          .then((data) =>
+            setUpload({
+              key: again.key,
+              name: again.fileName,
+              data,
+              document: {
+                fileName: again.fileName,
+                size: again.size,
+                hash: again.hash,
+                pages: again.pages,
+              },
+            }),
+          )
+          .catch((e) => toast.error(errorText(e)));
+      }
     }
   }, [open, prefill]);
 
@@ -208,6 +290,115 @@ const SendDialog = ({
     if (prefill?.to) rows[0] = { ...rows[0], ...prefill.to };
     setSigners(rows);
     setStep('write');
+  };
+
+  const firstSigners = () => {
+    const row = blankSigner(1);
+    return [prefill?.to ? { ...row, ...prefill.to } : row];
+  };
+
+  /** A PDF to sign as it is: read here, uploaded, then checked. */
+  const takePdf = async (file: File) => {
+    if (file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name)) {
+      toast.error('Upload a PDF.');
+      return;
+    }
+    if (file.size > MAX_PDF_MB * 1024 * 1024) {
+      toast.error(`PDFs can be up to ${MAX_PDF_MB} MB.`);
+      return;
+    }
+    setReading('pdf');
+    try {
+      setReadingText('Reading it…');
+      const data = await file.arrayBuffer();
+      let text = '';
+      try {
+        const doc = await openPdf(data);
+        text = await pdfText(doc);
+        doc.destroy();
+      } catch (e) {
+        throw new Error(
+          (e as Error)?.name === 'PasswordException'
+            ? 'This PDF is password-protected. Save an unlocked copy and upload that.'
+            : 'This PDF can’t be read. Try saving it again as PDF.',
+        );
+      }
+      setReadingText('Uploading…');
+      const up = await PortalSdk.postData('/api/agreements/sources', {
+        companyId,
+        name: file.name,
+        size: file.size,
+        mime: 'application/pdf',
+      });
+      const put = await fetch(up.data.url, {
+        method: 'PUT',
+        headers: up.data.headers,
+        body: file,
+      });
+      if (!put.ok) throw new Error('The upload failed. Try again.');
+      setReadingText('Checking it…');
+      const res = await PortalSdk.postData('/api/agreements/sources', {
+        companyId,
+        check: true,
+        key: up.data.key,
+        name: file.name,
+      });
+      setUpload({
+        key: up.data.key,
+        name: file.name,
+        data,
+        document: res.data.document,
+      });
+      setTemplateId(null);
+      setTitle(titleFromFile(file.name));
+      setBody(text);
+      setCategory(prefill?.category ?? AGREEMENT_CATEGORY.OTHER);
+      setFieldDrafts([]);
+      setSigners(firstSigners());
+      setBoxes([]);
+      setEditText(false);
+      setStep('write');
+    } catch (err) {
+      toast.error(errorText(err));
+    } finally {
+      setReading(null);
+    }
+  };
+
+  /** A Word file, turned into text to edit and send. */
+  const takeWord = async (file: File) => {
+    if (!/\.docx$/i.test(file.name)) {
+      toast.error(
+        /\.doc$/i.test(file.name)
+          ? 'Save it as .docx in Word first, then upload that.'
+          : 'Upload a Word file (.docx).',
+      );
+      return;
+    }
+    setReading('word');
+    setReadingText('Reading it…');
+    try {
+      const text = await wordToText(await file.arrayBuffer());
+      if (!text.trim()) throw new Error('There is no text in that file.');
+      setUpload(null);
+      setTemplateId(null);
+      setTitle(
+        /^# (.+)/.exec(text)?.[1]?.trim().slice(0, 150) ||
+          titleFromFile(file.name),
+      );
+      setBody(text);
+      setCategory(prefill?.category ?? AGREEMENT_CATEGORY.OTHER);
+      setFieldDrafts([]);
+      setSigners(firstSigners());
+      setEditText(true);
+      setStep('write');
+    } catch (err) {
+      toast.error(
+        errorText(err) || 'This Word file can’t be read. Try saving it again.',
+      );
+    } finally {
+      setReading(null);
+    }
   };
 
   // From a person's file, "Send an NDA" opens on the starter NDA.
@@ -241,7 +432,12 @@ const SendDialog = ({
   const typeConfidential = !!settings?.types[category]?.confidential;
   const isConfidential = confidential ?? typeConfidential;
 
-  const fields = useMemo(() => templateFields(title, body), [title, body]);
+  // An uploaded PDF goes as it is: no blanks to fill in its text.
+  const isUpload = !!upload || !!prefill?.from?.upload;
+  const fields = useMemo(
+    () => (isUpload ? [] : templateFields(title, body)),
+    [title, body, isUpload],
+  );
   const wantsFacts = fields.some(isPersonKey);
 
   // Blanks about a signer fill from their Portal record when there is one.
@@ -278,6 +474,29 @@ const SendDialog = ({
     (s, i) => s.name.trim() || s.role.trim() || `Signer ${i + 1}`,
   );
 
+  // Whose boxes go on an uploaded PDF: the signers in order, then whoever
+  // signs for the company (0), numbered as the server numbers them.
+  const recipients = useMemo((): BoxRecipient[] => {
+    const companyEmail = companySigner?.email.toLowerCase() || null;
+    const rows = signers.filter(
+      (s) => !companyEmail || s.email.trim().toLowerCase() !== companyEmail,
+    );
+    return [
+      ...rows.map((s, i) => ({
+        n: i + 1,
+        name: s.name.trim() || `Signer ${i + 1}`,
+        note: s.role.trim() || undefined,
+      })),
+      ...(companySigner
+        ? [{ n: 0, name: companySigner.name, note: `For ${companyName}` }]
+        : []),
+    ];
+  }, [signers, companySigner, companyName]);
+  const placed = boxes.filter((b) => recipients.some((r) => r.n === b.signer));
+  const boxesMissing = recipients.filter(
+    (r) => !placed.some((b) => b.signer === r.n && b.kind === 'signature'),
+  );
+
   const payload = () => ({
     companyId,
     templateId: templateId?.startsWith('starter:') ? null : templateId,
@@ -306,6 +525,20 @@ const SendDialog = ({
       .split(/[,\s]+/)
       .map((e) => e.trim())
       .filter(Boolean),
+    emailCode,
+    source: upload ? { key: upload.key, name: upload.name } : null,
+    placements: upload
+      ? placed.map(({ id, kind, signer, page, x, y, w, h }) => ({
+          id,
+          kind,
+          signer,
+          page,
+          x,
+          y,
+          w,
+          h,
+        }))
+      : [],
   });
 
   const missing = fields.filter((f) => !values[f]?.trim() && !known(f));
@@ -376,19 +609,70 @@ const SendDialog = ({
                 : 'Send it again'
             : step === 'preview'
               ? 'Check and send'
-              : 'Who signs, and the details'
+              : step === 'place'
+                ? 'Show where each person signs'
+                : 'Who signs, and the details'
       }
       description={
         step === 'pick'
-          ? 'Start from one of your templates or a starter draft.'
+          ? 'Upload your own document, or start from a template or a starter draft.'
           : step === 'preview'
             ? 'This is exactly what the signers will read.'
-            : undefined
+            : step === 'place'
+              ? 'Each person sees their boxes on the document, and signs in them.'
+              : undefined
       }
       icon="signature"
-      size="lg"
+      size={step === 'place' ? 'xl' : 'lg'}
       footer={
-        step === 'pick' ? null : step === 'write' ? (
+        step === 'pick' ? null : step === 'write' && isUpload ? (
+          <>
+            {!prefill?.from && (
+              <AdminButton
+                tone="ghost"
+                size="sm"
+                onClick={() => setStep('pick')}
+              >
+                Back
+              </AdminButton>
+            )}
+            <AdminButton
+              tone="primary"
+              size="sm"
+              icon="ink_pen"
+              loading={!upload}
+              disabled={!upload || !title.trim() || !signersOk}
+              onClick={() => setStep('place')}
+            >
+              Place the boxes
+            </AdminButton>
+          </>
+        ) : step === 'place' ? (
+          <>
+            <span className="mr-auto text-xs text-neutral-500">
+              {boxesMissing.length
+                ? `Add a signature box for ${boxesMissing.map((r) => r.name).join(', ')}.`
+                : `${placed.length} ${placed.length === 1 ? 'box' : 'boxes'} on ${upload?.document.pages.length ?? 0} ${upload?.document.pages.length === 1 ? 'page' : 'pages'}.`}
+            </span>
+            <AdminButton
+              tone="ghost"
+              size="sm"
+              onClick={() => setStep('write')}
+            >
+              Back
+            </AdminButton>
+            <AdminButton
+              tone="primary"
+              size="sm"
+              icon="send"
+              loading={busy}
+              disabled={boxesMissing.length > 0}
+              onClick={send}
+            >
+              Send to {total} {total === 1 ? 'person' : 'people'}
+            </AdminButton>
+          </>
+        ) : step === 'write' ? (
           <>
             {!prefill?.from && (
               <AdminButton
@@ -439,6 +723,75 @@ const SendDialog = ({
     >
       {step === 'pick' && (
         <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+              Your own document
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {[
+                {
+                  kind: 'pdf' as const,
+                  icon: 'picture_as_pdf',
+                  label: 'Upload a PDF',
+                  hint: 'Signed as it is. You place the signature, initials and date boxes on its pages.',
+                  input: pdfInput,
+                },
+                {
+                  kind: 'word' as const,
+                  icon: 'article',
+                  label: 'Upload a Word file',
+                  hint: 'Turned into text you can edit, with blanks to fill, before it goes out.',
+                  input: wordInput,
+                },
+              ].map((c) => (
+                <button
+                  key={c.kind}
+                  type="button"
+                  disabled={!!reading}
+                  onClick={() => c.input.current?.click()}
+                  className="flex items-start gap-3 rounded-xl border border-dashed border-white/15 bg-white/[0.02] p-3 text-left transition-colors hover:border-white/30 hover:bg-white/[0.05] disabled:cursor-wait"
+                >
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.06] text-[20px] text-neutral-300">
+                    {reading === c.kind ? (
+                      <span className="inline-block size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    ) : (
+                      <Icon name={c.icon} />
+                    )}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium text-white">
+                      {reading === c.kind ? readingText : c.label}
+                    </span>
+                    <span className="mt-0.5 block text-[11px] leading-relaxed text-neutral-500">
+                      {c.hint}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+            <input
+              ref={pdfInput}
+              type="file"
+              accept="application/pdf,.pdf"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = '';
+                if (f) takePdf(f);
+              }}
+            />
+            <input
+              ref={wordInput}
+              type="file"
+              accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = '';
+                if (f) takeWord(f);
+              }}
+            />
+          </div>
           {[
             ...(preferred.length
               ? [
@@ -500,6 +853,46 @@ const SendDialog = ({
               {LINK_LABEL[prefill.from.linkKind]} “{prefill.from.previousTitle}
               ”. The two stay linked in both audit trails.
             </p>
+          )}
+          {upload && (
+            <div className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-red-500/10 text-[22px] text-red-300">
+                <Icon name="picture_as_pdf" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-white">
+                  {upload.document.fileName}
+                </p>
+                <p className="text-[11px] text-neutral-500">
+                  {upload.document.pages.length}{' '}
+                  {upload.document.pages.length === 1 ? 'page' : 'pages'} ·{' '}
+                  {fileSize(upload.document.size)} · Fingerprint{' '}
+                  <span className="font-mono">
+                    {upload.document.hash.slice(0, 12)}…
+                  </span>
+                </p>
+              </div>
+              <AdminButton
+                size="sm"
+                tone="ghost"
+                icon="swap_horiz"
+                onClick={() => pdfInput.current?.click()}
+                loading={reading === 'pdf'}
+              >
+                Replace
+              </AdminButton>
+              <input
+                ref={pdfInput}
+                type="file"
+                accept="application/pdf,.pdf"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  e.target.value = '';
+                  if (f) takePdf(f);
+                }}
+              />
+            </div>
           )}
           <div className="grid gap-3 sm:grid-cols-[1fr_180px]">
             <Field label="Title" required>
@@ -656,6 +1049,12 @@ const SendDialog = ({
                   : 'Everyone who can see agreements sees it.'
               }
             />
+            <ToggleSwitch
+              checked={emailCode}
+              onChange={setEmailCode}
+              label="Ask for a code from their email"
+              description="Before it opens, each signer enters a 6-digit code emailed to them. Signed in to the Portal, they skip it."
+            />
           </div>
 
           {fields.length > 0 && (
@@ -712,7 +1111,7 @@ const SendDialog = ({
             </p>
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className={cn('flex flex-col gap-2', isUpload && 'hidden')}>
             <button
               type="button"
               onClick={() => setEditText((v) => !v)}
@@ -780,6 +1179,16 @@ const SendDialog = ({
             />
           )}
         </div>
+      )}
+
+      {step === 'place' && upload && (
+        <PlaceBoxes
+          source={{ data: upload.data }}
+          pages={upload.document.pages}
+          recipients={recipients}
+          boxes={boxes}
+          onChange={setBoxes}
+        />
       )}
 
       {step === 'preview' && preview && (
@@ -898,8 +1307,61 @@ const prefillFrom = (
         order: s.order,
       })),
     fields: d.fields.map(({ signerName: _n, ...f }) => f),
+    upload: d.document
+      ? {
+          key: d.document.key,
+          fileName: d.document.fileName,
+          size: d.document.size,
+          hash: d.document.hash,
+          pages: d.document.pages,
+          url: d.document.url,
+          boxes: d.placements.map((p) => ({
+            id: p.id,
+            kind: p.kind,
+            signer: p.signer,
+            page: p.page,
+            x: p.x,
+            y: p.y,
+            w: p.w,
+            h: p.h,
+          })),
+        }
+      : null,
   },
 });
+
+/** The document's fingerprint, and the signed PDF's once it was issued. */
+const Fingerprints = ({ detail }: { detail: AgreementDetail }) => (
+  <div className="flex flex-col gap-1">
+    <p
+      className={cn(
+        'flex items-center gap-1.5 break-all font-mono text-[11px]',
+        detail.hashOk ? 'text-neutral-500' : 'text-rose-300',
+      )}
+    >
+      <Icon
+        name={detail.hashOk ? 'verified' : 'error'}
+        className="text-[14px]"
+      />
+      {detail.document ? 'Original PDF' : 'Text'} SHA-256 {detail.hash}
+      {detail.hashOk
+        ? ''
+        : detail.document
+          ? ' (the stored PDF changed)'
+          : ' (does not match the text)'}
+    </p>
+    {detail.sealed && (
+      <p className="flex items-center gap-1.5 break-all font-mono text-[11px] text-neutral-500">
+        <Icon name="workspace_premium" className="text-[14px]" />
+        Signed PDF SHA-256 {detail.sealed.hash}
+        <span className="font-sans">
+          {' '}
+          · issued {when(detail.sealed.at)}, checkable at /verify
+        </span>
+      </p>
+    )}
+  </div>
+);
 
 const DetailDialog = ({
   id,
@@ -1112,6 +1574,8 @@ const DetailDialog = ({
                   HR and owners
                 </Pill>
               )}
+              {detail.emailCode && <Pill icon="pin">Email code</Pill>}
+              {detail.document && <Pill icon="picture_as_pdf">PDF</Pill>}
               <span className="text-xs text-neutral-500">
                 {detail.progress.signed} of {detail.progress.total} signed
                 {detail.completedAt
@@ -1388,7 +1852,60 @@ const DetailDialog = ({
               </div>
             )}
 
-            {tab === 'document' && (
+            {tab === 'document' && detail.document && (
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-red-500/10 text-[22px] text-red-300">
+                    <Icon name="picture_as_pdf" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-white">
+                      {detail.document.fileName}
+                    </p>
+                    <p className="text-[11px] text-neutral-500">
+                      Uploaded PDF, signed as it is ·{' '}
+                      {detail.document.pages.length}{' '}
+                      {detail.document.pages.length === 1 ? 'page' : 'pages'} ·{' '}
+                      {fileSize(detail.document.size)}
+                    </p>
+                  </div>
+                  <a
+                    href={`${detail.document.url}?download=1`}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-xs font-medium text-neutral-100 hover:bg-white/[0.09]"
+                  >
+                    <Icon name="download" className="text-[16px]" />
+                    Original
+                  </a>
+                </div>
+                <BoxesPreview
+                  source={{ url: detail.document.url }}
+                  pages={detail.document.pages}
+                  boxes={detail.placements.map((p) => {
+                    const signer = detail.signers.find(
+                      (x) => x.id === p.signerId,
+                    );
+                    const sig = detail.signatures.find(
+                      (x) => x.signerId === p.signerId,
+                    );
+                    return {
+                      ...p,
+                      name: signer?.name ?? 'Signer',
+                      signed: sig
+                        ? {
+                            name: sig.name,
+                            image: sig.image,
+                            initials: sig.initials,
+                            at: sig.at,
+                          }
+                        : null,
+                    };
+                  })}
+                />
+                <Fingerprints detail={detail} />
+              </div>
+            )}
+
+            {tab === 'document' && !detail.document && (
               <div className="flex flex-col gap-2">
                 {open && canEdit && (
                   <div className="flex items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2 text-xs text-neutral-400">
@@ -1412,19 +1929,7 @@ const DetailDialog = ({
                   </div>
                 )}
                 <Paper body={detail.body} />
-                <p
-                  className={cn(
-                    'flex items-center gap-1.5 break-all font-mono text-[11px]',
-                    detail.hashOk ? 'text-neutral-500' : 'text-rose-300',
-                  )}
-                >
-                  <Icon
-                    name={detail.hashOk ? 'verified' : 'error'}
-                    className="text-[14px]"
-                  />
-                  SHA-256 {detail.hash}
-                  {detail.hashOk ? '' : ' (does not match the text)'}
-                </p>
+                <Fingerprints detail={detail} />
               </div>
             )}
 
@@ -2148,8 +2653,14 @@ export const AdminAgreementTemplates = ({
   );
 };
 
-type View = 'overview' | 'documents' | 'people' | 'policies';
-const VIEWS: View[] = ['overview', 'documents', 'people', 'policies'];
+type View = 'overview' | 'documents' | 'people' | 'policies' | 'letters';
+const VIEWS: View[] = [
+  'overview',
+  'documents',
+  'people',
+  'policies',
+  'letters',
+];
 
 /** Admin > Companies > Agreements: the documents, and each person's file. */
 export const AdminAgreements = ({
@@ -2166,6 +2677,7 @@ export const AdminAgreements = ({
   const [sending, setSending] = useState<SendPrefill | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
+  const [letterId, setLetterId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!companyId) return;
@@ -2207,6 +2719,8 @@ export const AdminAgreements = ({
     }
     const v = params.get('view') as View | null;
     if (v && VIEWS.includes(v)) setView(v);
+    const letter = params.get('letter');
+    if (letter && /^[a-f0-9]{24}$/i.test(letter)) setLetterId(letter);
   }, []);
 
   const closeDetail = useCallback(() => setOpenId(null), []);
@@ -2247,6 +2761,8 @@ export const AdminAgreements = ({
   const canCreate = can(companyId, 'agreements:create');
   const canEdit = can(companyId, 'agreements:edit');
   const canDelete = can(companyId, 'agreements:delete');
+  // Letters carry pay and personal details: HR and owners.
+  const canLetters = canCreate && can(companyId, 'confidential:read');
 
   return (
     <div className="flex flex-col gap-5">
@@ -2264,6 +2780,15 @@ export const AdminAgreements = ({
             { value: 'documents', label: 'Documents', icon: 'folder_open' },
             { value: 'people', label: 'People', icon: 'folder_shared' },
             { value: 'policies', label: 'Policies', icon: 'campaign' },
+            ...(canLetters
+              ? [
+                  {
+                    value: 'letters' as const,
+                    label: 'Letters',
+                    icon: 'contract',
+                  },
+                ]
+              : []),
           ]}
         />
         <div className="flex-1" />
@@ -2284,7 +2809,16 @@ export const AdminAgreements = ({
         )}
       </div>
 
-      {view === 'overview' ? (
+      {view === 'letters' && canLetters ? (
+        <LettersView
+          companyId={companyId}
+          companyName={companyName}
+          refreshKey={refreshKey}
+          openLetterId={letterId}
+          onOpenAgreement={setOpenId}
+          onChanged={changed}
+        />
+      ) : view === 'overview' ? (
         <OverviewView
           companyId={companyId}
           refreshKey={refreshKey}

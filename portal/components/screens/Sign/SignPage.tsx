@@ -9,6 +9,7 @@ import {
   useState,
 } from 'react';
 
+import { PdfPages } from '@/components/global/PdfPages';
 import { DocProse } from '@/components/shared/DocProse';
 import { SignaturePad } from '@/components/shared/SignaturePad';
 import { envelopeId, signatureMethod } from '@/lib/agreements/envelope';
@@ -478,6 +479,365 @@ const Sheet = ({
   </article>
 );
 
+type Placement = SigningState['placements'][number];
+
+const shortDay = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+
+const BOX_LABEL: Record<Placement['kind'], string> = {
+  signature: 'Sign here',
+  initials: 'Initial',
+  date: 'Date',
+};
+
+/** One box on an uploaded PDF: where someone signs, or what they signed. */
+const PdfBox = ({
+  box,
+  state,
+  onSignHere,
+}: {
+  box: Placement;
+  state: SigningState;
+  onSignHere: () => void;
+}) => {
+  const owner = state.signers.find((s) => s.id === box.signerId);
+  const mine = box.signerId === state.you.id;
+  const sig = owner?.signature;
+  const pos = {
+    left: `${box.x * 100}%`,
+    top: `${box.y * 100}%`,
+    width: `${box.w * 100}%`,
+    height: `${box.h * 100}%`,
+  };
+  if (sig)
+    return (
+      <div
+        className="absolute flex items-center overflow-hidden text-[#0b2a6b]"
+        style={pos}
+        title={`${owner!.name} · ${when(sig.at)}`}
+      >
+        {box.kind === 'signature' ? (
+          sig.image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={sig.image}
+              alt={`Signature of ${sig.name}`}
+              className="max-h-full max-w-full object-contain object-left"
+            />
+          ) : (
+            <span className="truncate text-[clamp(12px,2.4vw,26px)] leading-none [font-family:var(--sign-hand)]">
+              {sig.name}
+            </span>
+          )
+        ) : box.kind === 'initials' ? (
+          <span className="mx-auto text-[clamp(11px,2vw,20px)] leading-none [font-family:var(--sign-hand)]">
+            {sig.initials}
+          </span>
+        ) : (
+          <span className="truncate text-[clamp(8px,1.2vw,12px)] text-slate-800">
+            {shortDay(sig.at)}
+          </span>
+        )}
+      </div>
+    );
+  const canSign =
+    mine &&
+    state.status === AGREEMENT_STATUS.SENT &&
+    state.you.canSign &&
+    state.you.status !== SIGNER_STATUS.SIGNED;
+  if (canSign)
+    return (
+      <button
+        type="button"
+        id={`box-${box.id}`}
+        data-mine-box
+        onClick={onSignHere}
+        className="absolute flex scroll-mt-40 items-center justify-center gap-1 overflow-visible rounded-[3px] border-[1.5px] border-[#1d4ed8] bg-[#fde68a]/80 text-[clamp(8px,1.1vw,11px)] font-bold uppercase tracking-wide text-[#1e3a8a] shadow-sm hover:bg-[#fcd34d] print:hidden"
+        style={pos}
+      >
+        {box.kind === 'signature' && (
+          <Symbol name="signature" className="text-[14px]" />
+        )}
+        <span className="truncate">{BOX_LABEL[box.kind]}</span>
+      </button>
+    );
+  return (
+    <div
+      className="absolute flex items-center overflow-hidden rounded-[3px] border border-dashed border-slate-400/80 bg-slate-100/60 px-1 text-[clamp(7px,1vw,10px)] font-medium text-slate-500 print:hidden"
+      style={pos}
+      title={owner ? `${owner.name} signs here` : undefined}
+    >
+      <span className="truncate">
+        {box.kind === 'signature'
+          ? (owner?.name ?? 'Signer')
+          : box.kind === 'initials'
+            ? 'Initials'
+            : 'Date'}
+      </span>
+    </div>
+  );
+};
+
+/** An uploaded PDF, page by page, with everyone's boxes on it. */
+const PdfSheet = ({
+  state,
+  onSignHere,
+}: {
+  state: SigningState;
+  onSignHere: () => void;
+}) => {
+  const doc = state.document!;
+  const mine = state.placements.filter((p) => p.signerId === state.you.id);
+  const open =
+    state.status === AGREEMENT_STATUS.SENT &&
+    state.you.canSign &&
+    state.you.status !== SIGNER_STATUS.SIGNED &&
+    mine.length > 0;
+  const [next, setNext] = useState(0);
+  const pages = Array.from(new Set(mine.map((p) => p.page + 1))).sort(
+    (a, b) => a - b,
+  );
+
+  const goNext = () => {
+    const list = Array.from(
+      document.querySelectorAll<HTMLElement>('[data-mine-box]'),
+    );
+    if (!list.length) return onSignHere();
+    const el = list[next % list.length];
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.animate?.(
+      [
+        { boxShadow: '0 0 0 0 rgba(29,78,216,.6)' },
+        { boxShadow: '0 0 0 10px rgba(29,78,216,0)' },
+      ],
+      { duration: 900 },
+    );
+    setNext((n) => n + 1);
+  };
+
+  return (
+    // Not overflow-hidden: the "places for you" bar sticks while scrolling.
+    <article className="rounded-sm bg-white shadow-[0_1px_3px_rgba(15,23,42,.10),0_12px_32px_-12px_rgba(15,23,42,.22)] ring-1 ring-slate-900/[0.06] print:shadow-none print:ring-0">
+      <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-4 py-3 text-[11px] text-slate-500 sm:px-6">
+        <span className="flex min-w-0 items-center gap-2">
+          <Symbol name="picture_as_pdf" className="text-[18px] text-rose-700" />
+          <span className="truncate font-semibold text-slate-700">
+            {doc.fileName}
+          </span>
+          <span className="shrink-0">
+            · {doc.pages.length} {doc.pages.length === 1 ? 'page' : 'pages'}
+          </span>
+        </span>
+        <span className="hidden shrink-0 font-mono tracking-wide sm:inline">
+          Envelope ID {envelopeId(state.reference)}
+        </span>
+      </div>
+      {open && (
+        <div className="sticky top-[64px] z-20 flex items-center gap-3 border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-[13px] text-amber-900 sm:px-6 print:hidden">
+          <Symbol name="info" className="text-[18px] text-amber-600" />
+          <span className="min-w-0 flex-1">
+            {mine.length} {mine.length === 1 ? 'place' : 'places'} for you on{' '}
+            {pages.length === 1 ? 'page' : 'pages'} {pages.join(', ')}. They
+            fill in when you sign.
+          </span>
+          <button
+            type="button"
+            onClick={goNext}
+            className="inline-flex h-8 shrink-0 items-center gap-1 rounded-md bg-[#1d4ed8] px-3 text-[12px] font-semibold text-white hover:bg-[#1e40af]"
+          >
+            {next ? 'Next' : 'Start'}
+            <Symbol name="arrow_downward" className="text-[15px]" />
+          </button>
+        </div>
+      )}
+      <div className="bg-[#e7eaee] px-3 py-5 sm:p-8 print:bg-white print:p-0">
+        <PdfPages
+          source={{ url: doc.url }}
+          pages={doc.pages}
+          pageClassName="shadow-[0_2px_10px_rgba(15,23,42,.18)] ring-0"
+          overlay={(page) =>
+            state.placements
+              .filter((p) => p.page === page)
+              .map((p) => (
+                <PdfBox
+                  key={p.id}
+                  box={p}
+                  state={state}
+                  onSignHere={onSignHere}
+                />
+              ))
+          }
+        />
+      </div>
+      <div className="px-6 pb-10 sm:px-14">
+        <SignatureLines state={state} onSignHere={onSignHere} />
+      </div>
+    </article>
+  );
+};
+
+/* ------------------------------- email code ------------------------------ */
+
+/** Asks for the code emailed to the signer before the document opens. */
+const VerifyGate = ({
+  state,
+  onOpened,
+}: {
+  state: SigningState;
+  onOpened: (s: SigningState) => void;
+}) => {
+  const locked = state.locked!;
+  const recent =
+    !!locked.codeSentAt &&
+    Date.now() - new Date(locked.codeSentAt).getTime() < 10 * 60_000;
+  const [sentTo, setSentTo] = useState<string | null>(
+    recent ? locked.email : null,
+  );
+  const [code, setCode] = useState('');
+  const [busy, setBusy] = useState<'send' | 'check' | null>(null);
+  const [error, setError] = useState('');
+  const input = useRef<HTMLInputElement>(null);
+
+  const send = async () => {
+    setBusy('send');
+    setError('');
+    try {
+      const res = await callSign(state.token, { action: 'sendCode' });
+      setSentTo(res.sentTo);
+      setCode('');
+      requestAnimationFrame(() => input.current?.focus());
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const check = async (value: string) => {
+    setBusy('check');
+    setError('');
+    try {
+      const res = await callSign(state.token, {
+        action: 'checkCode',
+        code: value,
+      });
+      onOpened(res.state);
+    } catch (err) {
+      setError((err as Error).message);
+      setCode('');
+      input.current?.focus();
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <main className="mx-auto w-full max-w-[500px] px-4 py-10 sm:py-16">
+      <Panel>
+        <div className="flex flex-col gap-5 px-6 py-8 sm:px-9">
+          <span className="flex size-12 items-center justify-center rounded-full bg-blue-50 ring-1 ring-blue-100">
+            <Symbol name="shield_lock" className="text-[24px] text-[#1d4ed8]" />
+          </span>
+          <div>
+            <h1 className="text-[22px] font-semibold tracking-tight text-slate-900">
+              Verify it&apos;s you
+            </h1>
+            <p className="mt-2 text-[14.5px] leading-relaxed text-slate-600">
+              {state.companyName} asked for an extra check before{' '}
+              <span className="font-medium text-slate-900">
+                “{state.title}”
+              </span>{' '}
+              opens. We&apos;ll email a 6-digit code to{' '}
+              <span className="font-medium text-slate-900">{locked.email}</span>
+              .
+            </p>
+          </div>
+          {!sentTo ? (
+            <Button
+              size="lg"
+              onClick={send}
+              disabled={busy === 'send'}
+              className="w-full"
+            >
+              <Symbol name="mail" className="text-[20px]" />
+              {busy === 'send' ? 'Sending…' : 'Email me a code'}
+            </Button>
+          ) : (
+            <form
+              className="flex flex-col gap-3"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (code.length === 6) check(code);
+              }}
+            >
+              <label className="flex flex-col gap-1.5">
+                <Label>Code sent to {sentTo}</Label>
+                <input
+                  ref={input}
+                  value={code}
+                  autoFocus
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  aria-label="6-digit code"
+                  placeholder="000000"
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    setCode(v);
+                    if (v.length === 6 && busy !== 'check') check(v);
+                  }}
+                  className={cn(
+                    inputClass(!!error),
+                    'h-14 text-center font-mono text-[26px] tracking-[0.5em]',
+                  )}
+                />
+              </label>
+              <Button
+                size="lg"
+                type="submit"
+                disabled={code.length !== 6 || busy === 'check'}
+                className="w-full"
+              >
+                {busy === 'check' ? 'Checking…' : 'Continue'}
+              </Button>
+              <p className="text-center text-[13px] text-slate-500">
+                No email? Check spam, or{' '}
+                <button
+                  type="button"
+                  onClick={send}
+                  disabled={busy === 'send'}
+                  className="font-medium text-[#1d4ed8] hover:underline"
+                >
+                  send a new code
+                </button>
+                .
+              </p>
+            </form>
+          )}
+          {error && <ErrorNote text={error} />}
+          <p className="border-t border-slate-100 pt-4 text-[12.5px] leading-relaxed text-slate-500">
+            The code works for 10 minutes. Have a Portal account with this
+            email?{' '}
+            <a
+              href={`/login?uri=${encodeURIComponent(`/sign/${state.token}`)}`}
+              className="font-medium text-[#1d4ed8] underline underline-offset-2"
+            >
+              Sign in
+            </a>{' '}
+            instead and you skip this step.
+          </p>
+        </div>
+      </Panel>
+      <p className="mt-4 text-center font-mono text-[11px] tracking-wide text-slate-500">
+        Envelope ID {envelopeId(state.reference)}
+      </p>
+    </main>
+  );
+};
+
 /* --------------------------------- sidebar -------------------------------- */
 
 const CopyId = ({ value }: { value: string }) => {
@@ -622,13 +982,24 @@ const SecurityCard = ({ state }: { state: SigningState }) => (
         <Symbol name="history" className="mt-0.5 text-[16px] text-slate-400" />
         Every view and signature is recorded with its time and IP address.
       </li>
+      {state.emailCode && (
+        <li className="flex gap-2.5">
+          <Symbol
+            name="shield_lock"
+            className="mt-0.5 text-[16px] text-slate-400"
+          />
+          Each signer confirms a code sent to their email before it opens.
+        </li>
+      )}
       <li className="flex gap-2.5">
         <Symbol
           name="fingerprint"
           className="mt-0.5 text-[16px] text-slate-400"
         />
         <span className="min-w-0">
-          Document fingerprint (SHA-256)
+          {state.document
+            ? 'Fingerprint of the original PDF (SHA-256)'
+            : 'Document fingerprint (SHA-256)'}
           <span
             className="block truncate font-mono text-[11px] text-slate-500"
             title={state.hash}
@@ -828,10 +1199,23 @@ const SignBox = ({
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [values, setValues] = useState<Values>(state.you.values ?? {});
+  // Initials, for initials boxes on an uploaded PDF: from the name unless
+  // they type their own.
+  const [ownInitials, setOwnInitials] = useState<string | null>(null);
+  const wantsInitials = state.you.initialsBoxes > 0;
+  const fromName = name
+    .split(/\s+/)
+    .map((w) => w.replace(/[^\p{L}\p{N}]/gu, '').charAt(0))
+    .filter(Boolean)
+    .join('')
+    .toUpperCase()
+    .slice(0, 4);
+  const myInitials = (ownInitials ?? fromName).trim();
   const fields = state.you.fields;
   const toFill = stillToFill(fields, values);
   const matches = normalName(name) === normalName(state.you.name);
-  const adopted = matches && (mode === 'type' || !!image);
+  const adopted =
+    matches && (mode === 'type' || !!image) && (!wantsInitials || !!myInitials);
   const ready = adopted && agree && !toFill;
   let n = 0;
 
@@ -847,6 +1231,7 @@ const SignBox = ({
         image: mode === 'draw' ? image : null,
         save: state.viewer.signedIn && save,
         values,
+        initials: wantsInitials ? myInitials : undefined,
       });
       onDone(data.state);
     } catch (err) {
@@ -943,6 +1328,28 @@ const SignBox = ({
             </div>
           ) : (
             <SignaturePad onChange={setImage} />
+          )}
+          {wantsInitials && (
+            <div className="flex flex-wrap items-end gap-4">
+              <label className="flex w-32 flex-col gap-1.5">
+                <Label required>Initials</Label>
+                <input
+                  value={ownInitials ?? fromName}
+                  onChange={(e) =>
+                    setOwnInitials(e.target.value.toUpperCase().slice(0, 4))
+                  }
+                  className={cn(inputClass(), 'uppercase')}
+                />
+              </label>
+              <span className="pb-2 text-[30px] leading-none text-[#0b2a6b] [font-family:var(--sign-hand)]">
+                {myInitials || ' '}
+              </span>
+              <p className="basis-full text-[12px] text-slate-500">
+                Goes in the {state.you.initialsBoxes} initials{' '}
+                {state.you.initialsBoxes === 1 ? 'box' : 'boxes'} on the
+                document.
+              </p>
+            </div>
           )}
         </Step>
         <Step n={++n} title="Confirm and sign" done={ready}>
@@ -1677,6 +2084,17 @@ export const SignPage = ({ initial }: { initial: SigningState }) => {
               icon: 'block',
               onClick: () => toPanel('decline'),
             },
+            ...(state.document
+              ? [
+                  {
+                    label: 'Download the original PDF',
+                    icon: 'download',
+                    onClick: () => {
+                      window.location.href = `${state.document!.url}?download=1`;
+                    },
+                  },
+                ]
+              : []),
             { label: 'Print', icon: 'print', onClick: () => window.print() },
           ]}
         />
@@ -1686,6 +2104,27 @@ export const SignPage = ({ initial }: { initial: SigningState }) => {
       </ActionBar>
     );
   })();
+
+  if (state.locked)
+    return (
+      <Shell>
+        <TopBar state={state} />
+        <ActionBar
+          tone="navy"
+          icon="shield_lock"
+          title="Verify it's you to open this document"
+          body={`Sent by ${state.sender.name} for ${state.companyName}.`}
+        />
+        <VerifyGate
+          state={state}
+          onOpened={(s) => {
+            setState(s);
+            if (s.you.canSign && s.you.status !== SIGNER_STATUS.SIGNED)
+              callSign(s.token, { action: 'view' }).catch(() => {});
+          }}
+        />
+      </Shell>
+    );
 
   return (
     <Shell>
@@ -1730,7 +2169,11 @@ export const SignPage = ({ initial }: { initial: SigningState }) => {
             </Panel>
           )}
 
-          <Sheet state={state} onSignHere={() => toPanel('sign')} />
+          {state.document ? (
+            <PdfSheet state={state} onSignHere={() => toPanel('sign')} />
+          ) : (
+            <Sheet state={state} onSignHere={() => toPanel('sign')} />
+          )}
 
           {showSign &&
             (mode === 'handover' ? (

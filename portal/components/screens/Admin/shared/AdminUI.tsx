@@ -760,7 +760,7 @@ export const AdminModal = ({
   icon?: string;
   children: ReactNode;
   footer?: ReactNode;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   /** Follow the portal's light/dark theme (screens marked `auto-theme`). */
   autoTheme?: boolean;
 }) => {
@@ -768,6 +768,7 @@ export const AdminModal = ({
     sm: 'max-w-md',
     md: 'max-w-xl',
     lg: 'max-w-3xl',
+    xl: 'max-w-6xl',
   } as const;
 
   return (
