@@ -1,5 +1,6 @@
 import { createHash, randomBytes, randomInt } from 'crypto';
 
+import { requestOnboardingCountersign } from '@/lib/agreements/countersign';
 import { ensureIntroCourse } from '@/lib/courses/server';
 import { moveApplication } from '@/lib/hiring/server';
 import { db } from '@/lib/mongodb/db-client';
@@ -942,6 +943,10 @@ export async function signDocument(
     {
       documents,
     },
+  );
+  // The company countersigns it afterwards; onboarding doesn't wait.
+  await requestOnboardingCountersign(onboarding.id, docId, origin).catch((e) =>
+    console.error('[onboarding] countersign', e),
   );
   const updated = await reload(onboarding.id);
   const done = documents

@@ -92,6 +92,10 @@ export const modelMetaMap = defineModelRegistry({
   onboardingTemplate: { collection: 'OnboardingTemplate' },
   course: { collection: 'Course' },
   courseProgress: { collection: 'CourseProgress' },
+  agreement: { collection: 'Agreement' },
+  agreementTemplate: { collection: 'AgreementTemplate' },
+  agreementSettings: { collection: 'AgreementSettings' },
+  savedSignature: { collection: 'SavedSignature' },
 });
 
 export type ModelName = keyof typeof modelMetaMap;

@@ -6,7 +6,10 @@ export type AdminTabId =
   | 'companies'
   | 'projects'
   | 'tasks'
-  | 'roles';
+  | 'roles'
+  | 'agreements'
+  | 'signing-rules'
+  | 'agreement-templates';
 
 /** Tabs that moved to the Hiring space, and the page each opens there. */
 export const MOVED_TO_HIRING: Record<string, string> = {
@@ -15,7 +18,11 @@ export const MOVED_TO_HIRING: Record<string, string> = {
   courses: 'courses',
 };
 
-export type AdminNavGroup = 'Workspace' | 'Companies' | 'Community';
+export type AdminNavGroup =
+  | 'Workspace'
+  | 'Companies'
+  | 'Administration'
+  | 'Community';
 
 export type AdminTab = {
   id: AdminTabId;
@@ -40,6 +47,7 @@ export type AdminTab = {
 export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
   'Workspace',
   'Companies',
+  'Administration',
   'Community',
 ];
 
@@ -89,6 +97,39 @@ export const ADMIN_TABS: AdminTab[] = [
     description: 'Major and minor tasks for each project.',
     group: 'Companies',
     access: 'company',
+  },
+  {
+    id: 'agreements',
+    label: 'Agreements',
+    icon: 'signature',
+    title: 'Agreements',
+    description:
+      'Send any agreement to sign, follow who has signed, and find any signed document or person’s file.',
+    group: 'Companies',
+    access: 'company',
+    permission: 'agreements:read',
+  },
+  {
+    id: 'signing-rules',
+    label: 'Signing rules',
+    icon: 'approval',
+    title: 'Signing rules',
+    description:
+      'Who signs each kind of document for the company, which are confidential, and automatic reminders.',
+    group: 'Administration',
+    access: 'company',
+    permission: 'agreements:read',
+  },
+  {
+    id: 'agreement-templates',
+    label: 'Agreement templates',
+    icon: 'description',
+    title: 'Agreement templates',
+    description:
+      'The company’s own wording for agreements, with blanks to fill in when sending.',
+    group: 'Administration',
+    access: 'company',
+    permission: 'agreements:read',
   },
   {
     id: 'roles',

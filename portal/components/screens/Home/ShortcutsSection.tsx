@@ -14,6 +14,8 @@ const SHORTCUTS = [
   { label: 'Goals', icon: 'flag', href: APP_ROUTES.goals },
   // Tasks are logged as worklogs, so this opens the person's worklogs.
   { label: 'Tasks', icon: 'task_alt', href: APP_ROUTES.userWorklogs },
+  // What they signed, what waits for their signature, their saved signature.
+  { label: 'Docs', icon: 'description', href: APP_ROUTES.myDocuments },
 ];
 
 export const ShortcutsSection = () => (

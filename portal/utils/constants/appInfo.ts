@@ -19,6 +19,8 @@ export enum APP_ROUTES {
   messages = '/messages',
   /** A person's page: /user for your own, /user/<id> for someone's. */
   user = '/user',
+  /** Your documents: signed, waiting for you, and your saved signature. */
+  myDocuments = '/user?tab=documents',
 }
 
 export enum LOCAL_STORAGE {

@@ -46,11 +46,15 @@ export interface OutgoingEmail {
   html: string;
   /** Shown in Resend's logs and sent back with webhook events. */
   tags?: Array<{ name: string; value: string }>;
-  /** Text files such as calendar invites. Only `sendEmail` sends these. */
+  /**
+   * Files such as calendar invites or a signed PDF. Only `sendEmail` sends
+   * these. `content` is text, or base64 when `encoding` says so.
+   */
   attachments?: Array<{
     filename: string;
     content: string;
     contentType: string;
+    encoding?: 'utf8' | 'base64';
   }>;
 }
 
@@ -123,7 +127,10 @@ const toPayload = (email: OutgoingEmail) => ({
     ? {
         attachments: email.attachments.map((a) => ({
           filename: a.filename,
-          content: Buffer.from(a.content, 'utf8').toString('base64'),
+          content:
+            a.encoding === 'base64'
+              ? a.content
+              : Buffer.from(a.content, 'utf8').toString('base64'),
           content_type: a.contentType,
         })),
       }

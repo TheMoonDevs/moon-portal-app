@@ -13,6 +13,11 @@ import { useWorkspace } from '@/utils/hooks/useWorkspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { AdminUsers } from './AdminUsers';
+import {
+  AdminAgreements,
+  AdminAgreementTemplates,
+  AdminSigningRules,
+} from './Agreements/AdminAgreements';
 import { AdminBadges } from './Badges/AdminBadges';
 import { AdminOverview } from './Overview/AdminOverview';
 import SendNotifications from './SendNotifications';
@@ -272,6 +277,27 @@ export const AdminPage = () => {
             onSelectCompany={selectCompany}
             selectedProjectId={projectId}
             onSelectProject={setProjectId}
+          />
+        );
+      case 'agreements':
+        return (
+          <AdminAgreements
+            selectedCompanyId={companyId}
+            onSelectCompany={selectCompany}
+          />
+        );
+      case 'signing-rules':
+        return (
+          <AdminSigningRules
+            selectedCompanyId={companyId}
+            onSelectCompany={selectCompany}
+          />
+        );
+      case 'agreement-templates':
+        return (
+          <AdminAgreementTemplates
+            selectedCompanyId={companyId}
+            onSelectCompany={selectCompany}
           />
         );
       case 'roles':
