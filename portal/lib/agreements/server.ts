@@ -11,9 +11,11 @@ import {
   AGREEMENT_CATEGORY,
   AGREEMENT_STATUS,
   type AgreementEvent,
+  type AgreementField,
   type AgreementSignature,
   type AgreementSigner,
   type AgreementTemplate,
+  type AgreementTemplateVersion,
   type CompanySignerRule,
   SIGNER_STATUS,
 } from '@/models/agreements';
@@ -22,12 +24,21 @@ import { ONBOARDING_STEP } from '@/models/onboarding';
 import { NotificationType } from '@/models/shared/enums';
 import type { Company } from '@/models/workspace';
 
+import { signerFacts } from './autofill';
 import { docTypeLabel, isSignerRule, onboardingTypeKey } from './docTypes';
 import {
   type AgreementEmailContext,
   type AgreementEmailKind,
   sendAgreementEmail,
 } from './emails';
+import {
+  checkValues,
+  fieldsFor,
+  fieldText,
+  isSensitiveField,
+  parseFields,
+  partiesOf,
+} from './fields';
 import { buildAgreementPdf, pdfFileName } from './pdf';
 import {
   checkSignatureImage,
@@ -41,6 +52,7 @@ import {
   fieldLabel,
   fillAgreement,
   isCategory,
+  isPersonKey,
   MAX_AGREEMENT_BODY,
   MAX_AGREEMENT_MESSAGE,
   MAX_AGREEMENT_TITLE,
@@ -68,25 +80,26 @@ export class AgreementError extends Error {
 
 export const SIGN_TOKEN_PATTERN = /^[a-f0-9]{40}$/;
 
-const sha256 = (value: string) =>
+export const sha256 = (value: string) =>
   createHash('sha256').update(value).digest('hex');
 
-const text = (value: unknown, max: number) =>
+export const text = (value: unknown, max: number) =>
   typeof value === 'string' ? value.trim().slice(0, max) : '';
 
-const isEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+export const isEmail = (value: string) =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
-const isDay = (value: unknown): value is string =>
+export const isDay = (value: unknown): value is string =>
   typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
 
 const sameName = (a: string, b: string) =>
   a.trim().replace(/\s+/g, ' ').toLowerCase() ===
   b.trim().replace(/\s+/g, ' ').toLowerCase();
 
-const newId = () => randomBytes(6).toString('hex');
-const newToken = () => randomBytes(20).toString('hex');
+export const newId = () => randomBytes(6).toString('hex');
+export const newToken = () => randomBytes(20).toString('hex');
 
-const OPEN_SIGNER = [
+export const OPEN_SIGNER = [
   SIGNER_STATUS.WAITING,
   SIGNER_STATUS.PENDING,
   SIGNER_STATUS.VIEWED,
@@ -156,7 +169,7 @@ export async function loadAgreement(
 
 /* -------------------------------- writing --------------------------------- */
 
-type Change = {
+export type Change = {
   patch: Partial<Agreement>;
   events: Array<Omit<AgreementEvent, 'at'> & { at?: string }>;
 };
@@ -166,7 +179,7 @@ type Change = {
  * moment can't overwrite each other: a write only lands on the revision it
  * was made from, and a clash is retried from the fresh copy.
  */
-async function mutate(
+export async function mutate(
   id: string,
   change: (agreement: Agreement) => Change | Promise<Change>,
 ): Promise<Agreement> {
@@ -288,7 +301,18 @@ export interface AgreementInput {
   values: Record<string, string>;
   /** The company's name as it reads in the agreement. */
   companyName: string | null;
+  /** What the signers fill in before they sign. */
+  fields: AgreementField[];
+  /** When the contract or NDA term ends (YYYY-MM-DD), for the alerts. */
+  endsOn: string | null;
+  /** The agreement this one renews, amends or sends again. */
+  previousId: string | null;
+  linkKind: 'renewal' | 'amendment' | 'resend' | null;
+  /** The signers can't use the Portal until they sign it. */
+  blocking: boolean;
 }
+
+const LINK_KINDS = ['renewal', 'amendment', 'resend'] as const;
 
 /** An agreement to send, from an untrusted body, with every field checked. */
 export function parseAgreementInput(raw: any): AgreementInput {
@@ -317,6 +341,13 @@ export function parseAgreementInput(raw: any): AgreementInput {
         ),
       ).slice(0, 10)
     : [];
+  const signers = parseSigners(raw?.signers, ordered);
+  const endsOn = isDay(raw?.endsOn) ? raw.endsOn : null;
+  const previousId =
+    typeof raw?.previousId === 'string' &&
+    /^[a-f0-9]{24}$/i.test(raw.previousId)
+      ? raw.previousId
+      : null;
   return {
     companyId,
     title,
@@ -324,6 +355,15 @@ export function parseAgreementInput(raw: any): AgreementInput {
     category: isCategory(raw?.category)
       ? raw.category
       : AGREEMENT_CATEGORY.OTHER,
+    fields: parseFields(raw?.fields, signers.length),
+    endsOn,
+    previousId,
+    linkKind: previousId
+      ? LINK_KINDS.includes(raw?.linkKind)
+        ? raw.linkKind
+        : 'renewal'
+      : null,
+    blocking: raw?.blocking === true,
     companySigner: isSignerRule(raw?.companySigner) ? raw.companySigner : null,
     companyFirst: raw?.companyFirst === true,
     confidential:
@@ -332,20 +372,32 @@ export function parseAgreementInput(raw: any): AgreementInput {
     templateId: text(raw?.templateId, 60) || null,
     ordered,
     expiresOn,
-    signers: parseSigners(raw?.signers, ordered),
+    signers,
     ccEmails: ccEmails as string[],
     values,
     companyName: text(raw?.companyName, 120) || null,
   };
 }
 
-/** The title and text as the signers will read them, every blank filled. */
-export async function renderAgreement(input: AgreementInput) {
+/**
+ * The title and text as the signers will read them, every blank filled.
+ * Blanks about a signer (`{{signer1Address}}`) the sender left empty are
+ * filled from what the Portal knows about them; pay only with `pay`.
+ */
+export async function renderAgreement(
+  input: AgreementInput,
+  opts: { pay: boolean } = { pay: false },
+) {
   const company: Company | null = await db.company.findFirst({
     where: { id: input.companyId },
   });
+  const blanks = templateFields(input.title, input.body);
+  const known = blanks.some((k) => isPersonKey(k) && !input.values[k])
+    ? await signerFacts(input.companyId, input.signers, opts)
+    : {};
+  const values = { ...known, ...input.values };
   const vars: Record<string, string> = {
-    ...input.values,
+    ...values,
     companyName: input.companyName || company?.name || 'The company',
     today: new Date(`${todayIst()}T00:00:00Z`).toLocaleDateString('en-GB', {
       day: 'numeric',
@@ -355,13 +407,15 @@ export async function renderAgreement(input: AgreementInput) {
     }),
     ...signerVariables(input.signers),
   };
-  const missing = templateFields(input.title, input.body).filter(
-    (k) => !input.values[k],
-  );
+  const missing = blanks.filter((k) => !values[k]);
   return {
     title: fillAgreement(input.title, vars).trim(),
     body: fillAgreement(input.body, vars).trim(),
     missing: missing.map((key) => ({ key, label: fieldLabel(key) })),
+    /** Blanks the Portal filled from the signers' records. */
+    filled: Object.keys(known).filter(
+      (k) => !input.values[k] && blanks.includes(k),
+    ),
     company,
   };
 }
@@ -404,7 +458,7 @@ export const signUrl = (origin: string, signer: { token: string }) =>
 const teamLink = (origin: string, agreement: Agreement) =>
   `${origin}/admin?tab=agreements&companyId=${agreement.companyId}&agreement=${agreement.id}`;
 
-type EmailExtra = Partial<
+export type EmailExtra = Partial<
   Pick<
     AgreementEmailContext,
     | 'reason'
@@ -413,11 +467,12 @@ type EmailExtra = Partial<
     | 'waitingOn'
     | 'partiesSigned'
     | 'pdf'
+    | 'handedOverTo'
   >
 >;
 
 /** Emails the given signers; returns the ones that failed, with why. */
-async function emailSigners(
+export async function emailSigners(
   agreement: Agreement,
   signers: AgreementSigner[],
   kind: AgreementEmailKind,
@@ -462,9 +517,9 @@ async function emailSigners(
 }
 
 /** The sender and anyone on copy, when it isn't one of the signers. */
-async function emailTeam(
+export async function emailTeam(
   agreement: Agreement,
-  kind: 'completed' | 'declined' | 'signed',
+  kind: 'completed' | 'declined' | 'signed' | 'handedOver',
   origin: string,
   extra: EmailExtra = {},
 ) {
@@ -476,7 +531,12 @@ async function emailTeam(
   const signerEmails = new Set(agreement.signers.map((s) => s.email));
   const to = Array.from(
     new Set(
-      [sender.email, ...(kind === 'signed' ? [] : (agreement.ccEmails ?? []))]
+      [
+        sender.email,
+        ...(kind === 'signed' || kind === 'handedOver'
+          ? []
+          : (agreement.ccEmails ?? [])),
+      ]
         .filter(Boolean)
         .map((e) => e!.toLowerCase()),
     ),
@@ -584,6 +644,12 @@ export async function agreementPdf(agreement: Agreement) {
               saved: !!s.signature.saved,
             }
           : null,
+        details: s.signature
+          ? fieldsFor(agreement.fields, agreement.signers, s.id).map((f) => ({
+              label: f.label,
+              text: fieldText(f, s.values?.[f.id]),
+            }))
+          : [],
       })),
     history: agreement.history.map((e) => ({
       at: e.at,
@@ -599,15 +665,32 @@ export async function sendAgreement(
   actor: SessionUser,
   input: AgreementInput,
   origin: string,
+  opts: { rolloutId?: string | null; templateVersion?: number | null } = {},
 ) {
   await requireAgreements(actor, input.companyId, 'agreements:create');
-  const rendered = await renderAgreement(input);
+  const rendered = await renderAgreement(input, {
+    pay: await seesConfidential(actor, input.companyId),
+  });
   if (rendered.missing.length)
     throw new AgreementError(
       400,
       `Fill in: ${rendered.missing.map((m) => m.label).join(', ')}.`,
     );
   const at = nowIso();
+  const previous: Agreement | null = input.previousId
+    ? await db.agreement.findFirst({
+        where: { id: input.previousId, companyId: input.companyId },
+      })
+    : null;
+  if (input.previousId && !previous)
+    throw new AgreementError(404, 'The agreement it follows was not found.');
+  const template = input.templateId
+    ? await db.agreementTemplate.findFirst({
+        where: { id: input.templateId, companyId: input.companyId },
+      })
+    : null;
+  const templateVersion =
+    opts.templateVersion ?? (template ? (template.version ?? 1) : null);
 
   // Who signs for the company, by the document type's rule.
   const [companySigner, settings] = await Promise.all([
@@ -687,9 +770,24 @@ export async function sendAgreement(
   const signers = draft.signers.map((s) =>
     up.has(s.id) ? { ...s, status: SIGNER_STATUS.PENDING, notifiedAt: at } : s,
   );
+  // Pay letters, and anything asking for bank or ID details, by default.
   const confidential =
-    input.confidential ?? !!settings.types[input.category]?.confidential;
+    input.confidential ??
+    (!!settings.types[input.category]?.confidential ||
+      !!previous?.confidential ||
+      input.fields.some(isSensitiveField));
   const countersigner = signers.find((s) => s.company);
+  const partyCount = partiesOf(signers).length;
+  const fields = input.fields.filter((f) => f.signer <= partyCount);
+  const linkText = previous
+    ? `. ${
+        input.linkKind === 'amendment'
+          ? 'Amends'
+          : input.linkKind === 'resend'
+            ? 'Sent again in place of'
+            : 'Renews'
+      } “${previous.title}”`
+    : '';
 
   const created: Agreement = await db.agreement.create({
     data: {
@@ -710,6 +808,15 @@ export async function sendAgreement(
       sentAt: at,
       completedAt: null,
       createdById: actor.id,
+      fields,
+      templateVersion,
+      endsOn: input.endsOn,
+      endAlerts: [],
+      previousId: previous?.id ?? null,
+      linkKind: previous ? input.linkKind : null,
+      rolloutId: opts.rolloutId ?? null,
+      blocking: input.blocking,
+      corrections: [],
       history: [
         {
           at,
@@ -719,7 +826,11 @@ export async function sendAgreement(
             .map((s) => s.name)
             .join(', ')} to sign${input.ordered ? ', in order' : ''}${
             countersigner ? `; ${countersigner.name} signs for the company` : ''
-          }${confidential ? '. Marked confidential' : ''}`,
+          }${confidential ? '. Marked confidential' : ''}${linkText}${
+            templateVersion && template
+              ? `. From the template “${template.name}”, version ${templateVersion}`
+              : ''
+          }`,
         },
       ],
       revision: 0,
@@ -748,9 +859,9 @@ export async function agreementByToken(token: string) {
   return signer ? { agreement, signer } : null;
 }
 
-type Meta = { ip: string | null; userAgent: string | null };
+export type Meta = { ip: string | null; userAgent: string | null };
 
-const metaOf = (meta: Meta) => ({
+export const metaOf = (meta: Meta) => ({
   ip: meta.ip,
   userAgent: meta.userAgent?.slice(0, 300) ?? null,
 });
@@ -785,6 +896,19 @@ export async function signingState(
   // the one they saved.
   const isMe = await isSignerUser(viewer, signer);
   const saved = isMe && viewer ? await getSavedSignature(viewer.id) : null;
+  const fields = agreement.fields ?? [];
+  const lastFix = (agreement.corrections ?? [])
+    .filter((c) => c.kind === 'text')
+    .at(-1);
+  // What each signer filled in shows to everyone once they signed, like the
+  // signature; the company's signer sees it before countersigning.
+  const detailsOf = (s: AgreementSigner) =>
+    s.signature && (done || s.id === signer.id || signer.company)
+      ? fieldsFor(fields, agreement.signers, s.id).map((f) => ({
+          label: f.label,
+          text: fieldText(f, s.values?.[f.id]),
+        }))
+      : [];
   return {
     token,
     title: agreement.title,
@@ -820,6 +944,10 @@ export async function signingState(
       company: !!signer.company,
       status: signer.status,
       canSign: myTurn,
+      /** What they fill in before signing. */
+      fields: fieldsFor(fields, agreement.signers, signer.id),
+      values: signer.values ?? {},
+      handedOverFrom: signer.handedOverFrom ?? null,
       waitingOn:
         agreement.status === AGREEMENT_STATUS.SENT && !myTurn
           ? up.map((s) => s.name)
@@ -849,8 +977,10 @@ export async function signingState(
             }
           : null,
         declinedAt: s.declinedAt ?? null,
+        details: detailsOf(s),
       })),
     ordered: agreement.ordered,
+    correctedAt: lastFix?.at ?? null,
     history: done
       ? agreement.history.map((e) => ({ at: e.at, text: e.text, ip: e.ip }))
       : [],
@@ -907,7 +1037,7 @@ async function recordSignature(
   signature: Omit<AgreementSignature, 'at' | 'ip' | 'userAgent' | 'provider'>,
   meta: Meta,
   origin: string,
-  check: { hash?: unknown; typed?: string } = {},
+  check: { hash?: unknown; typed?: string; values?: unknown } = {},
 ) {
   let notify: AgreementSigner[] = [];
   let justSigned = '';
@@ -928,6 +1058,20 @@ async function recordSignature(
         400,
         `Type your full name exactly as it reads here: ${s.name}`,
       );
+    // What they fill in before signing.
+    const mine = fieldsFor(a.fields, a.signers, s.id);
+    if (check.values === undefined && mine.some((f) => f.required))
+      throw new AgreementError(
+        409,
+        'This one asks you to fill in some details first. Open it to sign.',
+      );
+    let values: Record<string, string> = {};
+    try {
+      values = mine.length ? checkValues(mine, check.values) : {};
+    } catch (e) {
+      throw new AgreementError(400, (e as Error).message);
+    }
+    const filled = Object.keys(values).length;
     justSigned = s.name;
     const at = nowIso();
     let signers = a.signers.map((x) =>
@@ -936,6 +1080,7 @@ async function recordSignature(
             ...x,
             status: SIGNER_STATUS.SIGNED,
             viewedAt: x.viewedAt ?? at,
+            ...(mine.length ? { values } : {}),
             signature: {
               ...signature,
               at,
@@ -949,9 +1094,11 @@ async function recordSignature(
       {
         at,
         signerId: s.id,
-        text: signature.saved
-          ? `${s.name} approved with their saved signature${s.company ? ', for the company' : ''}`
-          : `${s.name} signed${signature.method === 'drawn' ? ' (drawn signature)' : ''}${s.company ? ', for the company' : ''}`,
+        text: `${
+          signature.saved
+            ? `${s.name} approved with their saved signature${s.company ? ', for the company' : ''}`
+            : `${s.name} signed${signature.method === 'drawn' ? ' (drawn signature)' : ''}${s.company ? ', for the company' : ''}`
+        }${filled ? `, filling in ${filled} ${filled === 1 ? 'detail' : 'details'}` : ''}`,
         ...metaOf(meta),
       },
     ];
@@ -1034,6 +1181,7 @@ export async function signAgreement(
     image?: unknown;
     hash?: unknown;
     save?: unknown;
+    values?: unknown;
   },
   meta: Meta,
   origin: string,
@@ -1060,7 +1208,7 @@ export async function signAgreement(
     },
     meta,
     origin,
-    { hash: input.hash, typed },
+    { hash: input.hash, typed, values: input.values ?? {} },
   );
   if (
     input.save === true &&
@@ -1084,6 +1232,8 @@ export async function approveAgreement(
   meta: Meta,
   origin: string,
   signerId?: string | null,
+  /** What they filled in, from the signing page; none from Home. */
+  values?: unknown,
 ) {
   const candidates: AgreementSigner[] = [];
   for (const s of agreement.signers)
@@ -1111,6 +1261,7 @@ export async function approveAgreement(
     },
     meta,
     origin,
+    { values },
   );
 }
 
@@ -1349,7 +1500,7 @@ export async function agreementView(agreement: Agreement, origin: string) {
   const signed = agreement.signers.filter((s) => s.signature).length;
   return {
     id: agreement.id,
-    source: 'portal' as 'portal' | 'onboarding',
+    source: 'portal' as 'portal' | 'onboarding' | 'imported',
     companyId: agreement.companyId,
     title: agreement.title,
     category: agreement.category,
@@ -1391,6 +1542,15 @@ export async function agreementView(agreement: Agreement, origin: string) {
       agreement.status === AGREEMENT_STATUS.COMPLETED
         ? pdfUrlFor(agreement.id)
         : null,
+    endsOn: agreement.endsOn ?? null,
+    previousId: agreement.previousId ?? null,
+    linkKind: agreement.linkKind ?? null,
+    rolloutId: agreement.rolloutId ?? null,
+    templateId: agreement.templateId ?? null,
+    templateVersion: agreement.templateVersion ?? null,
+    blocking: !!agreement.blocking,
+    fieldCount: (agreement.fields ?? []).length,
+    corrected: (agreement.corrections ?? []).length > 0,
   };
 }
 
@@ -1399,8 +1559,77 @@ export type AgreementView = Awaited<ReturnType<typeof agreementView>>;
 /** The full record: the text, signatures and the audit trail. */
 export async function agreementDetail(agreement: Agreement, origin: string) {
   const view = await agreementView(agreement, origin);
+  const [previous, next, template] = await Promise.all([
+    agreement.previousId
+      ? db.agreement.findFirst({
+          where: { id: agreement.previousId, companyId: agreement.companyId },
+          select: { id: true, title: true, status: true, completedAt: true },
+        })
+      : null,
+    db.agreement.findMany({
+      where: { previousId: agreement.id, companyId: agreement.companyId },
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        linkKind: true,
+        sentAt: true,
+      },
+    }),
+    agreement.templateId
+      ? db.agreementTemplate.findFirst({
+          where: { id: agreement.templateId },
+          select: { id: true, name: true, version: true },
+        })
+      : null,
+  ]);
+  const fields = agreement.fields ?? [];
+  const parties = partiesOf(agreement.signers);
   return {
     ...view,
+    fields: fields.map((f) => ({
+      ...f,
+      signerName: parties[f.signer - 1]?.name ?? null,
+    })),
+    details: agreement.signers
+      .filter((s) => s.values && Object.keys(s.values).length)
+      .map((s) => ({
+        signerId: s.id,
+        name: s.name,
+        values: fieldsFor(fields, agreement.signers, s.id).map((f) => ({
+          label: f.label,
+          text: fieldText(f, s.values?.[f.id]),
+        })),
+      })),
+    corrections: (agreement.corrections ?? []).map((c) => ({
+      at: c.at,
+      kind: c.kind,
+      note: c.note ?? null,
+      previousTitle: c.previous?.title ?? null,
+      previousHash: c.previous?.hash ?? null,
+      signer: c.signer ?? null,
+    })),
+    previous: previous
+      ? {
+          id: previous.id as string,
+          title: previous.title as string,
+          status: previous.status as AGREEMENT_STATUS,
+        }
+      : null,
+    next: (next as Agreement[]).map((n) => ({
+      id: n.id,
+      title: n.title,
+      status: n.status,
+      linkKind: n.linkKind ?? null,
+      sentAt: n.sentAt,
+    })),
+    template: template
+      ? {
+          id: template.id as string,
+          name: template.name as string,
+          currentVersion: (template.version as number) ?? 1,
+        }
+      : null,
     body: agreement.body,
     hash: agreement.hash,
     hashOk: agreement.hash === sha256(agreement.body),
@@ -1551,6 +1780,15 @@ export async function onboardingRows(
         signers,
         link: `${origin}/hiring?view=onboarding&company=${companyId}&hire=${o.id}`,
         pdfUrl: d.signature ? pdfUrlFor(ref) : null,
+        endsOn: null,
+        previousId: null,
+        linkKind: null,
+        rolloutId: null,
+        templateId: null,
+        templateVersion: null,
+        blocking: false,
+        fieldCount: 0,
+        corrected: false,
         body: d.body,
       };
     }),
@@ -1592,10 +1830,14 @@ export function templateView(t: AgreementTemplate) {
     title: t.title,
     body: t.body,
     signerRoles: t.signerRoles ?? [],
-    fields: templateFields(t.title, t.body).map((key) => ({
+    /** The blanks the sender fills in. */
+    blanks: templateFields(t.title, t.body).map((key) => ({
       key,
       label: fieldLabel(key),
     })),
+    /** What the signers fill in before signing. */
+    fields: t.fields ?? [],
+    version: t.version ?? 1,
     updatedAt: (t.updatedAt as string) ?? null,
   };
 }
@@ -1619,6 +1861,7 @@ export async function listTemplates(
       title: s.title,
       body: s.body,
       signerRoles: s.signerRoles,
+      fields: s.fields ?? [],
       createdById: '',
     }),
     builtIn: true,
@@ -1647,8 +1890,17 @@ export function parseTemplateInput(raw: any) {
       ? raw.category
       : AGREEMENT_CATEGORY.OTHER,
     signerRoles: signerRoles as string[],
+    fields: parseFields(raw?.fields, MAX_SIGNERS),
   };
 }
+
+const sameWording = (
+  a: { name: string; title: string; body: string; fields?: AgreementField[] },
+  b: { name: string; title: string; body: string; fields?: AgreementField[] },
+) =>
+  a.title === b.title &&
+  a.body === b.body &&
+  JSON.stringify(a.fields ?? []) === JSON.stringify(b.fields ?? []);
 
 export async function saveTemplate(
   actor: SessionUser,
@@ -1659,29 +1911,122 @@ export async function saveTemplate(
   await requireAgreements(actor, companyId, 'agreements:edit');
   const input = parseTemplateInput(raw);
   const at = nowIso();
+  // Every change of wording is a new version; the old ones are kept, so an
+  // agreement always shows the wording it was sent from.
+  const snapshot = (t: AgreementTemplate, version: number) =>
+    db.agreementTemplateVersion.create({
+      data: {
+        templateId: t.id,
+        companyId,
+        version,
+        name: t.name,
+        title: t.title,
+        body: t.body,
+        fields: t.fields ?? [],
+        savedById: actor.id,
+        createdAt: at,
+        updatedAt: at,
+      },
+    });
   if (id) {
     const found: AgreementTemplate | null =
       await db.agreementTemplate.findFirst({ where: { id, companyId } });
     if (!found) throw new AgreementError(404, 'Template not found.');
-    return templateView(
-      await db.agreementTemplate.update({
-        where: { id },
-        data: { ...input, updatedById: actor.id, updatedAt: at },
-      }),
-    );
-  }
-  return templateView(
-    await db.agreementTemplate.create({
+    const current = found.version ?? 1;
+    const changed = !sameWording(found, input);
+    const updated: AgreementTemplate = await db.agreementTemplate.update({
+      where: { id },
       data: {
         ...input,
-        companyId,
-        createdById: actor.id,
-        createdAt: at,
+        version: changed ? current + 1 : current,
+        updatedById: actor.id,
         updatedAt: at,
       },
-    }),
-  );
+    });
+    if (changed) await snapshot(updated, current + 1);
+    return templateView(updated);
+  }
+  const created: AgreementTemplate = await db.agreementTemplate.create({
+    data: {
+      ...input,
+      version: 1,
+      companyId,
+      createdById: actor.id,
+      createdAt: at,
+      updatedAt: at,
+    },
+  });
+  await snapshot(created, 1);
+  return templateView(created);
 }
+
+/**
+ * Every saved wording of a template, newest first, with how many agreements
+ * went out with each. Templates saved before versions existed start at 1.
+ */
+export async function templateVersions(
+  actor: SessionUser,
+  companyId: string,
+  templateId: string,
+) {
+  await requireAgreements(actor, companyId, 'agreements:read');
+  const t: AgreementTemplate | null = await db.agreementTemplate.findFirst({
+    where: { id: templateId, companyId },
+  });
+  if (!t) throw new AgreementError(404, 'Template not found.');
+  const [saved, sent]: [AgreementTemplateVersion[], Agreement[]] =
+    await Promise.all([
+      db.agreementTemplateVersion.findMany({
+        where: { templateId, companyId },
+        orderBy: { version: 'desc' },
+      }),
+      db.agreement.findMany({
+        where: { templateId, companyId },
+        select: { id: true, templateVersion: true },
+      }),
+    ]);
+  const versions = saved.length
+    ? saved
+    : [
+        {
+          id: `${t.id}:1`,
+          templateId,
+          companyId,
+          version: t.version ?? 1,
+          name: t.name,
+          title: t.title,
+          body: t.body,
+          fields: t.fields ?? [],
+          savedById: t.updatedById ?? t.createdById,
+          createdAt: t.updatedAt ?? t.createdAt,
+        } as AgreementTemplateVersion,
+      ];
+  const savers = await db.user.findMany({
+    where: {
+      id: { in: Array.from(new Set(versions.map((v) => v.savedById))) },
+    },
+    select: { id: true, name: true },
+  });
+  return versions
+    .slice()
+    .sort((a, b) => b.version - a.version)
+    .map((v) => ({
+      version: v.version,
+      current: v.version === (t.version ?? 1),
+      title: v.title,
+      body: v.body,
+      fields: v.fields ?? [],
+      savedAt: String(v.createdAt ?? ''),
+      savedBy:
+        savers.find((u: { id: string }) => u.id === v.savedById)?.name ??
+        'Someone',
+      sent: sent.filter((a) => (a.templateVersion ?? 1) === v.version).length,
+    }));
+}
+
+export type TemplateVersionView = Awaited<
+  ReturnType<typeof templateVersions>
+>[number];
 
 export async function deleteTemplate(
   actor: SessionUser,

@@ -17,7 +17,13 @@ export type AgreementEmailKind =
   | 'signed'
   | 'completed'
   | 'declined'
-  | 'voided';
+  | 'voided'
+  /** The text changed after it went out: read it again, and sign. */
+  | 'corrected'
+  /** To the team: a signer handed it over to someone else. */
+  | 'handedOver'
+  /** To the team: it ends soon (30 or 7 days). */
+  | 'ending';
 
 export interface AgreementEmailContext {
   kind: AgreementEmailKind;
@@ -46,6 +52,11 @@ export interface AgreementEmailContext {
   forTeam?: boolean;
   /** The signed PDF, for `completed`. */
   pdf?: { filename: string; base64: string } | null;
+  /** For `handedOver`: who has it now. */
+  handedOverTo?: string | null;
+  /** For `ending`: the last day, and how many days are left. */
+  endsOn?: string | null;
+  daysLeft?: number | null;
 }
 
 export function agreementEmail(ctx: AgreementEmailContext): {
@@ -148,6 +159,41 @@ ${sign}`,
 ${ctx.declinedBy ?? 'A signer'} declined to sign "${ctx.title}".${ctx.reason ? `\n\nTheir reason: ${ctx.reason}` : ''}
 
 ${ctx.forTeam ? 'Nobody else can sign it now. You can send a corrected one from the portal.' : `Nobody else can sign it now, and you don't need to do anything. ${ctx.companyName} may send a corrected one.`}
+
+${ctx.signUrl}`,
+      };
+    case 'corrected':
+      return {
+        subject: `Updated: please review ${ctx.title}`,
+        text: `${hi}
+
+${ctx.sender.name} at ${ctx.companyName} corrected "${ctx.title}" before everyone signed.${ctx.reason ? `\n\nWhat changed: ${ctx.reason}` : ''}
+
+Please read it again and sign. If you signed the earlier version, that signature no longer counts for this one:
+
+${ctx.signUrl}
+${deadline}
+${sign}`,
+      };
+    case 'handedOver':
+      return {
+        subject: `Handed over: ${ctx.title}`,
+        text: `${hi}
+
+${ctx.declinedBy ?? 'A signer'} handed "${ctx.title}" over to ${ctx.handedOverTo ?? 'someone else'} to sign instead.${ctx.reason ? `\n\nTheir reason: ${ctx.reason}` : ''}
+
+${ctx.handedOverTo ?? 'They'} got their own link. If that's not right, you can change the signer from the portal:
+
+${ctx.signUrl}`,
+      };
+    case 'ending':
+      return {
+        subject: `Ends in ${ctx.daysLeft} days: ${ctx.title}`,
+        text: `${hi}
+
+"${ctx.title}" ends on ${ctx.endsOn ? formatDay(ctx.endsOn) : 'its end date'}, ${ctx.daysLeft} days from now.
+
+If it should go on, renew it from the portal: the renewal starts from the same text and signers, and stays linked to this one.
 
 ${ctx.signUrl}`,
       };

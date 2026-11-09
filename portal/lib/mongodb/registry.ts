@@ -96,6 +96,9 @@ export const modelMetaMap = defineModelRegistry({
   agreementTemplate: { collection: 'AgreementTemplate' },
   agreementSettings: { collection: 'AgreementSettings' },
   savedSignature: { collection: 'SavedSignature' },
+  agreementTemplateVersion: { collection: 'AgreementTemplateVersion' },
+  importedDocument: { collection: 'ImportedDocument' },
+  policyRollout: { collection: 'PolicyRollout' },
 });
 
 export type ModelName = keyof typeof modelMetaMap;

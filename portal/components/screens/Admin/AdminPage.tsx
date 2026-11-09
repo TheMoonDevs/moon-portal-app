@@ -16,6 +16,7 @@ import { AdminUsers } from './AdminUsers';
 import {
   AdminAgreements,
   AdminAgreementTemplates,
+  AdminRequiredDocuments,
   AdminSigningRules,
 } from './Agreements/AdminAgreements';
 import { AdminBadges } from './Badges/AdminBadges';
@@ -296,6 +297,13 @@ export const AdminPage = () => {
       case 'agreement-templates':
         return (
           <AdminAgreementTemplates
+            selectedCompanyId={companyId}
+            onSelectCompany={selectCompany}
+          />
+        );
+      case 'required-documents':
+        return (
+          <AdminRequiredDocuments
             selectedCompanyId={companyId}
             onSelectCompany={selectCompany}
           />

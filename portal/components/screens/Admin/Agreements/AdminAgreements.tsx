@@ -4,13 +4,18 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { docTypeLabel, signerRuleLabel } from '@/lib/agreements/docTypes';
-import type { AgreementDetail, TemplateView } from '@/lib/agreements/server';
+import type {
+  AgreementDetail,
+  TemplateVersionView,
+  TemplateView,
+} from '@/lib/agreements/server';
 import type { SettingsView } from '@/lib/agreements/signers';
 import {
   AGREEMENT_CATEGORIES,
   AUTO_PLACEHOLDERS,
   CATEGORY_LABEL,
   fieldLabel,
+  isPersonKey,
   templateFields,
 } from '@/lib/agreements/templates';
 import type { VaultRow } from '@/lib/agreements/vault';
@@ -18,6 +23,8 @@ import { cn } from '@/lib/utils';
 import {
   AGREEMENT_CATEGORY,
   AGREEMENT_STATUS,
+  type AgreementField,
+  type AgreementLinkKind,
   type CompanySignerRule,
   SIGNER_STATUS,
 } from '@/models/agreements';
@@ -45,8 +52,13 @@ import {
   ToggleSwitch,
 } from '../shared/AdminUI';
 import { CompanyPicker, errorText, NeedsCompany } from '../Workspace/shared';
+import { type FieldDraft, FieldsEditor, toDrafts } from './FieldsEditor';
+import { ImportDialog } from './ImportDialog';
 import { day, SIGNER_META, STATUS_META, when } from './meta';
+import { OverviewView } from './OverviewView';
 import { PeopleView } from './PeopleView';
+import { PoliciesView } from './PoliciesView';
+import { RequiredDocsView } from './RequiredDocsView';
 import { SigningRulesView } from './SigningRulesView';
 import { VaultView } from './VaultView';
 
@@ -74,6 +86,34 @@ type CompanyChoice = 'rules' | CompanySignerRule;
 export type SendPrefill = {
   to?: { name: string; email: string };
   category?: AGREEMENT_CATEGORY;
+  /** A renewal, amendment or fresh copy of an agreement, linked to it. */
+  from?: {
+    previousId: string;
+    linkKind: AgreementLinkKind;
+    previousTitle: string;
+    title: string;
+    body: string;
+    category: AGREEMENT_CATEGORY;
+    templateId: string | null;
+    ordered: boolean;
+    confidential: boolean;
+    signers: SignerRow[];
+    fields: AgreementField[];
+  };
+};
+
+const LINK_LABEL: Record<AgreementLinkKind, string> = {
+  renewal: 'Renews',
+  amendment: 'Amends',
+  resend: 'Sent again from',
+};
+
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** signer2Address → 2 and Address. */
+const personBlank = (key: string) => {
+  const m = /^signer(\d+)(\w+)$/.exec(key);
+  return m ? { n: Number(m[1]), fact: m[2] } : null;
 };
 
 const SendDialog = ({
@@ -113,33 +153,54 @@ const SendDialog = ({
   const [companyFirst, setCompanyFirst] = useState(false);
   const [confidential, setConfidential] = useState<boolean | null>(null);
   const [editText, setEditText] = useState(false);
+  const [fieldDrafts, setFieldDrafts] = useState<FieldDraft[]>([]);
+  const [endsOn, setEndsOn] = useState('');
+  const [blocking, setBlocking] = useState(false);
+  // What the Portal knows about each signer, by email, for blanks about them.
+  const [facts, setFacts] = useState<Record<string, Record<string, string>>>(
+    {},
+  );
   const [preview, setPreview] = useState<{
     title: string;
     body: string;
+    filled: string[];
   } | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    setStep('pick');
-    setTemplateId(null);
+    const from = prefill?.from;
+    setStep(from ? 'write' : 'pick');
+    setTemplateId(from?.templateId ?? null);
     setPreview(null);
     setEditText(false);
     setValues({});
     setMessage('');
     setExpiresOn('');
+    setEndsOn('');
+    setBlocking(false);
     setCc('');
-    setOrdered(false);
+    setOrdered(from?.ordered ?? false);
     setCompanyChoice('rules');
     setCompanyFirst(false);
-    setConfidential(null);
-  }, [open]);
+    setConfidential(from ? from.confidential : null);
+    setFieldDrafts(toDrafts(from?.fields));
+    if (from) {
+      setTitle(from.title);
+      setBody(from.body);
+      setCategory(from.category);
+      setSigners(from.signers.length ? from.signers : [blankSigner(1)]);
+      // An amendment usually changes the words: open the text.
+      setEditText(from.linkKind === 'amendment');
+    }
+  }, [open, prefill]);
 
   const pick = (t: TemplateView) => {
     setTemplateId(t.id);
     setTitle(t.title);
     setBody(t.body);
     setCategory(t.category);
+    setFieldDrafts(toDrafts(t.fields));
     const rows = t.signerRoles.length
       ? t.signerRoles.map((r, i) => blankSigner(i + 1, r))
       : [blankSigner(1)];
@@ -181,6 +242,41 @@ const SendDialog = ({
   const isConfidential = confidential ?? typeConfidential;
 
   const fields = useMemo(() => templateFields(title, body), [title, body]);
+  const wantsFacts = fields.some(isPersonKey);
+
+  // Blanks about a signer fill from their Portal record when there is one.
+  const emails = signers
+    .map((s) => s.email.trim().toLowerCase())
+    .filter((e) => EMAIL.test(e));
+  const emailKey = emails.join(',');
+  useEffect(() => {
+    if (!open || !wantsFacts) return;
+    const todo = emailKey.split(',').filter((e) => e && !(e in facts));
+    if (!todo.length) return;
+    const timer = setTimeout(() => {
+      todo.forEach((email) =>
+        PortalSdk.getData(
+          `/api/agreements/autofill?companyId=${companyId}&email=${encodeURIComponent(email)}`,
+          null,
+        )
+          .then((res) =>
+            setFacts((f) => ({ ...f, [email]: res?.data?.facts ?? {} })),
+          )
+          .catch(() => setFacts((f) => ({ ...f, [email]: {} }))),
+      );
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [open, wantsFacts, emailKey, companyId, facts]);
+
+  const known = (key: string) => {
+    const p = personBlank(key);
+    if (!p || !isPersonKey(key)) return null;
+    const email = signers[p.n - 1]?.email.trim().toLowerCase();
+    return (email && facts[email]?.[p.fact]) || null;
+  };
+  const parties = signers.map(
+    (s, i) => s.name.trim() || s.role.trim() || `Signer ${i + 1}`,
+  );
 
   const payload = () => ({
     companyId,
@@ -201,15 +297,23 @@ const SendDialog = ({
     companyFirst: ordered && companyFirst,
     confidential: confidential,
     expiresOn: expiresOn || null,
+    fields: fieldDrafts.filter((f) => f.label.trim()),
+    endsOn: endsOn || null,
+    blocking: category === AGREEMENT_CATEGORY.POLICY && blocking,
+    previousId: prefill?.from?.previousId ?? null,
+    linkKind: prefill?.from?.linkKind ?? null,
     ccEmails: cc
       .split(/[,\s]+/)
       .map((e) => e.trim())
       .filter(Boolean),
   });
 
-  const missing = fields.filter((f) => !values[f]?.trim());
+  const missing = fields.filter((f) => !values[f]?.trim() && !known(f));
   const signersOk = signers.every(
-    (s) => s.name.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.email.trim()),
+    (s) => s.name.trim() && EMAIL.test(s.email.trim()),
+  );
+  const sensitive = fieldDrafts.some((f) =>
+    /\b(pan|aadhaar|bank|ifsc|account|passport)\b/i.test(f.label),
   );
 
   const showPreview = async () => {
@@ -219,7 +323,11 @@ const SendDialog = ({
         '/api/agreements/preview',
         payload(),
       );
-      setPreview({ title: res.data.title, body: res.data.body });
+      setPreview({
+        title: res.data.title,
+        body: res.data.body,
+        filled: res.data.filled ?? [],
+      });
       setStep('preview');
     } catch (err) {
       toast.error(errorText(err));
@@ -260,9 +368,15 @@ const SendDialog = ({
       title={
         step === 'pick'
           ? 'Send an agreement'
-          : step === 'preview'
-            ? 'Check and send'
-            : 'Who signs, and the details'
+          : prefill?.from && step === 'write'
+            ? prefill.from.linkKind === 'renewal'
+              ? 'Renew this agreement'
+              : prefill.from.linkKind === 'amendment'
+                ? 'Send an amendment'
+                : 'Send it again'
+            : step === 'preview'
+              ? 'Check and send'
+              : 'Who signs, and the details'
       }
       description={
         step === 'pick'
@@ -276,9 +390,15 @@ const SendDialog = ({
       footer={
         step === 'pick' ? null : step === 'write' ? (
           <>
-            <AdminButton tone="ghost" size="sm" onClick={() => setStep('pick')}>
-              Back
-            </AdminButton>
+            {!prefill?.from && (
+              <AdminButton
+                tone="ghost"
+                size="sm"
+                onClick={() => setStep('pick')}
+              >
+                Back
+              </AdminButton>
+            )}
             <AdminButton
               tone="primary"
               size="sm"
@@ -354,9 +474,11 @@ const SendDialog = ({
                       </span>
                       <span className="flex flex-wrap items-center gap-1.5 text-[11px] text-neutral-500">
                         <Pill>{CATEGORY_LABEL[t.category]}</Pill>
-                        {t.fields.length
-                          ? `${t.fields.length} blanks to fill`
+                        {t.blanks.length
+                          ? `${t.blanks.length} blanks to fill`
                           : 'No blanks'}
+                        {t.fields.length > 0 &&
+                          ` · they fill in ${t.fields.length}`}
                       </span>
                     </button>
                   ))}
@@ -372,6 +494,13 @@ const SendDialog = ({
 
       {step === 'write' && (
         <div className="flex flex-col gap-5">
+          {prefill?.from && (
+            <p className="flex items-center gap-2 rounded-xl border border-sky-500/20 bg-sky-500/[0.06] px-3 py-2 text-xs text-sky-200">
+              <Icon name="link" className="text-[16px]" />
+              {LINK_LABEL[prefill.from.linkKind]} “{prefill.from.previousTitle}
+              ”. The two stay linked in both audit trails.
+            </p>
+          )}
           <div className="grid gap-3 sm:grid-cols-[1fr_180px]">
             <Field label="Title" required>
               <TextInput
@@ -535,19 +664,53 @@ const SendDialog = ({
                 Fill in the blanks
               </p>
               <div className="grid gap-3 sm:grid-cols-2">
-                {fields.map((key) => (
-                  <Field key={key} label={fieldLabel(key)} required>
-                    <TextInput
-                      value={values[key] ?? ''}
-                      onChange={(e) =>
-                        setValues((v) => ({ ...v, [key]: e.target.value }))
+                {fields.map((key) => {
+                  const auto = known(key);
+                  return (
+                    <Field
+                      key={key}
+                      label={fieldLabel(key)}
+                      required={!auto}
+                      hint={
+                        auto
+                          ? 'From their Portal record. Type to change it.'
+                          : isPersonKey(key)
+                            ? 'Not in their Portal record.'
+                            : undefined
                       }
-                    />
-                  </Field>
-                ))}
+                    >
+                      <TextInput
+                        value={values[key] ?? ''}
+                        placeholder={auto ?? undefined}
+                        onChange={(e) =>
+                          setValues((v) => ({ ...v, [key]: e.target.value }))
+                        }
+                      />
+                    </Field>
+                  );
+                })}
               </div>
             </div>
           )}
+
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-medium uppercase tracking-wide text-neutral-400">
+              They fill in when signing
+            </p>
+            <FieldsEditor
+              fields={fieldDrafts}
+              onChange={setFieldDrafts}
+              parties={parties}
+            />
+            <p className="text-xs text-neutral-500">
+              {fieldDrafts.length
+                ? 'Their answers are saved with their signature and printed in the signed PDF.'
+                : 'Optional: ask for an address, PAN, bank details or a tick box.'}
+              {sensitive && !isConfidential
+                ? ' Bank and ID details make it confidential unless you turn that off.'
+                : ''}
+            </p>
+          </div>
 
           <div className="flex flex-col gap-2">
             <button
@@ -592,6 +755,15 @@ const SendDialog = ({
                 />
               </Field>
               <Field
+                label="Ends on"
+                hint="Optional. You hear 30 and 7 days before, to renew it."
+              >
+                <DateInput
+                  value={endsOn}
+                  onChange={(e) => setEndsOn(e.target.value)}
+                />
+              </Field>
+              <Field
                 label="Copy the signed agreement to"
                 hint="Emails, separated by commas."
               >
@@ -599,6 +771,14 @@ const SendDialog = ({
               </Field>
             </div>
           </div>
+          {category === AGREEMENT_CATEGORY.POLICY && (
+            <ToggleSwitch
+              checked={blocking}
+              onChange={setBlocking}
+              label="They sign it before using the Portal"
+              description="Until they do, the Portal opens on this document."
+            />
+          )}
         </div>
       )}
 
@@ -646,8 +826,43 @@ const SendDialog = ({
                 Confidential
               </Pill>
             )}
+            {endsOn && <Pill icon="event">Ends {day(endsOn)}</Pill>}
           </div>
+          {preview.filled.length > 0 && (
+            <p className="flex items-start gap-1.5 text-xs text-neutral-400">
+              <Icon
+                name="auto_awesome"
+                className="text-[15px] text-violet-300"
+              />
+              Filled from their Portal records:{' '}
+              {preview.filled.map(fieldLabel).join(', ')}.
+            </p>
+          )}
           <Paper title={preview.title} body={preview.body} />
+          {fieldDrafts.some((f) => f.label.trim()) && (
+            <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-3">
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-400">
+                They fill in when signing
+              </p>
+              <ul className="flex flex-col gap-1 text-sm text-neutral-200">
+                {fieldDrafts
+                  .filter((f) => f.label.trim())
+                  .map((f, i) => (
+                    <li key={i} className="flex items-center gap-2">
+                      <Icon
+                        name={f.kind === 'checkbox' ? 'check_box' : 'edit'}
+                        className="text-[15px] text-neutral-500"
+                      />
+                      {f.label}
+                      <span className="text-xs text-neutral-500">
+                        {parties[Math.min(f.signer, parties.length) - 1]}
+                        {f.required ? '' : ' · optional'}
+                      </span>
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
     </AdminModal>
@@ -656,29 +871,80 @@ const SendDialog = ({
 
 /* ------------------------------ detail dialog ---------------------------- */
 
+type DetailTab = 'people' | 'details' | 'document' | 'trail';
+
+/** A renewal, amendment or fresh copy of an agreement, for the send dialog. */
+const prefillFrom = (
+  d: AgreementDetail,
+  linkKind: AgreementLinkKind,
+): SendPrefill => ({
+  from: {
+    previousId: d.id,
+    linkKind,
+    previousTitle: d.title,
+    title: d.title,
+    body: d.body,
+    category: d.category,
+    templateId: d.templateId,
+    ordered: d.ordered,
+    confidential: d.confidential,
+    // The company's signer is added again by the rules.
+    signers: d.signers
+      .filter((s) => !s.company)
+      .map((s) => ({
+        name: s.name,
+        email: s.email,
+        role: s.role ?? '',
+        order: s.order,
+      })),
+    fields: d.fields.map(({ signerName: _n, ...f }) => f),
+  },
+});
+
 const DetailDialog = ({
   id,
   onClose,
   onChanged,
+  onOpen,
+  onSendFrom,
   canEdit,
+  canCreate,
   canDelete,
 }: {
   id: string | null;
   onClose: () => void;
   onChanged: () => void;
+  /** Open a linked agreement. */
+  onOpen: (id: string) => void;
+  /** Renew, amend or send it again. */
+  onSendFrom: (prefill: SendPrefill) => void;
   canEdit: boolean;
+  canCreate: boolean;
   canDelete: boolean;
 }) => {
   const [detail, setDetail] = useState<AgreementDetail | null>(null);
-  const [tab, setTab] = useState<'people' | 'document' | 'trail'>('people');
+  const [tab, setTab] = useState<DetailTab>('people');
   const [busy, setBusy] = useState<string | null>(null);
   const [voiding, setVoiding] = useState(false);
   const [voidReason, setVoidReason] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [fixing, setFixing] = useState<{
+    signerId: string;
+    name: string;
+    email: string;
+    note: string;
+  } | null>(null);
+  const [rewriting, setRewriting] = useState<{
+    title: string;
+    body: string;
+    note: string;
+  } | null>(null);
+  const [endsOn, setEndsOn] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return setDetail(null);
     setTab('people');
+    setEndsOn(null);
     PortalSdk.getData(`/api/agreements/${id}`, null)
       .then((res) => setDetail(res.data.agreement))
       .catch((err) => {
@@ -687,8 +953,16 @@ const DetailDialog = ({
       });
   }, [id, onClose]);
 
+  const DONE: Record<string, string> = {
+    void: 'Withdrawn',
+    remind: 'Reminder sent',
+    'correct-signer': 'Signer corrected',
+    'correct-text': 'Text corrected. Signers have the new version.',
+    'end-date': 'End date saved',
+  };
+
   const act = async (key: string, data: Record<string, unknown>) => {
-    if (!detail) return;
+    if (!detail) return false;
     setBusy(key);
     try {
       const res = await PortalSdk.putData(`/api/agreements/${detail.id}`, data);
@@ -696,11 +970,12 @@ const DetailDialog = ({
       const errors: Array<{ email: string; error: string }> =
         res?.data?.emailErrors ?? [];
       if (errors.length) toast.warning(`Not sent: ${errors[0].error}`);
-      else
-        toast.success(data.action === 'void' ? 'Withdrawn' : 'Reminder sent');
+      else toast.success(DONE[String(data.action)] ?? 'Saved');
       onChanged();
+      return true;
     } catch (err) {
       toast.error(errorText(err));
+      return false;
     } finally {
       setBusy(null);
     }
@@ -754,6 +1029,40 @@ const DetailDialog = ({
                   </AdminButton>
                 )}
               <div className="flex-1" />
+              {canCreate &&
+                detail.status === AGREEMENT_STATUS.COMPLETED &&
+                !detail.rolloutId && (
+                  <>
+                    <AdminButton
+                      size="sm"
+                      tone="ghost"
+                      icon="edit_document"
+                      onClick={() =>
+                        onSendFrom(prefillFrom(detail, 'amendment'))
+                      }
+                    >
+                      Amend
+                    </AdminButton>
+                    <AdminButton
+                      size="sm"
+                      icon="autorenew"
+                      onClick={() => onSendFrom(prefillFrom(detail, 'renewal'))}
+                    >
+                      Renew
+                    </AdminButton>
+                  </>
+                )}
+              {canCreate &&
+                !open &&
+                detail.status !== AGREEMENT_STATUS.COMPLETED && (
+                  <AdminButton
+                    size="sm"
+                    icon="send"
+                    onClick={() => onSendFrom(prefillFrom(detail, 'resend'))}
+                  >
+                    Send again
+                  </AdminButton>
+                )}
               {detail.pdfUrl && (
                 <a
                   href={detail.pdfUrl}
@@ -818,10 +1127,119 @@ const DetailDialog = ({
                 onChange={setTab}
                 options={[
                   { value: 'people', label: 'Signers', icon: 'group' },
+                  ...(detail.fields.length
+                    ? [
+                        {
+                          value: 'details' as const,
+                          label: 'Filled in',
+                          icon: 'edit_note',
+                          count: detail.details.length,
+                        },
+                      ]
+                    : []),
                   { value: 'document', label: 'Document', icon: 'description' },
                   { value: 'trail', label: 'Audit trail', icon: 'history' },
                 ]}
               />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-400">
+              {detail.previous && (
+                <button
+                  type="button"
+                  onClick={() => onOpen(detail.previous!.id)}
+                  className="inline-flex items-center gap-1 rounded-full border border-sky-500/20 bg-sky-500/[0.06] px-2 py-0.5 text-sky-200 hover:border-sky-500/40"
+                >
+                  <Icon name="link" className="text-[13px]" />
+                  {LINK_LABEL[detail.linkKind ?? 'renewal']} “
+                  {detail.previous.title}”
+                </button>
+              )}
+              {detail.next.map((n) => (
+                <button
+                  key={n.id}
+                  type="button"
+                  onClick={() => onOpen(n.id)}
+                  className="inline-flex items-center gap-1 rounded-full border border-sky-500/20 bg-sky-500/[0.06] px-2 py-0.5 text-sky-200 hover:border-sky-500/40"
+                >
+                  <Icon name="link" className="text-[13px]" />
+                  {n.linkKind === 'amendment'
+                    ? 'Amended'
+                    : n.linkKind === 'resend'
+                      ? 'Sent again'
+                      : 'Renewed'}{' '}
+                  {day(n.sentAt)} · {STATUS_META[n.status].label}
+                </button>
+              ))}
+              {detail.template && (
+                <Pill icon="article">
+                  {detail.template.name}
+                  {detail.templateVersion
+                    ? `, version ${detail.templateVersion}`
+                    : ''}
+                  {detail.templateVersion &&
+                  detail.templateVersion < detail.template.currentVersion
+                    ? ` (now ${detail.template.currentVersion})`
+                    : ''}
+                </Pill>
+              )}
+              {detail.corrected && (
+                <Pill tone="warning" icon="edit_document">
+                  Corrected after sending
+                </Pill>
+              )}
+              {detail.blocking && (
+                <Pill tone="info" icon="lock_open">
+                  Signed before using the Portal
+                </Pill>
+              )}
+              {(detail.status === AGREEMENT_STATUS.COMPLETED || open) && (
+                <span className="inline-flex items-center gap-1.5">
+                  <Icon name="event" className="text-[14px]" />
+                  {endsOn !== null && canEdit ? (
+                    <>
+                      <input
+                        type="date"
+                        aria-label="Ends on"
+                        value={endsOn}
+                        onChange={(e) => setEndsOn(e.target.value)}
+                        className="h-7 rounded-md border border-white/10 bg-neutral-900 px-2 text-xs text-neutral-200"
+                      />
+                      <AdminButton
+                        size="sm"
+                        tone="ghost"
+                        loading={busy === 'end-date'}
+                        onClick={async () => {
+                          if (
+                            await act('end-date', {
+                              action: 'end-date',
+                              endsOn: endsOn || null,
+                            })
+                          )
+                            setEndsOn(null);
+                        }}
+                      >
+                        Save
+                      </AdminButton>
+                    </>
+                  ) : (
+                    <>
+                      {detail.endsOn
+                        ? `Ends ${day(detail.endsOn)}`
+                        : 'No end date'}
+                      {canEdit && (
+                        <button
+                          type="button"
+                          onClick={() => setEndsOn(detail.endsOn ?? '')}
+                          className="text-neutral-500 underline underline-offset-2 hover:text-neutral-200"
+                        >
+                          {detail.endsOn ? 'Change' : 'Set one'}
+                        </button>
+                      )}
+                    </>
+                  )}
+                </span>
+              )}
             </div>
 
             {detail.voidReason && (
@@ -899,6 +1317,20 @@ const DetailDialog = ({
                         />
                       )}
                       <div className="flex items-center gap-1">
+                        {open && canEdit && !s.signedAt && (
+                          <IconAction
+                            icon="edit"
+                            label="Fix their name or email"
+                            onClick={() =>
+                              setFixing({
+                                signerId: s.id,
+                                name: s.name,
+                                email: s.email,
+                                note: '',
+                              })
+                            }
+                          />
+                        )}
                         {up && canEdit && (
                           <IconAction
                             icon="notifications_active"
@@ -924,8 +1356,61 @@ const DetailDialog = ({
               </ul>
             )}
 
+            {tab === 'details' && (
+              <div className="flex flex-col gap-3">
+                {detail.fields.length > 0 && !detail.details.length && (
+                  <p className="text-sm text-neutral-400">
+                    Nobody has filled anything in yet. They fill in{' '}
+                    {detail.fields.map((f) => f.label).join(', ')} when they
+                    sign.
+                  </p>
+                )}
+                {detail.details.map((d) => (
+                  <div
+                    key={d.signerId}
+                    className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-3"
+                  >
+                    <p className="mb-2 text-sm font-medium text-white">
+                      {d.name}
+                    </p>
+                    <dl className="grid gap-x-4 gap-y-1.5 text-sm sm:grid-cols-[200px_1fr]">
+                      {d.values.map((v) => (
+                        <div key={v.label} className="contents">
+                          <dt className="text-neutral-500">{v.label}</dt>
+                          <dd className="whitespace-pre-line text-neutral-100">
+                            {v.text || '—'}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {tab === 'document' && (
               <div className="flex flex-col gap-2">
+                {open && canEdit && (
+                  <div className="flex items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.02] px-3 py-2 text-xs text-neutral-400">
+                    <Icon name="edit_document" className="text-[16px]" />
+                    <span className="flex-1">
+                      A typo or a wrong figure? Correct it here: everyone who
+                      signed signs the new version.
+                    </span>
+                    <AdminButton
+                      size="sm"
+                      onClick={() =>
+                        setRewriting({
+                          title: detail.title,
+                          body: detail.body,
+                          note: '',
+                        })
+                      }
+                    >
+                      Correct the text
+                    </AdminButton>
+                  </div>
+                )}
                 <Paper body={detail.body} />
                 <p
                   className={cn(
@@ -1010,6 +1495,143 @@ const DetailDialog = ({
         </Field>
       </AdminModal>
 
+      <AdminModal
+        open={!!fixing}
+        onOpenChange={(o) => !o && setFixing(null)}
+        title="Fix a signer"
+        description="A new email gets a new link, and the old one stops working."
+        icon="edit"
+        size="sm"
+        footer={
+          <>
+            <AdminButton size="sm" tone="ghost" onClick={() => setFixing(null)}>
+              Cancel
+            </AdminButton>
+            <AdminButton
+              size="sm"
+              tone="primary"
+              loading={busy === 'correct-signer'}
+              disabled={
+                !fixing?.name.trim() || !EMAIL.test(fixing?.email.trim() ?? '')
+              }
+              onClick={async () => {
+                if (!fixing) return;
+                if (
+                  await act('correct-signer', {
+                    action: 'correct-signer',
+                    ...fixing,
+                  })
+                )
+                  setFixing(null);
+              }}
+            >
+              Save and resend
+            </AdminButton>
+          </>
+        }
+      >
+        {fixing && (
+          <div className="flex flex-col gap-3">
+            <Field label="Full legal name">
+              <TextInput
+                value={fixing.name}
+                onChange={(e) => setFixing({ ...fixing, name: e.target.value })}
+              />
+            </Field>
+            <Field label="Email">
+              <TextInput
+                type="email"
+                value={fixing.email}
+                onChange={(e) =>
+                  setFixing({ ...fixing, email: e.target.value })
+                }
+              />
+            </Field>
+            <Field label="Why (in the audit trail)">
+              <TextInput
+                value={fixing.note}
+                placeholder="e.g. typo in the email"
+                onChange={(e) => setFixing({ ...fixing, note: e.target.value })}
+              />
+            </Field>
+          </div>
+        )}
+      </AdminModal>
+
+      <AdminModal
+        open={!!rewriting}
+        onOpenChange={(o) => !o && setRewriting(null)}
+        title="Correct the text"
+        description={
+          detail?.signatures.length
+            ? `${detail.signatures.map((x) => x.name).join(', ')} signed already and will be asked to sign again.`
+            : 'Signers get the corrected version by email.'
+        }
+        icon="edit_document"
+        size="lg"
+        footer={
+          <>
+            <AdminButton
+              size="sm"
+              tone="ghost"
+              onClick={() => setRewriting(null)}
+            >
+              Cancel
+            </AdminButton>
+            <AdminButton
+              size="sm"
+              tone="primary"
+              loading={busy === 'correct-text'}
+              disabled={!rewriting?.title.trim() || !rewriting?.body.trim()}
+              onClick={async () => {
+                if (!rewriting) return;
+                if (
+                  await act('correct-text', {
+                    action: 'correct-text',
+                    ...rewriting,
+                  })
+                )
+                  setRewriting(null);
+              }}
+            >
+              Send the corrected version
+            </AdminButton>
+          </>
+        }
+      >
+        {rewriting && (
+          <div className="flex flex-col gap-3">
+            <Field label="Title">
+              <TextInput
+                value={rewriting.title}
+                onChange={(e) =>
+                  setRewriting({ ...rewriting, title: e.target.value })
+                }
+              />
+            </Field>
+            <TextArea
+              value={rewriting.body}
+              onChange={(e) =>
+                setRewriting({ ...rewriting, body: e.target.value })
+              }
+              className="min-h-[360px] font-mono text-[13px]"
+            />
+            <Field
+              label="What changed"
+              hint="In the email to the signers, and the audit trail."
+            >
+              <TextInput
+                value={rewriting.note}
+                placeholder="e.g. Fixed the start date"
+                onChange={(e) =>
+                  setRewriting({ ...rewriting, note: e.target.value })
+                }
+              />
+            </Field>
+          </div>
+        )}
+      </AdminModal>
+
       <ConfirmDialog
         open={deleting}
         onOpenChange={setDeleting}
@@ -1043,10 +1665,13 @@ const TemplatesView = ({
     title: string;
     body: string;
     roles: string;
+    fields: FieldDraft[];
   } | null>(null);
-  const [mode, setMode] = useState<'edit' | 'preview'>('edit');
+  const [mode, setMode] = useState<'edit' | 'preview' | 'versions'>('edit');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [versions, setVersions] = useState<TemplateVersionView[] | null>(null);
+  const [openVersion, setOpenVersion] = useState<number | null>(null);
 
   const active =
     templates.find((t) => t.id === activeId) ?? templates[0] ?? null;
@@ -1060,9 +1685,22 @@ const TemplatesView = ({
       title: active.title,
       body: active.body,
       roles: active.signerRoles.join(', '),
+      fields: toDrafts(active.fields),
     });
     setMode('edit');
+    setVersions(null);
+    setOpenVersion(null);
   }, [active]);
+
+  useEffect(() => {
+    if (mode !== 'versions' || !active || active.builtIn) return;
+    PortalSdk.getData(
+      `/api/agreements/templates?companyId=${companyId}&versions=${active.id}`,
+      null,
+    )
+      .then((res) => setVersions(res?.data?.versions ?? []))
+      .catch((err) => toast.error(errorText(err)));
+  }, [mode, active, companyId]);
 
   const save = async () => {
     if (!draft) return;
@@ -1079,8 +1717,14 @@ const TemplatesView = ({
           .split(',')
           .map((r) => r.trim())
           .filter(Boolean),
+        fields: draft.fields.filter((f) => f.label.trim()),
       });
-      toast.success('Template saved');
+      const v = res.data.template.version;
+      toast.success(
+        draft.id && active && v > active.version
+          ? `Saved as version ${v}. Agreements already sent keep their wording.`
+          : 'Template saved',
+      );
       setActiveId(res.data.template.id);
       onChanged();
     } catch (err) {
@@ -1134,8 +1778,14 @@ const TemplatesView = ({
       title: 'Agreement',
       body: '# Agreement\n\nThis agreement is made on {{today}} between **{{companyName}}** and **{{signer1Name}}**.\n\n',
       roles: '',
+      fields: [],
     });
   };
+
+  const parties = (draft?.roles ?? '')
+    .split(',')
+    .map((r) => r.trim())
+    .filter(Boolean);
 
   return (
     <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
@@ -1167,7 +1817,7 @@ const TemplatesView = ({
             </span>
             <span className="flex items-center gap-1.5 text-[11px] text-neutral-500">
               <Pill tone={t.builtIn ? 'neutral' : 'info'}>
-                {t.builtIn ? 'Starter draft' : 'Yours'}
+                {t.builtIn ? 'Starter draft' : `Yours · v${t.version}`}
               </Pill>
               {CATEGORY_LABEL[t.category]}
             </span>
@@ -1229,6 +1879,15 @@ const TemplatesView = ({
               options={[
                 { value: 'edit', label: 'Edit', icon: 'edit' },
                 { value: 'preview', label: 'Preview', icon: 'visibility' },
+                ...(draft.id
+                  ? [
+                      {
+                        value: 'versions' as const,
+                        label: 'Versions',
+                        icon: 'history',
+                      },
+                    ]
+                  : []),
               ]}
             />
             <div className="flex-1" />
@@ -1240,8 +1899,78 @@ const TemplatesView = ({
               … Any other {'{{word}}'} is a blank to fill when sending.
             </span>
           </div>
-          {mode === 'edit' ? (
+          {mode === 'versions' ? (
             <div className="p-4">
+              {!versions ? (
+                <SkeletonRows rows={2} />
+              ) : (
+                <ol className="flex flex-col gap-2">
+                  {versions.map((v) => (
+                    <li
+                      key={v.version}
+                      className="rounded-xl border border-white/[0.07] bg-white/[0.02]"
+                    >
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setOpenVersion(
+                            openVersion === v.version ? null : v.version,
+                          )
+                        }
+                        className="flex w-full items-center gap-3 px-3 py-2.5 text-left"
+                      >
+                        <span className="text-sm font-medium text-white">
+                          Version {v.version}
+                        </span>
+                        {v.current && <Pill tone="positive">Current</Pill>}
+                        <span className="flex-1 truncate text-xs text-neutral-500">
+                          {when(v.savedAt)} · {v.savedBy}
+                        </span>
+                        <span className="text-xs text-neutral-400">
+                          {v.sent} sent
+                        </span>
+                        <Icon
+                          name={
+                            openVersion === v.version
+                              ? 'expand_less'
+                              : 'expand_more'
+                          }
+                          className="text-[18px] text-neutral-500"
+                        />
+                      </button>
+                      {openVersion === v.version && (
+                        <div className="flex flex-col gap-2 border-t border-white/[0.07] p-3">
+                          <Paper title={v.title} body={v.body} />
+                          {canEdit && !v.current && (
+                            <AdminButton
+                              size="sm"
+                              icon="restore"
+                              className="self-end"
+                              onClick={() => {
+                                setDraft({
+                                  ...draft,
+                                  title: v.title,
+                                  body: v.body,
+                                  fields: toDrafts(v.fields),
+                                });
+                                setMode('edit');
+                                toast.message(
+                                  `Version ${v.version} is in the editor. Save to make it the current one.`,
+                                );
+                              }}
+                            >
+                              Start from this version
+                            </AdminButton>
+                          )}
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
+          ) : mode === 'edit' ? (
+            <div className="flex flex-col gap-4 p-4">
               <textarea
                 value={draft.body}
                 readOnly={!canEdit}
@@ -1249,6 +1978,22 @@ const TemplatesView = ({
                 spellCheck
                 className="custom-scrollbar min-h-[460px] w-full resize-y rounded-lg border border-white/10 bg-neutral-900/80 p-4 font-mono text-[13px] leading-relaxed text-neutral-200 focus:border-white/25 focus:outline-none"
               />
+              <div className="flex flex-col gap-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-neutral-400">
+                  Signers fill in when signing
+                </p>
+                <FieldsEditor
+                  fields={draft.fields}
+                  onChange={(fields) => setDraft({ ...draft, fields })}
+                  parties={parties.length ? parties : ['Signer 1']}
+                  disabled={!canEdit}
+                />
+                <p className="text-xs text-neutral-500">
+                  Blanks about a signer, such as {'{{signer1Address}}'} or{' '}
+                  {'{{signer1Title}}'}, fill in from their Portal record when
+                  you send.
+                </p>
+              </div>
             </div>
           ) : (
             <div className="custom-scrollbar max-h-[640px] overflow-y-auto bg-neutral-800/30 p-4">
@@ -1403,7 +2148,8 @@ export const AdminAgreementTemplates = ({
   );
 };
 
-type View = 'documents' | 'people';
+type View = 'overview' | 'documents' | 'people' | 'policies';
+const VIEWS: View[] = ['overview', 'documents', 'people', 'policies'];
 
 /** Admin > Companies > Agreements: the documents, and each person's file. */
 export const AdminAgreements = ({
@@ -1413,12 +2159,13 @@ export const AdminAgreements = ({
   const { readable, companyId, companyName, can } =
     useAgreementCompany(selectedCompanyId);
 
-  const [view, setView] = useState<View>('documents');
+  const [view, setView] = useState<View>('overview');
   const [templates, setTemplates] = useState<TemplateView[]>([]);
   const [settings, setSettings] = useState<SettingsView | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [sending, setSending] = useState<SendPrefill | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
 
   const load = useCallback(async () => {
     if (!companyId) return;
@@ -1454,18 +2201,45 @@ export const AdminAgreements = ({
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('agreement');
-    if (id && /^[a-f0-9]{24}$/i.test(id)) setOpenId(id);
-    if (params.get('view') === 'people') setView('people');
+    if (id && /^[a-f0-9]{24}$/i.test(id)) {
+      setOpenId(id);
+      setView('documents');
+    }
+    const v = params.get('view') as View | null;
+    if (v && VIEWS.includes(v)) setView(v);
   }, []);
 
   const closeDetail = useCallback(() => setOpenId(null), []);
 
-  const openRow = useCallback((row: VaultRow) => {
-    if (row.source === 'onboarding') {
-      if (row.link) window.location.href = row.link;
-      return;
-    }
-    setOpenId(row.id);
+  const openAny = useCallback(
+    (
+      id: string,
+      source: string,
+      link: string | null,
+      pdfUrl?: string | null,
+    ) => {
+      if (source === 'onboarding') {
+        if (link) window.location.href = link;
+        return;
+      }
+      // Signed elsewhere: the PDF is the document.
+      if (source === 'imported') {
+        if (pdfUrl) window.open(pdfUrl, '_blank', 'noopener');
+        return;
+      }
+      setOpenId(id);
+    },
+    [],
+  );
+
+  const openRow = useCallback(
+    (row: VaultRow) => openAny(row.id, row.source, row.link, row.pdfUrl),
+    [openAny],
+  );
+
+  const sendFrom = useCallback((prefill: SendPrefill) => {
+    setOpenId(null);
+    setSending(prefill);
   }, []);
 
   if (!companyId) return <NeedsCompany text={NEEDS_COMPANY} />;
@@ -1486,24 +2260,49 @@ export const AdminAgreements = ({
           value={view}
           onChange={setView}
           options={[
+            { value: 'overview', label: 'Overview', icon: 'space_dashboard' },
             { value: 'documents', label: 'Documents', icon: 'folder_open' },
             { value: 'people', label: 'People', icon: 'folder_shared' },
+            { value: 'policies', label: 'Policies', icon: 'campaign' },
           ]}
         />
         <div className="flex-1" />
         {canCreate && (
-          <AdminButton
-            tone="primary"
-            icon="send"
-            disabled={!templates.length}
-            onClick={() => setSending({})}
-          >
-            Send an agreement
-          </AdminButton>
+          <>
+            <AdminButton icon="upload_file" onClick={() => setImporting(true)}>
+              Import
+            </AdminButton>
+            <AdminButton
+              tone="primary"
+              icon="send"
+              disabled={!templates.length}
+              onClick={() => setSending({})}
+            >
+              Send an agreement
+            </AdminButton>
+          </>
         )}
       </div>
 
-      {view === 'people' ? (
+      {view === 'overview' ? (
+        <OverviewView
+          companyId={companyId}
+          refreshKey={refreshKey}
+          onOpen={(id, source, link) => openAny(id, source, link)}
+          onShow={setView}
+        />
+      ) : view === 'policies' ? (
+        <PoliciesView
+          companyId={companyId}
+          refreshKey={refreshKey}
+          templates={templates}
+          settings={settings}
+          canCreate={canCreate}
+          canEdit={canEdit}
+          onOpen={setOpenId}
+          onChanged={changed}
+        />
+      ) : view === 'people' ? (
         <PeopleView
           companyId={companyId}
           refreshKey={refreshKey}
@@ -1535,8 +2334,67 @@ export const AdminAgreements = ({
         id={openId}
         onClose={closeDetail}
         onChanged={changed}
+        onOpen={setOpenId}
+        onSendFrom={sendFrom}
         canEdit={canEdit}
+        canCreate={canCreate}
         canDelete={canDelete}
+      />
+      <ImportDialog
+        open={importing}
+        onOpenChange={setImporting}
+        companyId={companyId}
+        settings={settings}
+        onImported={changed}
+      />
+    </div>
+  );
+};
+
+/** Admin > Administration > Required documents. */
+export const AdminRequiredDocuments = ({
+  selectedCompanyId,
+  onSelectCompany,
+}: CompanyTabProps) => {
+  const { readable, companyId, can } = useAgreementCompany(selectedCompanyId);
+  const [settings, setSettings] = useState<SettingsView | null>(null);
+  const [templates, setTemplates] = useState<TemplateView[]>([]);
+
+  useEffect(() => {
+    if (!companyId) return;
+    setSettings(null);
+    Promise.all([
+      PortalSdk.getData(
+        `/api/agreements/settings?companyId=${companyId}`,
+        null,
+      ),
+      PortalSdk.getData(
+        `/api/agreements/templates?companyId=${companyId}`,
+        null,
+      ),
+    ])
+      .then(([s, t]) => {
+        setSettings(s?.data?.settings ?? null);
+        setTemplates(t?.data?.templates ?? []);
+      })
+      .catch((err) => toast.error(errorText(err)));
+  }, [companyId]);
+
+  if (!companyId) return <NeedsCompany text={NEEDS_COMPANY} />;
+  return (
+    <div className="flex flex-col gap-5">
+      <CompanyPicker
+        companies={readable}
+        value={companyId}
+        onChange={onSelectCompany}
+      />
+      <RequiredDocsView
+        companyId={companyId}
+        settings={settings}
+        templates={templates}
+        canEdit={can(companyId, 'agreements:edit')}
+        canCreate={can(companyId, 'agreements:create')}
+        onSaved={setSettings}
       />
     </div>
   );

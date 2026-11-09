@@ -35,6 +35,8 @@ export interface PdfSigner {
   company?: boolean | null;
   status: string;
   signature?: PdfSignature | null;
+  /** What they filled in before signing, as it reads. */
+  details?: Array<{ label: string; text: string }> | null;
 }
 
 export interface PdfInput {
@@ -507,6 +509,52 @@ export async function buildAgreementPdf(input: PdfInput): Promise<Uint8Array> {
       ? tree.slice(1)
       : tree,
   );
+
+  // What each signer filled in before signing.
+  const filled = input.signers.filter((s) => s.details?.length);
+  if (filled.length) {
+    w.gap(10);
+    w.ensure(60);
+    w.text('Details filled in', { size: 13.5, bold: true, leading: 20 });
+    for (const s of filled) {
+      w.gap(4);
+      w.ensure(40);
+      w.text(`By ${s.name}`, { size: 10, bold: true, leading: 15 });
+      w.gap(2);
+      for (const d of s.details!) {
+        const label = [{ text: d.label }];
+        const value = [{ text: d.text }];
+        // Keep a label and its answer together when they fit on a page.
+        w.ensure(
+          Math.min(
+            Math.max(
+              w.wrap(label, 9, 150).length * 13,
+              w.wrap(value, 10, WIDTH - 160).length * 14,
+            ),
+            A4.h - M.top - M.bottom,
+          ),
+        );
+        const page = w.page;
+        const top = w.y;
+        w.runs(label, {
+          x: M.x,
+          size: 9,
+          leading: 13,
+          width: 150,
+          color: MUTED,
+        });
+        const afterLabel = w.y;
+        w.y = top;
+        w.runs(value, {
+          x: M.x + 160,
+          size: 10,
+          leading: 14,
+          width: WIDTH - 160,
+        });
+        w.y = (w.page === page ? Math.min(w.y, afterLabel) : w.y) - 4;
+      }
+    }
+  }
 
   // Signatures, two to a row.
   w.gap(10);

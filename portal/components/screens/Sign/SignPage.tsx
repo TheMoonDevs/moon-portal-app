@@ -75,11 +75,14 @@ const Shell = ({ children }: { children: ReactNode }) => (
 const Card = ({
   children,
   className,
+  id,
 }: {
   children: ReactNode;
   className?: string;
+  id?: string;
 }) => (
   <section
+    id={id}
     className={cn(
       'rounded-2xl bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,.05)] ring-1 ring-black/[0.06] sm:p-6 print:shadow-none print:ring-0',
       className,
@@ -170,7 +173,21 @@ const Signers = ({ state }: { state: SigningState }) => (
       {state.signers.map((s) => (
         <li key={s.id}>
           {s.signature ? (
-            <SignatureMark signer={s} />
+            <>
+              <SignatureMark signer={s} />
+              {s.details.length > 0 && (
+                <dl className="mt-3 flex flex-col gap-1.5 rounded-xl bg-zinc-50 p-3 text-xs">
+                  {s.details.map((d) => (
+                    <div key={d.label}>
+                      <dt className="text-zinc-500">{d.label}</dt>
+                      <dd className="whitespace-pre-line text-zinc-900">
+                        {d.text || '—'}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
+            </>
           ) : (
             <div className="flex items-center gap-3">
               <span
@@ -284,6 +301,178 @@ const Certificate = ({ state }: { state: SigningState }) => (
 
 /* --------------------------------- signing ------------------------------- */
 
+type Values = Record<string, string>;
+type FieldSpec = SigningState['you']['fields'][number];
+
+/** What's still to fill in before signing, or null when it's all there. */
+const stillToFill = (fields: FieldSpec[], values: Values) => {
+  const f = fields.find((x) => x.required && !values[x.id]?.trim());
+  return f
+    ? f.kind === 'checkbox'
+      ? `Tick “${f.label}”.`
+      : `Fill in ${f.label}.`
+    : null;
+};
+
+/** The details this signer fills in, above where they sign. */
+const FieldsForm = ({
+  fields,
+  values,
+  onChange,
+}: {
+  fields: FieldSpec[];
+  values: Values;
+  onChange: (v: Values) => void;
+}) => {
+  if (!fields.length) return null;
+  const set = (id: string, v: string) => onChange({ ...values, [id]: v });
+  return (
+    <div className="flex flex-col gap-3 rounded-xl bg-zinc-50 p-4 ring-1 ring-black/[0.04]">
+      <p className="text-sm font-semibold text-zinc-900">
+        Fill in your details
+        <span className="block text-xs font-normal text-zinc-500">
+          They are saved with your signature and go in the signed copy.
+        </span>
+      </p>
+      {fields.map((f) =>
+        f.kind === 'checkbox' ? (
+          <label
+            key={f.id}
+            className="flex cursor-pointer items-start gap-3 text-sm text-zinc-700"
+          >
+            <input
+              type="checkbox"
+              checked={values[f.id] === 'yes'}
+              onChange={(e) => set(f.id, e.target.checked ? 'yes' : '')}
+              className="mt-0.5 size-5 shrink-0 accent-zinc-900"
+            />
+            <span>
+              {f.label}
+              {!f.required && (
+                <span className="text-zinc-400"> (optional)</span>
+              )}
+              {f.hint && (
+                <span className="block text-xs text-zinc-500">{f.hint}</span>
+              )}
+            </span>
+          </label>
+        ) : (
+          <label key={f.id} className="flex flex-col gap-1.5">
+            <span className="text-xs text-zinc-600">
+              {f.label}
+              {f.required ? (
+                <span className="text-rose-500"> *</span>
+              ) : (
+                <span className="text-zinc-400"> (optional)</span>
+              )}
+            </span>
+            {f.kind === 'longtext' ? (
+              <textarea
+                value={values[f.id] ?? ''}
+                onChange={(e) => set(f.id, e.target.value)}
+                rows={3}
+                className="w-full rounded-xl border border-zinc-200 bg-white p-3 text-[15px] text-zinc-900 outline-none focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"
+              />
+            ) : (
+              <input
+                type={f.kind === 'date' ? 'date' : 'text'}
+                value={values[f.id] ?? ''}
+                onChange={(e) => set(f.id, e.target.value)}
+                className={fieldClass()}
+              />
+            )}
+            {f.hint && <span className="text-xs text-zinc-500">{f.hint}</span>}
+          </label>
+        ),
+      )}
+    </div>
+  );
+};
+
+/** Not the right person: pass it to a colleague, who gets their own link. */
+const HandOverBox = ({
+  state,
+  onBack,
+  onDone,
+}: {
+  state: SigningState;
+  onBack: () => void;
+  onDone: (to: string) => void;
+}) => {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [reason, setReason] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const ok = name.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  return (
+    <Card className="flex flex-col gap-4 print:hidden">
+      <div id="sign-here">
+        <p className="text-sm font-semibold text-zinc-900">
+          Someone else should sign this
+        </p>
+        <p className="mt-1 text-sm text-zinc-600">
+          They get their own link by email and sign in your place
+          {state.you.role ? `, as ${state.you.role}` : ''}. Your link stops
+          working, and {state.sender.name} is told.
+        </p>
+      </div>
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs text-zinc-600">Their full legal name</span>
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className={fieldClass()}
+        />
+      </label>
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs text-zinc-600">Their email</span>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className={fieldClass()}
+        />
+      </label>
+      <textarea
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        rows={2}
+        placeholder="Why (optional), e.g. I'm away this week"
+        className="w-full rounded-xl border border-zinc-200 bg-white p-3 text-[15px] outline-none focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"
+      />
+      {error && <p className="text-sm font-medium text-rose-600">{error}</p>}
+      <div className="flex flex-col gap-2 sm:flex-row-reverse">
+        <Button
+          disabled={!ok || busy}
+          onClick={async () => {
+            setBusy(true);
+            setError('');
+            try {
+              const data = await callSign(state.token, {
+                action: 'handover',
+                name,
+                email,
+                reason,
+              });
+              onDone(data?.handedOver?.to ?? name);
+            } catch (err) {
+              setError((err as Error).message);
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          {busy ? 'Passing it on…' : 'Pass it on'}
+        </Button>
+        <Button tone="light" onClick={onBack}>
+          Back
+        </Button>
+      </div>
+    </Card>
+  );
+};
+
 /** Signed in with a saved signature: one click, after reading it. */
 const ApproveBox = ({
   state,
@@ -296,8 +485,10 @@ const ApproveBox = ({
 }) => {
   const saved = state.viewer.savedSignature!;
   const [agree, setAgree] = useState(false);
+  const [values, setValues] = useState<Values>(state.you.values ?? {});
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const toFill = stillToFill(state.you.fields, values);
   return (
     <Card className="flex flex-col gap-4 ring-amber-200/80 print:hidden">
       <div id="sign-here">
@@ -325,6 +516,11 @@ const ApproveBox = ({
           </span>
         )}
       </div>
+      <FieldsForm
+        fields={state.you.fields}
+        values={values}
+        onChange={setValues}
+      />
       <label className="flex cursor-pointer items-start gap-3 text-sm text-zinc-700">
         <input
           type="checkbox"
@@ -336,14 +532,19 @@ const ApproveBox = ({
         {state.you.company ? ` on behalf of ${state.companyName}` : ''}. I agree
         that approving it here is the same as signing it by hand.
       </label>
-      {error && <p className="text-sm font-medium text-rose-600">{error}</p>}
+      {(error || (agree && toFill)) && (
+        <p className="text-sm font-medium text-rose-600">{error || toFill}</p>
+      )}
       <Button
-        disabled={!agree || busy}
+        disabled={!agree || busy || !!toFill}
         onClick={async () => {
           setBusy(true);
           setError('');
           try {
-            onDone((await callSign(state.token, { action: 'approve' })).state);
+            onDone(
+              (await callSign(state.token, { action: 'approve', values }))
+                .state,
+            );
           } catch (err) {
             setError((err as Error).message);
           } finally {
@@ -382,9 +583,13 @@ const SignBox = ({
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [declining, setDeclining] = useState(false);
+  const [handing, setHanding] = useState(false);
+  const [handedTo, setHandedTo] = useState<string | null>(null);
   const [reason, setReason] = useState('');
+  const [values, setValues] = useState<Values>(state.you.values ?? {});
+  const toFill = stillToFill(state.you.fields, values);
   const matches = normalName(name) === normalName(state.you.name);
-  const ready = matches && agree && (mode === 'type' || !!image);
+  const ready = matches && agree && !toFill && (mode === 'type' || !!image);
 
   const run = async (body: Record<string, unknown>) => {
     setBusy(true);
@@ -398,6 +603,30 @@ const SignBox = ({
       setBusy(false);
     }
   };
+
+  if (handedTo)
+    return (
+      <Card className="flex items-start gap-3 print:hidden">
+        <Symbol name="forward_to_inbox" className="text-[22px] text-sky-600" />
+        <div>
+          <p className="text-sm font-semibold text-zinc-900">
+            Passed to {handedTo}
+          </p>
+          <p className="mt-0.5 text-sm text-zinc-600">
+            They have their own link by email. This link no longer signs.
+          </p>
+        </div>
+      </Card>
+    );
+
+  if (handing)
+    return (
+      <HandOverBox
+        state={state}
+        onBack={() => setHanding(false)}
+        onDone={setHandedTo}
+      />
+    );
 
   if (declining)
     return (
@@ -432,8 +661,16 @@ const SignBox = ({
     );
 
   return (
-    <Card className="flex flex-col gap-4 ring-amber-200/80 print:hidden">
-      <div id="sign-here" className="flex items-center justify-between gap-3">
+    <Card
+      id="sign-here"
+      className="flex scroll-mt-4 flex-col gap-4 ring-amber-200/80 print:hidden"
+    >
+      <FieldsForm
+        fields={state.you.fields}
+        values={values}
+        onChange={setValues}
+      />
+      <div className="flex items-center justify-between gap-3">
         <p className="text-base font-semibold text-zinc-900">
           Sign as {state.you.name}
         </p>
@@ -522,7 +759,9 @@ const SignBox = ({
           </p>
         )
       )}
-      {error && <p className="text-sm font-medium text-rose-600">{error}</p>}
+      {(error || (agree && matches && toFill)) && (
+        <p className="text-sm font-medium text-rose-600">{error || toFill}</p>
+      )}
       <Button
         disabled={!ready || busy}
         onClick={() =>
@@ -533,6 +772,7 @@ const SignBox = ({
             hash: state.hash,
             image: mode === 'draw' ? image : null,
             save: state.viewer.signedIn && save,
+            values,
           })
         }
         className="w-full"
@@ -540,13 +780,22 @@ const SignBox = ({
         {busy ? 'Signing…' : 'Sign the agreement'}
         {!busy && <Symbol name="signature" className="text-[18px]" />}
       </Button>
-      <button
-        type="button"
-        onClick={() => setDeclining(true)}
-        className="self-center text-xs font-medium text-zinc-500 underline underline-offset-2 hover:text-zinc-800"
-      >
-        I don&apos;t want to sign this
-      </button>
+      <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+        <button
+          type="button"
+          onClick={() => setHanding(true)}
+          className="text-xs font-medium text-zinc-500 underline underline-offset-2 hover:text-zinc-800"
+        >
+          Someone else should sign this
+        </button>
+        <button
+          type="button"
+          onClick={() => setDeclining(true)}
+          className="text-xs font-medium text-zinc-500 underline underline-offset-2 hover:text-zinc-800"
+        >
+          I don&apos;t want to sign this
+        </button>
+      </div>
     </Card>
   );
 };
@@ -614,6 +863,19 @@ const Banner = ({ state }: { state: SigningState }) => {
           'bg-sky-50 text-sky-900 ring-1 ring-sky-200',
           `Waiting for ${you.waitingOn.join(', ')} to sign first`,
           'You can read it now. We will email you when it is your turn.',
+        );
+      if (state.correctedAt)
+        return row(
+          'edit_document',
+          'bg-amber-50 text-amber-900 ring-1 ring-amber-200',
+          `${state.sender.name} corrected the text on ${when(state.correctedAt)}`,
+          'Any earlier signatures were cleared. Read it again before you sign.',
+        );
+      if (you.handedOverFrom)
+        return row(
+          'forward_to_inbox',
+          'bg-sky-50 text-sky-900 ring-1 ring-sky-200',
+          `${you.handedOverFrom.name} passed this to you to sign`,
         );
       return null;
   }

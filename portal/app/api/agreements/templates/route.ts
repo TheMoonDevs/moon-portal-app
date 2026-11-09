@@ -4,19 +4,29 @@ import {
   listTemplates,
   requireAgreements,
   saveTemplate,
+  templateVersions,
 } from '@/lib/agreements/server';
 import { getSessionUser } from '@/lib/permissions/server';
 import { fail, ok } from '@/lib/workspace/server';
 
 export const dynamic = 'force-dynamic';
 
-/** A company's agreement templates, then the starter drafts. */
+/**
+ * A company's agreement templates, then the starter drafts. With
+ * `&versions=<template id>`, that template's saved versions instead.
+ */
 export async function GET(request: Request) {
   const actor = await getSessionUser();
   if (!actor) return fail(401, 'Authentication required.');
-  const companyId = new URL(request.url).searchParams.get('companyId');
+  const params = new URL(request.url).searchParams;
+  const companyId = params.get('companyId');
   if (!companyId) return fail(400, 'companyId is required.');
   try {
+    const versionsOf = params.get('versions');
+    if (versionsOf && /^[a-f0-9]{24}$/i.test(versionsOf))
+      return ok({
+        versions: await templateVersions(actor, companyId, versionsOf),
+      });
     await requireAgreements(actor, companyId, 'agreements:read');
     return ok({ templates: await listTemplates(companyId) });
   } catch (e) {
@@ -24,7 +34,10 @@ export async function GET(request: Request) {
   }
 }
 
-/** Saves a template: `{ companyId, id?, name, category, title, body, signerRoles? }`. */
+/**
+ * Saves a template: `{ companyId, id?, name, category, title, body,
+ * signerRoles?, fields? }`. A change of wording makes a new version.
+ */
 export async function PUT(request: Request) {
   const actor = await getSessionUser();
   if (!actor) return fail(401, 'Authentication required.');
