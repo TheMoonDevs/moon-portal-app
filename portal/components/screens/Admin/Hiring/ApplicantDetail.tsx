@@ -54,7 +54,7 @@ const AnswerLink = ({ href, label }: { href: string; label?: string }) => (
   </a>
 );
 
-const Answer = ({
+export const Answer = ({
   field,
   application,
   fromTask = false,

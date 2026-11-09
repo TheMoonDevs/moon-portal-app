@@ -69,6 +69,7 @@ import { HiringSources } from './HiringSources';
 import { HiringTeam } from './HiringTeam';
 import { ImportApplicants } from './ImportApplicants';
 import { OpeningEditor, type OpeningEditorSection } from './OpeningEditor';
+import { ScreeningMode } from './ScreeningMode';
 
 /** How often the board checks for new applicants while the tab is visible. */
 const LIVE_INTERVAL_MS = 15_000;
@@ -406,6 +407,8 @@ export const AdminHiring = ({
   const [editorSection, setEditorSection] =
     useState<OpeningEditorSection>('details');
   const [importOpen, setImportOpen] = useState(false);
+  /** Fast screening of the opening's Applied people, full screen. */
+  const [screening, setScreening] = useState(false);
   /** Which page of the space is on screen; `opening` is an opening's board. */
   const [view, setView] = useState<View>('candidates');
   const [courses, setCourses] = useState<CourseView[]>([]);
@@ -993,8 +996,16 @@ export const AdminHiring = ({
       : []),
   ];
 
+  const unscreened = applications.filter(
+    (a) => a.stage === APPLICATION_STAGE.APPLIED,
+  ).length;
   const openingActions = opening && view === 'opening' && (
     <>
+      {canEdit && unscreened > 0 && (
+        <AdminButton size="sm" icon="bolt" onClick={() => setScreening(true)}>
+          Screen {unscreened}
+        </AdminButton>
+      )}
       {canEdit && opening.status !== JOB_OPENING_STATUS.OPEN && (
         <AdminButton
           size="sm"
@@ -1690,6 +1701,19 @@ export const AdminHiring = ({
             knownIds.current = null;
             loadApplications(true);
             loadOpenings(true);
+          }}
+        />
+      )}
+      {screening && opening && canEdit && (
+        <ScreeningMode
+          opening={opening}
+          applications={applications}
+          onClose={() => setScreening(false)}
+          onUpdated={(updated) => replaceApplications([updated])}
+          onCompose={(ids, template) => {
+            setScreening(false);
+            setComposeTemplate(template);
+            setComposeIds(ids);
           }}
         />
       )}
