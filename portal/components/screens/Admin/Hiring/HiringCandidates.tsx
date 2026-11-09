@@ -9,6 +9,7 @@ import type {
 } from '@/app/api/hiring/candidates/route';
 import { APPLICATION_STAGES } from '@/lib/hiring/forms';
 import { POOL_TAGS } from '@/lib/hiring/pool';
+import { sourceLabel } from '@/lib/hiring/sources';
 import { cn } from '@/lib/utils';
 import type {
   APPLICATION_STAGE,
@@ -23,6 +24,7 @@ import {
   inputBase,
   NativeSelect,
   Panel,
+  Pill,
   SkeletonRows,
   UserAvatar,
 } from '../shared/AdminUI';
@@ -224,10 +226,29 @@ const OPENING_STATUS_DOT: Partial<Record<JOB_OPENING_STATUS, string>> = {
   ARCHIVED: '#525252',
 };
 
+/** Shared by the header and every opening row, so they line up as columns. */
+const APP_COLS =
+  'grid grid-cols-[minmax(0,1fr)_auto_16px] items-center gap-3 sm:grid-cols-[minmax(0,1fr)_96px_112px_72px_16px]';
+const PERSON_COL = 'sm:w-[34%] sm:shrink-0';
+
+const ColumnHeader = () => (
+  <div className="hidden items-center gap-4 border-b border-white/[0.06] px-4 py-2 text-[10px] uppercase tracking-wider text-neutral-500 sm:flex">
+    <span className={PERSON_COL}>Candidate</span>
+    <div className={cn(APP_COLS, 'flex-1 px-2.5')}>
+      <span>Opening</span>
+      <span>Source</span>
+      <span>Stage</span>
+      <span className="text-right">Updated</span>
+      <span />
+    </div>
+  </div>
+);
+
 /**
- * One person: their avatar carries where they stand (the stage of the
- * application that changed last), and small icons after the name carry
- * tags and a bounced email. Clicking opens that application.
+ * One person: who they are on the left (tags and a bounced email as icons
+ * after the name), and a row per opening they're in on the right, in
+ * columns: the opening, where they came from, the stage, and when it last
+ * changed. Clicking a row opens that application.
  */
 const CandidateRow = ({
   person,
@@ -238,44 +259,24 @@ const CandidateRow = ({
   openingOf: Map<string, CandidateOpening>;
   onOpen: (a: CandidateApplication) => void;
 }) => {
-  const lead = person.applications[0];
-  const stage = STAGE_META[lead.stage];
   const tags = Array.from(new Set(person.applications.flatMap((a) => a.tags)));
   const bounced = person.applications.some(
     (a) =>
       a.lastEmail && EMAIL_STATUS_META[a.lastEmail.status]?.tone === 'danger',
   );
-  const openingTitle = openingOf.get(lead.openingId)?.title ?? 'An opening';
-  const more = person.applications.length - 1;
-  const where = person.applications
-    .map(
-      (a) =>
-        `${openingOf.get(a.openingId)?.title ?? 'An opening'}: ${STAGE_META[a.stage]?.label}`,
-    )
-    .join('\n');
 
   return (
-    <li>
+    <li className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-start sm:gap-4">
       <button
         type="button"
-        onClick={() => onOpen(lead)}
-        title={where}
-        className="group flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-white/[0.03]"
+        onClick={() => onOpen(person.applications[0])}
+        className={cn(
+          'group flex min-w-0 items-center gap-3 text-left',
+          PERSON_COL,
+        )}
       >
-        <span className="relative shrink-0">
-          <UserAvatar name={person.name} size={34} />
-          <span
-            className="absolute -right-1 -top-1 flex size-[18px] items-center justify-center rounded-full border-2 border-neutral-950"
-            style={{ backgroundColor: stage?.color }}
-            aria-label={stage?.label}
-          >
-            <Icon
-              name={stage?.icon ?? 'circle'}
-              className="text-[11px] text-white"
-            />
-          </span>
-        </span>
-        <span className="min-w-0 flex-1">
+        <UserAvatar name={person.name} size={34} />
+        <span className="min-w-0">
           <span className="flex min-w-0 items-center gap-1.5">
             <span className="truncate text-sm font-medium text-neutral-100 group-hover:underline">
               {person.name}
@@ -304,18 +305,66 @@ const CandidateRow = ({
             )}
           </span>
           <span className="block truncate text-xs text-neutral-500">
-            {person.email} · {openingTitle}
-            {more > 0 && ` +${more}`}
+            {person.email}
           </span>
         </span>
-        <span className="hidden shrink-0 text-[11px] text-neutral-500 sm:inline">
-          {timeAgo(person.updatedAt)}
-        </span>
-        <Icon
-          name="chevron_right"
-          className="shrink-0 text-[16px] text-neutral-600 group-hover:text-neutral-300"
-        />
       </button>
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        {person.applications.map((a) => {
+          const opening = openingOf.get(a.openingId);
+          const meta = STAGE_META[a.stage];
+          return (
+            <button
+              key={a.id}
+              type="button"
+              onClick={() => onOpen(a)}
+              className={cn(
+                APP_COLS,
+                'group rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-1.5 text-left transition-colors hover:border-white/15 hover:bg-white/[0.05]',
+              )}
+            >
+              <span className="flex min-w-0 items-center gap-2">
+                <span className="min-w-0 truncate text-xs text-neutral-200">
+                  {opening?.title ?? 'An opening'}
+                  {opening?.status === 'ARCHIVED' && (
+                    <span className="text-neutral-500"> · Archived</span>
+                  )}
+                </span>
+                {a.taskSubmitted ? (
+                  <span title="Task sent back" className="flex">
+                    <Icon
+                      name="task_alt"
+                      className="text-[14px] text-emerald-300"
+                    />
+                  </span>
+                ) : a.taskOpened ? (
+                  <span title="Opened the task" className="flex">
+                    <Icon
+                      name="visibility"
+                      className="text-[14px] text-violet-300"
+                    />
+                  </span>
+                ) : null}
+              </span>
+              <span className="hidden truncate text-[11px] text-neutral-500 sm:block">
+                {a.source && a.source !== 'direct'
+                  ? sourceLabel(a.source)
+                  : 'Direct'}
+              </span>
+              <span className="flex">
+                <Pill tone={meta?.tone}>{meta?.label}</Pill>
+              </span>
+              <span className="hidden text-right text-[11px] tabular-nums text-neutral-500 sm:block">
+                {timeAgo(a.updatedAt)}
+              </span>
+              <Icon
+                name="chevron_right"
+                className="text-[16px] text-neutral-600 group-hover:text-neutral-300"
+              />
+            </button>
+          );
+        })}
+      </div>
     </li>
   );
 };
@@ -543,16 +592,19 @@ export const HiringCandidates = ({
             }
           />
         ) : (
-          <ul className="divide-y divide-white/[0.05]">
-            {people.map((person) => (
-              <CandidateRow
-                key={person.email}
-                person={person}
-                openingOf={openingOf}
-                onOpen={openApplicant}
-              />
-            ))}
-          </ul>
+          <>
+            <ColumnHeader />
+            <ul className="divide-y divide-white/[0.05]">
+              {people.map((person) => (
+                <CandidateRow
+                  key={person.email}
+                  person={person}
+                  openingOf={openingOf}
+                  onOpen={openApplicant}
+                />
+              ))}
+            </ul>
+          </>
         )}
       </Panel>
     </div>
