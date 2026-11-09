@@ -1,11 +1,11 @@
 'use client';
 
-import { Caveat } from 'next/font/google';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { errorText } from '@/components/screens/Admin/Workspace/shared';
+import { signHand } from '@/components/screens/Sign/fonts';
 import { SignaturePad } from '@/components/shared/SignaturePad';
 import {
   Dialog,
@@ -28,8 +28,6 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
  * company), everything they signed, and their saved signature. The Home
  * card (light) and the Documents tab of their page (dark) both use these.
  */
-
-const hand = Caveat({ subsets: ['latin'], weight: ['600'] });
 
 const day = (iso?: string | null) =>
   iso
@@ -235,7 +233,7 @@ export const SignatureDialog = ({
           <div className="flex h-20 items-end rounded-xl bg-white px-4 pb-3">
             <span
               className={cn(
-                hand.className,
+                signHand.className,
                 'w-full border-b border-neutral-300 pb-1 text-[38px] leading-none',
                 name ? 'text-neutral-900' : 'text-neutral-300',
               )}
@@ -290,7 +288,7 @@ export const SignatureMark = ({
     ) : (
       <span
         className={cn(
-          hand.className,
+          signHand.className,
           'text-[32px] leading-none text-neutral-900',
         )}
       >

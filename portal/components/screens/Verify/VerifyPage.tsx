@@ -1,6 +1,5 @@
 'use client';
 
-import { Inter } from 'next/font/google';
 import {
   type ReactNode,
   useCallback,
@@ -9,6 +8,7 @@ import {
   useState,
 } from 'react';
 
+import { signSans } from '@/components/screens/Sign/fonts';
 import type { VerifyResult } from '@/lib/agreements/seal';
 import { cn } from '@/lib/utils';
 import { openPdf, sha256Hex } from '@/utils/helpers/pdfClient';
@@ -19,12 +19,6 @@ import { openPdf, sha256Hex } from '@/utils/helpers/pdfClient';
  * SHA-256 is worked out in their browser and compared with the copy that
  * was issued when everyone signed. The file never leaves their device.
  */
-
-const sans = Inter({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--verify-sans',
-});
 
 const Symbol = ({ name, className }: { name: string; className?: string }) => {
   const px = className?.match(/text-\[(\d+(?:\.\d+)?)px\]/)?.[1];
@@ -306,8 +300,8 @@ export const VerifyPage = ({ initialId }: { initialId: string }) => {
   return (
     <div
       className={cn(
-        sans.variable,
-        'min-h-dvh bg-[#f1f3f6] text-slate-800 antialiased [font-family:var(--verify-sans)]',
+        signSans.variable,
+        'min-h-dvh bg-[#f1f3f6] text-slate-800 antialiased [font-family:var(--sign-sans)]',
       )}
     >
       <header className="border-b border-slate-200 bg-white">

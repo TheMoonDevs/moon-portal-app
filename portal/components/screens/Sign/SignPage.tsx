@@ -1,6 +1,5 @@
 'use client';
 
-import { Caveat, Inter, Source_Serif_4 } from 'next/font/google';
 import {
   type ReactNode,
   useCallback,
@@ -10,6 +9,7 @@ import {
 } from 'react';
 
 import { PdfPages } from '@/components/global/PdfPages';
+import { signHand, signSans, signSerif } from '@/components/screens/Sign/fonts';
 import { DocProse } from '@/components/shared/DocProse';
 import { SignaturePad } from '@/components/shared/SignaturePad';
 import { envelopeId, signatureMethod } from '@/lib/agreements/envelope';
@@ -25,22 +25,6 @@ import { TMD_PORTAL_API_KEY } from '@/utils/constants/appInfo';
  * sign. Built to read like the signing tools large companies use: quiet
  * chrome, a clear next step, and the envelope's details always in view.
  */
-
-const sans = Inter({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--sign-sans',
-});
-const serif = Source_Serif_4({
-  subsets: ['latin'],
-  weight: ['400', '600', '700'],
-  variable: '--sign-serif',
-});
-const hand = Caveat({
-  subsets: ['latin'],
-  weight: ['600'],
-  variable: '--sign-hand',
-});
 
 /** Calls this signer's /api/sign/<token>. The link itself is the key. */
 async function callSign(token: string, body: Record<string, unknown>) {
@@ -97,9 +81,9 @@ const Symbol = ({ name, className }: { name: string; className?: string }) => {
 const Shell = ({ children }: { children: ReactNode }) => (
   <div
     className={cn(
-      sans.variable,
-      serif.variable,
-      hand.variable,
+      signSans.variable,
+      signSerif.variable,
+      signHand.variable,
       'min-h-dvh bg-[#f1f3f6] text-slate-800 antialiased [font-family:var(--sign-sans)] selection:bg-blue-100 print:bg-white',
     )}
   >
