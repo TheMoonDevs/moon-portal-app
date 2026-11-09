@@ -3,6 +3,8 @@ export enum APP_ROUTES {
   login = '/login',
   logout = '/logout',
   admin = '/admin',
+  /** Hiring, onboarding and courses: /hiring?view=<page>. */
+  hiring = '/hiring',
   userEditor = '/admin/user/editor',
   notifications = '/notifications',
   settings = '/settings',

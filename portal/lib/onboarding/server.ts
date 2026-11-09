@@ -462,7 +462,7 @@ async function notifyTeam(
           {
             title: 'Open',
             trigger_type: 'link',
-            trigger: `/admin?tab=onboarding&companyId=${onboarding.companyId}&hire=${onboarding.id}`,
+            trigger: `/hiring?view=onboarding&company=${onboarding.companyId}&hire=${onboarding.id}`,
           },
         ],
       },

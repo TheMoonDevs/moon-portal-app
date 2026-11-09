@@ -547,7 +547,7 @@ const SentMail = ({
           <EmptyState
             icon="outbox"
             title="No emails here"
-            description="Emails you send to candidates from the hiring tab show up here with their delivery status."
+            description="Emails you send to candidates from Hiring show up here with their delivery status."
           />
         ) : (
           <ul className="divide-y divide-white/[0.05]">

@@ -6,10 +6,14 @@ export type AdminTabId =
   | 'companies'
   | 'projects'
   | 'tasks'
-  | 'roles'
-  | 'hiring'
-  | 'onboarding'
-  | 'courses';
+  | 'roles';
+
+/** Tabs that moved to the Hiring space, and the page each opens there. */
+export const MOVED_TO_HIRING: Record<string, string> = {
+  hiring: 'candidates',
+  onboarding: 'onboarding',
+  courses: 'courses',
+};
 
 export type AdminNavGroup = 'Workspace' | 'Companies' | 'Community';
 
@@ -85,39 +89,6 @@ export const ADMIN_TABS: AdminTab[] = [
     description: 'Major and minor tasks for each project.',
     group: 'Companies',
     access: 'company',
-  },
-  {
-    id: 'hiring',
-    label: 'Hiring',
-    icon: 'person_search',
-    title: 'Hiring',
-    description:
-      'Openings, their application forms and the people who applied.',
-    group: 'Companies',
-    access: 'company',
-    permission: 'hiring:read',
-  },
-  {
-    id: 'onboarding',
-    label: 'Onboarding',
-    icon: 'how_to_reg',
-    title: 'Onboarding',
-    description:
-      'New hires from their details form and agreements, through the trial, to their offer.',
-    group: 'Companies',
-    access: 'company',
-    permission: 'hiring:read',
-  },
-  {
-    id: 'courses',
-    label: 'Courses',
-    icon: 'school',
-    title: 'Courses',
-    description:
-      'Short courses for your people, like the Portal course new hires get with their sign-in.',
-    group: 'Companies',
-    access: 'company',
-    permission: 'courses:edit',
   },
   {
     id: 'roles',

@@ -17,7 +17,7 @@ export const POOL_TAGS: Array<{
     value: 'HIRED',
     label: 'Hired',
     icon: 'verified',
-    hint: 'Joined the team from this opening. Their onboarding is in the Onboarding tab.',
+    hint: 'Joined the team from this opening. Their onboarding is under Onboarding in the Hiring space.',
     auto: true,
   },
   {

@@ -97,9 +97,9 @@ const clip = (value: string, max: number) =>
   value.length > max ? `${value.slice(0, max)}…` : value;
 
 const links = (origin: string) => ({
-  hiringTab: `${origin}/admin?tab=hiring`,
+  hiringTab: `${origin}/hiring`,
   applicant: (a: Pick<JobApplication, 'id' | 'companyId' | 'openingId'>) =>
-    `${origin}/admin?tab=hiring&company=${a.companyId}&opening=${a.openingId}&application=${a.id}`,
+    `${origin}/hiring?view=opening&company=${a.companyId}&opening=${a.openingId}&application=${a.id}`,
   apply: (slug: string) => `${origin}/apply/${slug}`,
   taskPreview: (openingId: string) => `${origin}/task/preview/${openingId}`,
 });
@@ -1594,7 +1594,7 @@ export const HIRING_TOOLS: Tool[] = [
     name: 'list_hiring_skills',
     title: 'List hiring skills',
     description:
-      "The Claude skills a company's hiring leads install from the Skills section of the Hiring tab (e.g. screen-applicants), with their SKILL.md and usage tips. Read one before updating it with save_hiring_skill.",
+      "The Claude skills a company's hiring leads install from the Skills page of the Hiring space (e.g. screen-applicants), with their SKILL.md and usage tips. Read one before updating it with save_hiring_skill.",
     inputSchema: {
       type: 'object',
       properties: {
@@ -1611,7 +1611,7 @@ export const HIRING_TOOLS: Tool[] = [
       return {
         company: company.name,
         skills: await listHiringSkills(company.id),
-        skillsPage: `${context.origin}/admin?tab=hiring&section=skills`,
+        skillsPage: `${context.origin}/hiring?view=skills`,
       };
     },
   },
@@ -1619,7 +1619,7 @@ export const HIRING_TOOLS: Tool[] = [
     name: 'save_hiring_skill',
     title: 'Save a hiring skill for the team',
     description:
-      'Publishes a Claude skill to the Skills section of the Hiring tab, so every hiring lead in the company can install it on their own Claude (download for the Claude app, or a copyable command for Claude Code). Give the whole SKILL.md (frontmatter with name and description, then the instructions) and a few tips on using it, one per line. A skill with the same name is replaced, which is how to update one. Whenever you create or change a hiring skill with the person, offer to save it here too.',
+      'Publishes a Claude skill to the Skills page of the Hiring space, so every hiring lead in the company can install it on their own Claude (download for the Claude app, or a copyable command for Claude Code). Give the whole SKILL.md (frontmatter with name and description, then the instructions) and a few tips on using it, one per line. A skill with the same name is replaced, which is how to update one. Whenever you create or change a hiring skill with the person, offer to save it here too.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1651,7 +1651,7 @@ export const HIRING_TOOLS: Tool[] = [
         return {
           saved: skill.name,
           created,
-          skillsPage: `${context.origin}/admin?tab=hiring&company=${company.id}&section=skills`,
+          skillsPage: `${context.origin}/hiring?view=skills&company=${company.id}`,
         };
       } catch (err) {
         if (err instanceof SkillError) throw new ToolError(err.message);

@@ -60,7 +60,7 @@ const canWriteCourses = async (user: SessionUser) =>
   (await companiesWith(user, 'courses:edit')).size > 0;
 
 const hireLink = (origin: string, o: { id: string; companyId: string }) =>
-  `${origin}/admin?tab=onboarding&companyId=${o.companyId}&hire=${o.id}`;
+  `${origin}/hiring?view=onboarding&company=${o.companyId}&hire=${o.id}`;
 
 /** Wraps onboarding errors as answers Claude can act on. */
 async function attempt<T>(fn: () => Promise<T>): Promise<T> {
@@ -217,7 +217,7 @@ export const ONBOARDING_TOOLS: Tool[] = [
           isOwner: p!.isOwner,
         })),
         projects: board.projects,
-        tab: `${context.origin}/admin?tab=onboarding`,
+        tab: `${context.origin}/hiring?view=onboarding`,
       };
     },
   },

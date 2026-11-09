@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { DocProse } from '@/components/shared/DocProse';
@@ -321,12 +321,29 @@ const CourseEditor = ({
 };
 
 /** Admin > Courses: a company's courses, the Portal course first. */
+export type { CourseView };
+
 export const AdminCourses = ({
   selectedCompanyId,
   onSelectCompany,
+  embedded,
+  activeId: controlledId,
+  onActiveChange,
+  onCoursesChange,
+  createSignal,
 }: {
   selectedCompanyId: string | null;
   onSelectCompany: (companyId: string) => void;
+  /**
+   * Inside the Hiring space: the sidebar lists the courses and picks one,
+   * so this shows only the open course.
+   */
+  embedded?: boolean;
+  activeId?: string | null;
+  onActiveChange?: (id: string | null) => void;
+  onCoursesChange?: (courses: CourseView[]) => void;
+  /** Bumping it opens the "New course" dialog. */
+  createSignal?: number;
 }) => {
   const { workCompanies: companies, can } = useWorkspace();
   const editable = companies.filter((c) => can(c.company.id, 'courses:edit'));
@@ -336,7 +353,29 @@ export const AdminCourses = ({
 
   const [courses, setCourses] = useState<CourseView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [ownActiveId, setOwnActiveId] = useState<string | null>(null);
+  const activeId = controlledId !== undefined ? controlledId : ownActiveId;
+  // Stable, so loading the list doesn't run again on every pick.
+  const controlled = useRef({ controlledId, onActiveChange });
+  controlled.current = { controlledId, onActiveChange };
+  const setActiveId = useCallback(
+    (next: string | null | ((current: string | null) => string | null)) => {
+      const { controlledId: id, onActiveChange: notify } = controlled.current;
+      setOwnActiveId((current) => {
+        const value =
+          typeof next === 'function'
+            ? next(id !== undefined ? id : current)
+            : next;
+        if (notify) queueMicrotask(() => notify(value));
+        return value;
+      });
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (createSignal) setCreating(true);
+  }, [createSignal]);
   const [creating, setCreating] = useState(false);
   const [newTitle, setNewTitle] = useState('');
 
@@ -364,6 +403,10 @@ export const AdminCourses = ({
     load();
   }, [load]);
 
+  useEffect(() => {
+    if (!loading) onCoursesChange?.(courses);
+  }, [courses, loading, onCoursesChange]);
+
   const create = async () => {
     try {
       const res = await PortalSdk.postData('/api/courses', {
@@ -386,11 +429,13 @@ export const AdminCourses = ({
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center gap-3">
-        <CompanyPicker
-          companies={editable}
-          value={companyId}
-          onChange={onSelectCompany}
-        />
+        {!embedded && (
+          <CompanyPicker
+            companies={editable}
+            value={companyId}
+            onChange={onSelectCompany}
+          />
+        )}
         <div className="flex-1" />
         <AdminButton
           tone="primary"
@@ -406,8 +451,18 @@ export const AdminCourses = ({
           <SkeletonRows rows={3} />
         </Panel>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
-          <div className="flex gap-2 overflow-x-auto lg:flex-col">
+        <div
+          className={cn(
+            'grid gap-4',
+            !embedded && 'lg:grid-cols-[260px_minmax(0,1fr)]',
+          )}
+        >
+          <div
+            className={cn(
+              'flex gap-2 overflow-x-auto lg:flex-col',
+              embedded && 'lg:hidden',
+            )}
+          >
             {courses.map((c) => (
               <button
                 key={c.id}
@@ -436,6 +491,15 @@ export const AdminCourses = ({
               </button>
             ))}
           </div>
+          {embedded && !active && !courses.length && (
+            <Panel>
+              <EmptyState
+                icon="school"
+                title="No courses yet"
+                description="Write a short course for your people, like the Portal course new hires get with their sign-in."
+              />
+            </Panel>
+          )}
           {active && (
             <CourseEditor
               key={active.id}

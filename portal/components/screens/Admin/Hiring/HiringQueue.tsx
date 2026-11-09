@@ -48,6 +48,12 @@ const KIND_META: Record<
     tone: 'warning',
     empty: 'Nobody is late with their task.',
   },
+  NOT_OPENED: {
+    label: 'Not opened',
+    icon: 'mark_email_unread',
+    tone: 'purple',
+    empty: 'Everyone with a task has opened it.',
+  },
   BOUNCED: {
     label: 'Email didn’t arrive',
     icon: 'unsubscribe',
@@ -62,7 +68,13 @@ const KIND_META: Record<
   },
 };
 
-const KINDS: QueueKind[] = ['REVIEW', 'PAST_DUE', 'BOUNCED', 'UNSCREENED'];
+const KINDS: QueueKind[] = [
+  'REVIEW',
+  'PAST_DUE',
+  'NOT_OPENED',
+  'BOUNCED',
+  'UNSCREENED',
+];
 
 const newSendId = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -76,6 +88,8 @@ const reason = (item: QueueItem) => {
     return `Sent their task ${daysSince(item.since)} ago`;
   if (item.kind === 'PAST_DUE')
     return `Task was due ${item.dueAt ? shortDay(item.dueAt) : ''} (${daysSince(item.since)} ago)`;
+  if (item.kind === 'NOT_OPENED')
+    return `Task sent ${daysSince(item.since)} ago, not opened yet${item.dueAt ? ` · due ${shortDay(item.dueAt)}` : ''}`;
   if (item.kind === 'BOUNCED') {
     const meta = a.lastEmail ? EMAIL_STATUS_META[a.lastEmail.status] : null;
     return `“${a.lastEmail?.subject}”: ${meta?.label ?? 'not delivered'}`;
@@ -218,16 +232,40 @@ export const HiringQueue = ({
     }
   };
 
-  const remind = (item: QueueItem) => {
+  const remind = (item: QueueItem, template = 'starter:reminder') => {
     const opening = openingOf.get(item.application.openingId);
     if (!opening) return;
     compose({
       recipients: [item.application as ApplicationRow],
       opening,
-      template: 'starter:reminder',
+      template,
       onSent: () => load(true),
     });
   };
+
+  /** Everyone not opened in one opening, in one email. */
+  const checkInAll = (openingId: string) => {
+    const opening = openingOf.get(openingId);
+    const recipients = items
+      .filter(
+        (i) => i.kind === 'NOT_OPENED' && i.application.openingId === openingId,
+      )
+      .map((i) => i.application as ApplicationRow);
+    if (!opening || !recipients.length) return;
+    compose({
+      recipients,
+      opening,
+      template: QUICK_ACTION_TEMPLATES.taskCheckIn,
+      onSent: () => load(true),
+    });
+  };
+  const notOpenedOpenings = Array.from(
+    new Set(
+      inOpening
+        .filter((i) => i.kind === 'NOT_OPENED')
+        .map((i) => i.application.openingId),
+    ),
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -277,6 +315,30 @@ export const HiringQueue = ({
         </label>
       </div>
 
+      {canEdit &&
+        (kind === 'ALL' || kind === 'NOT_OPENED') &&
+        notOpenedOpenings.map((id) => {
+          const n = inOpening.filter(
+            (i) => i.kind === 'NOT_OPENED' && i.application.openingId === id,
+          ).length;
+          if (n < 2) return null;
+          return (
+            <div
+              key={id}
+              className="flex flex-wrap items-center gap-3 rounded-xl border border-violet-500/20 bg-violet-500/[0.06] px-4 py-2.5 text-sm text-violet-100"
+            >
+              <Icon name="mark_email_unread" className="text-[18px]" />
+              <span className="min-w-0 flex-1">
+                {n} people in {openingOf.get(id)?.title ?? 'an opening'} haven’t
+                opened their task yet.
+              </span>
+              <AdminButton size="sm" onClick={() => checkInAll(id)}>
+                Check in with all {n}
+              </AdminButton>
+            </div>
+          );
+        })}
+
       <Panel className="overflow-hidden">
         {loading && !items.length ? (
           <SkeletonRows rows={5} />
@@ -310,9 +372,11 @@ export const HiringQueue = ({
                         ? 'bg-rose-500/10 text-rose-300'
                         : item.kind === 'PAST_DUE'
                           ? 'bg-amber-500/10 text-amber-300'
-                          : item.kind === 'REVIEW'
-                            ? 'bg-indigo-500/10 text-indigo-300'
-                            : 'bg-white/[0.06] text-neutral-400',
+                          : item.kind === 'NOT_OPENED'
+                            ? 'bg-violet-500/10 text-violet-300'
+                            : item.kind === 'REVIEW'
+                              ? 'bg-indigo-500/10 text-indigo-300'
+                              : 'bg-white/[0.06] text-neutral-400',
                     )}
                   >
                     <Icon name={meta.icon} />
@@ -364,6 +428,30 @@ export const HiringQueue = ({
                         </AdminButton>
                       </>
                     )}
+                    {canEdit && item.kind === 'NOT_OPENED' && (
+                      <>
+                        <AdminButton
+                          size="sm"
+                          icon="mark_email_unread"
+                          onClick={() =>
+                            remind(item, QUICK_ACTION_TEMPLATES.taskCheckIn)
+                          }
+                        >
+                          Check in
+                        </AdminButton>
+                        {a.lastEmail && (
+                          <AdminButton
+                            size="sm"
+                            tone="ghost"
+                            icon="forward_to_inbox"
+                            loading={busy === key}
+                            onClick={() => resend(item)}
+                          >
+                            Send again
+                          </AdminButton>
+                        )}
+                      </>
+                    )}
                     {canEdit && item.kind === 'BOUNCED' && (
                       <AdminButton
                         size="sm"
@@ -383,7 +471,8 @@ export const HiringQueue = ({
       </Panel>
       <p className="text-[11px] text-neutral-600">
         The same list the hiring digest emails each lead, across every opening.
-        A bounced address usually needs fixing before sending again.
+        A bounced address usually needs fixing before sending again. Openings
+        can send check-ins and reminders on their own, under Edit, Task.
       </p>
     </div>
   );

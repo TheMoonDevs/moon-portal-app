@@ -224,6 +224,23 @@ If it is, I can't wait to see what you make.
 {{company}}`,
   },
   {
+    key: 'task-check-in',
+    name: 'Task: did it reach you?',
+    icon: 'mark_email_unread',
+    moveTo: null,
+    subject: 'Did our task for {{role}} reach you?',
+    body: `Hi {{firstName}},
+
+We sent you a short task for the {{role}} role at {{company}} a few days ago and wanted to check it reached you. Emails like it sometimes land in spam or promotions.
+
+Here's your task, with the brief and the place to send your work: {{taskLink}}
+
+It's due by {{taskDue}}. If anything is unclear, or you need a little more time, just reply to this email.
+
+{{sender}}
+{{company}}`,
+  },
+  {
     key: 'deadline-extended',
     name: 'Deadline extended',
     icon: 'more_time',
@@ -250,6 +267,8 @@ export const QUICK_ACTION_TEMPLATES = {
   rejectAfterInterview: 'starter:reject-after-interview',
   sendTask: 'starter:send-task',
   deadlineExtended: 'starter:deadline-extended',
+  taskCheckIn: 'starter:task-check-in',
+  reminder: 'starter:reminder',
 } as const;
 
 export const starterById = (templateId?: string | null) =>

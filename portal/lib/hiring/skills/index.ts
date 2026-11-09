@@ -1,7 +1,7 @@
 /**
  * Hiring skills: instructions that teach Claude how a team hires (screening,
  * task emails, interviews). Hiring leads install them on their own Claude
- * from the Skills section of the Hiring tab. Client-safe.
+ * from the Skills page of the Hiring space. Client-safe.
  */
 
 export const MAX_SKILL_BODY = 60000;
@@ -93,7 +93,7 @@ export const tipLines = (tips: string | null | undefined) =>
  * (it writes ~/.claude/skills/<name>/SKILL.md). Pasting it again updates it.
  */
 export function skillInstallPrompt(name: string, body: string, origin: string) {
-  return `Please install this Claude skill for me, exactly as written below. It's called "${name}" and comes from the Skills section of our portal's Hiring tab. If I already have it, replace the old version.
+  return `Please install this Claude skill for me, exactly as written below. It's called "${name}" and comes from the Skills page of our portal's Hiring space. If I already have it, replace the old version.
 
 - In Claude Code (you can write files on my computer): save the SKILL.md below to ~/.claude/skills/${name}/SKILL.md, creating the folder. Then tell me I can use it by typing /${name} or just asking for the work.
 - In the Claude app (claude.ai, desktop or phone): save it to my skills. If you can save or propose a skill directly, do that with this exact content. If not, make a folder named ${name} with this SKILL.md inside, zip the folder as ${name}.zip, give me the file, and tell me to upload it under Settings → Capabilities → Skills → Upload skill (Customize → Skills in newer versions).

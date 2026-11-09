@@ -72,13 +72,13 @@ export const portalOrigin = () =>
   ).replace(/\/$/, '');
 
 const openingLink = (origin: string, o: Pick<JobOpening, 'id' | 'companyId'>) =>
-  `${origin}/admin?tab=hiring&company=${o.companyId}&opening=${o.id}`;
+  `${origin}/hiring?view=opening&company=${o.companyId}&opening=${o.id}`;
 
 const applicantLink = (
   origin: string,
   a: Pick<JobApplication, 'id' | 'companyId' | 'openingId'>,
 ) =>
-  `${origin}/admin?tab=hiring&company=${a.companyId}&opening=${a.openingId}&application=${a.id}`;
+  `${origin}/hiring?view=opening&company=${a.companyId}&opening=${a.openingId}&application=${a.id}`;
 
 const daysAgo = (value: unknown, now: Date) => {
   const at = new Date(String(value ?? '')).getTime();

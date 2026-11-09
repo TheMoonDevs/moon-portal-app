@@ -108,7 +108,7 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
             {companyName} · Course
             {canEdit && (
               <Link
-                href={`/admin?tab=courses&companyId=${course.companyId}`}
+                href={`/hiring?view=courses&company=${course.companyId}&course=${course.id}`}
                 className="ml-auto inline-flex items-center gap-1 rounded-full bg-zinc-100 px-3 py-1 text-zinc-700 hover:bg-zinc-200"
               >
                 <Symbol name="edit" className="text-[14px]" /> Edit course
@@ -161,7 +161,7 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
           </p>
           {canEdit && (
             <Link
-              href={`/admin?tab=courses&companyId=${course.companyId}`}
+              href={`/hiring?view=courses&company=${course.companyId}&course=${course.id}`}
               className="mt-5 inline-flex h-11 items-center gap-2 rounded-xl bg-zinc-900 px-5 text-sm font-semibold text-white"
             >
               <Symbol name="edit" className="text-[18px]" /> Write the first
