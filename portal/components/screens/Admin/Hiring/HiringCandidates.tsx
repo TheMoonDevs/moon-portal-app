@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import type { CandidateApplication } from '@/app/api/hiring/candidates/route';
+import type {
+  CandidateApplication,
+  CandidateSort,
+} from '@/app/api/hiring/candidates/route';
 import { APPLICATION_STAGES } from '@/lib/hiring/forms';
 import { POOL_TAGS } from '@/lib/hiring/pool';
-import { sourceLabel } from '@/lib/hiring/sources';
 import { cn } from '@/lib/utils';
 import type {
   APPLICATION_STAGE,
@@ -21,7 +23,6 @@ import {
   inputBase,
   NativeSelect,
   Panel,
-  Pill,
   SkeletonRows,
   UserAvatar,
 } from '../shared/AdminUI';
@@ -38,6 +39,7 @@ type Person = {
   email: string;
   name: string;
   latestAt: string;
+  updatedAt: string;
   applications: CandidateApplication[];
 };
 type CandidateOpening = {
@@ -47,6 +49,276 @@ type CandidateOpening = {
 };
 
 const tagMeta = (tag: ApplicationTag) => POOL_TAGS.find((t) => t.value === tag);
+
+const SORT_OPTIONS: Array<{ value: CandidateSort; label: string }> = [
+  { value: 'updated', label: 'Recently updated' },
+  { value: 'applied', label: 'Newest applied' },
+  { value: 'oldest', label: 'Oldest applied' },
+  { value: 'name', label: 'Name A–Z' },
+];
+
+const TAG_COLOR: Partial<Record<ApplicationTag, string>> = {
+  TOP: 'text-emerald-300',
+  HIRED: 'text-emerald-300',
+  KEEP: 'text-violet-300',
+};
+
+/** A filter for one opening, with a search box and a list that scrolls. */
+const OpeningPicker = ({
+  openings,
+  value,
+  onChange,
+}: {
+  openings: CandidateOpening[];
+  value: string;
+  onChange: (id: string) => void;
+}) => {
+  const [open, setOpen] = useState(false);
+  const [filter, setFilter] = useState('');
+  const boxRef = useRef<HTMLDivElement>(null);
+  const selected = openings.find((o) => o.id === value);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (!boxRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  const words = filter.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const shown = openings.filter((o) =>
+    words.every((w) => o.title.toLowerCase().includes(w)),
+  );
+  const pick = (id: string) => {
+    onChange(id);
+    setOpen(false);
+    setFilter('');
+  };
+
+  return (
+    <div ref={boxRef} className="relative">
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label="Opening"
+        onClick={() => setOpen((v) => !v)}
+        className={cn(
+          'flex h-8 min-w-[160px] max-w-[260px] items-center gap-2 rounded-lg border bg-neutral-900 px-2.5 text-left text-xs transition-colors',
+          value
+            ? 'border-white/20 text-neutral-100'
+            : 'border-white/10 text-neutral-300 hover:border-white/20',
+        )}
+      >
+        {selected && (
+          <span
+            className="size-2 shrink-0 rounded-full"
+            style={{
+              backgroundColor: OPENING_STATUS_DOT[selected.status] ?? '#737373',
+            }}
+          />
+        )}
+        <span className="min-w-0 flex-1 truncate">
+          {selected?.title ?? 'Every opening'}
+        </span>
+        <Icon name="expand_more" className="text-[16px] text-neutral-500" />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-30 mt-1 flex w-72 flex-col overflow-hidden rounded-xl border border-white/10 bg-neutral-900 shadow-2xl shadow-black/60">
+          <div className="relative border-b border-white/[0.07] p-2">
+            <Icon
+              name="search"
+              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[16px] text-neutral-500"
+            />
+            <input
+              autoFocus
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && shown[0]) pick(shown[0].id);
+              }}
+              placeholder="Find an opening"
+              aria-label="Find an opening"
+              className="h-8 w-full rounded-md bg-white/[0.04] pl-8 pr-2 text-xs text-neutral-100 placeholder:text-neutral-600 focus:outline-none"
+            />
+          </div>
+          <ul
+            role="listbox"
+            className="custom-scrollbar max-h-72 overflow-y-auto p-1"
+          >
+            {!words.length && (
+              <li>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={!value}
+                  onClick={() => pick('')}
+                  className={cn(
+                    'flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-xs hover:bg-white/[0.06]',
+                    !value ? 'text-white' : 'text-neutral-300',
+                  )}
+                >
+                  <Icon
+                    name="select_all"
+                    className="text-[15px] text-neutral-500"
+                  />
+                  Every opening
+                </button>
+              </li>
+            )}
+            {shown.map((o) => (
+              <li key={o.id}>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={o.id === value}
+                  onClick={() => pick(o.id)}
+                  className={cn(
+                    'flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-xs hover:bg-white/[0.06]',
+                    o.id === value
+                      ? 'bg-white/[0.06] text-white'
+                      : 'text-neutral-300',
+                  )}
+                >
+                  <span
+                    className="size-2 shrink-0 rounded-full"
+                    style={{
+                      backgroundColor:
+                        OPENING_STATUS_DOT[o.status] ?? '#737373',
+                    }}
+                  />
+                  <span className="min-w-0 flex-1 truncate">{o.title}</span>
+                  {o.status !== 'OPEN' && (
+                    <span className="text-[10px] text-neutral-500">
+                      {OPENING_STATUS_META[o.status]?.label}
+                    </span>
+                  )}
+                </button>
+              </li>
+            ))}
+            {words.length > 0 && !shown.length && (
+              <li className="px-2.5 py-2 text-xs text-neutral-500">
+                No opening matches.
+              </li>
+            )}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const OPENING_STATUS_DOT: Partial<Record<JOB_OPENING_STATUS, string>> = {
+  OPEN: '#34d399',
+  DRAFT: '#737373',
+  CLOSED: '#f59e0b',
+  ARCHIVED: '#525252',
+};
+
+/**
+ * One person: their avatar carries where they stand (the stage of the
+ * application that changed last), and small icons after the name carry
+ * tags and a bounced email. Clicking opens that application.
+ */
+const CandidateRow = ({
+  person,
+  openingOf,
+  onOpen,
+}: {
+  person: Person;
+  openingOf: Map<string, CandidateOpening>;
+  onOpen: (a: CandidateApplication) => void;
+}) => {
+  const lead = person.applications[0];
+  const stage = STAGE_META[lead.stage];
+  const tags = Array.from(new Set(person.applications.flatMap((a) => a.tags)));
+  const bounced = person.applications.some(
+    (a) =>
+      a.lastEmail && EMAIL_STATUS_META[a.lastEmail.status]?.tone === 'danger',
+  );
+  const openingTitle = openingOf.get(lead.openingId)?.title ?? 'An opening';
+  const more = person.applications.length - 1;
+  const where = person.applications
+    .map(
+      (a) =>
+        `${openingOf.get(a.openingId)?.title ?? 'An opening'}: ${STAGE_META[a.stage]?.label}`,
+    )
+    .join('\n');
+
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => onOpen(lead)}
+        title={where}
+        className="group flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-white/[0.03]"
+      >
+        <span className="relative shrink-0">
+          <UserAvatar name={person.name} size={34} />
+          <span
+            className="absolute -right-1 -top-1 flex size-[18px] items-center justify-center rounded-full border-2 border-neutral-950"
+            style={{ backgroundColor: stage?.color }}
+            aria-label={stage?.label}
+          >
+            <Icon
+              name={stage?.icon ?? 'circle'}
+              className="text-[11px] text-white"
+            />
+          </span>
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="flex min-w-0 items-center gap-1.5">
+            <span className="truncate text-sm font-medium text-neutral-100 group-hover:underline">
+              {person.name}
+            </span>
+            {tags.map((t) => {
+              const meta = tagMeta(t);
+              return (
+                <span key={t} title={meta?.label ?? t} className="flex">
+                  <Icon
+                    name={meta?.icon ?? 'sell'}
+                    className={cn(
+                      'shrink-0 text-[15px]',
+                      TAG_COLOR[t] ?? 'text-neutral-400',
+                    )}
+                  />
+                </span>
+              );
+            })}
+            {bounced && (
+              <span title="An email didn’t arrive" className="flex">
+                <Icon
+                  name="unsubscribe"
+                  className="shrink-0 text-[15px] text-rose-300"
+                />
+              </span>
+            )}
+          </span>
+          <span className="block truncate text-xs text-neutral-500">
+            {person.email} · {openingTitle}
+            {more > 0 && ` +${more}`}
+          </span>
+        </span>
+        <span className="hidden shrink-0 text-[11px] text-neutral-500 sm:inline">
+          {timeAgo(person.updatedAt)}
+        </span>
+        <Icon
+          name="chevron_right"
+          className="shrink-0 text-[16px] text-neutral-600 group-hover:text-neutral-300"
+        />
+      </button>
+    </li>
+  );
+};
 
 /**
  * Everyone who applied, across every opening: one search over names,
@@ -66,6 +338,8 @@ export const HiringCandidates = ({
   const [openingId, setOpeningId] = useState('');
   const [stage, setStage] = useState<APPLICATION_STAGE | ''>('');
   const [tag, setTag] = useState<ApplicationTag | ''>('');
+  const [sort, setSort] = useState<CandidateSort>('updated');
+  const [showRejected, setShowRejected] = useState(false);
   const [people, setPeople] = useState<Person[]>([]);
   const [total, setTotal] = useState(0);
   const [applicationCount, setApplicationCount] = useState(0);
@@ -105,6 +379,8 @@ export const HiringCandidates = ({
       if (openingId) params.set('openingId', openingId);
       if (stage) params.set('stage', stage);
       if (tag) params.set('tag', tag);
+      if (sort !== 'updated') params.set('sort', sort);
+      if (showRejected) params.set('rejected', '1');
       const res = await PortalSdk.getData(
         `/api/hiring/candidates?${params}`,
         null,
@@ -118,7 +394,7 @@ export const HiringCandidates = ({
     } finally {
       setLoading(false);
     }
-  }, [companyId, debounced, openingId, stage, tag]);
+  }, [companyId, debounced, openingId, stage, tag, sort, showRejected]);
 
   useEffect(() => {
     load();
@@ -128,7 +404,7 @@ export const HiringCandidates = ({
     () => new Map(openings.map((o) => [o.id, o])),
     [openings],
   );
-  const filtered = !!(debounced || openingId || stage || tag);
+  const filtered = !!(debounced || openingId || stage || tag || showRejected);
 
   return (
     <div className="flex flex-col gap-4">
@@ -162,27 +438,20 @@ export const HiringCandidates = ({
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <NativeSelect
-            aria-label="Opening"
+          <OpeningPicker
+            openings={openings}
             value={openingId}
-            onChange={(e) => setOpeningId(e.target.value)}
-            className="h-8 w-auto min-w-[160px] text-xs"
-          >
-            <option value="">Every opening</option>
-            {openings.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.title}
-                {o.status === 'ARCHIVED' ? ' (archived)' : ''}
-              </option>
-            ))}
-          </NativeSelect>
+            onChange={setOpeningId}
+          />
           <NativeSelect
             aria-label="Stage"
             value={stage}
             onChange={(e) => setStage(e.target.value as APPLICATION_STAGE)}
             className="h-8 w-auto min-w-[130px] text-xs"
           >
-            <option value="">Any stage</option>
+            <option value="">
+              {showRejected ? 'Any stage' : 'Any stage but Rejected'}
+            </option>
             {APPLICATION_STAGES.map((s) => (
               <option key={s} value={s}>
                 {STAGE_META[s].label}
@@ -202,6 +471,24 @@ export const HiringCandidates = ({
               </option>
             ))}
           </NativeSelect>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={showRejected}
+            onClick={() => setShowRejected((v) => !v)}
+            className={cn(
+              'flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs transition-colors',
+              showRejected
+                ? 'border-rose-400/30 bg-rose-400/10 text-rose-200'
+                : 'border-white/10 text-neutral-400 hover:border-white/20 hover:text-neutral-200',
+            )}
+          >
+            <Icon
+              name={showRejected ? 'visibility' : 'visibility_off'}
+              className="text-[15px]"
+            />
+            Rejected
+          </button>
           {filtered && (
             <button
               type="button"
@@ -210,19 +497,34 @@ export const HiringCandidates = ({
                 setOpeningId('');
                 setStage('');
                 setTag('');
+                setShowRejected(false);
               }}
               className="px-1 text-xs text-neutral-400 hover:text-neutral-200"
             >
               Clear filters
             </button>
           )}
-          <span className="ml-auto text-xs text-neutral-500">
-            {loading
-              ? 'Searching…'
-              : filtered
-                ? `${total} ${total === 1 ? 'person matches' : 'people match'}`
-                : `${total} ${total === 1 ? 'person' : 'people'} · ${applicationCount} applications`}
-            {total > people.length && ` · showing ${people.length}`}
+          <span className="ml-auto flex items-center gap-3 text-xs text-neutral-500">
+            <span>
+              {loading
+                ? 'Searching…'
+                : filtered
+                  ? `${total} ${total === 1 ? 'person matches' : 'people match'}`
+                  : `${total} ${total === 1 ? 'person' : 'people'} · ${applicationCount} applications`}
+              {total > people.length && ` · showing ${people.length}`}
+            </span>
+            <NativeSelect
+              aria-label="Sort by"
+              value={sort}
+              onChange={(e) => setSort(e.target.value as CandidateSort)}
+              className="h-8 w-auto text-xs"
+            >
+              {SORT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </NativeSelect>
           </span>
         </div>
       </div>
@@ -242,119 +544,14 @@ export const HiringCandidates = ({
           />
         ) : (
           <ul className="divide-y divide-white/[0.05]">
-            {people.map((person) => {
-              const tags = Array.from(
-                new Set(person.applications.flatMap((a) => a.tags)),
-              );
-              const bounced = person.applications.find(
-                (a) =>
-                  a.lastEmail &&
-                  EMAIL_STATUS_META[a.lastEmail.status]?.tone === 'danger',
-              );
-              return (
-                <li
-                  key={person.email}
-                  className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-start"
-                >
-                  <button
-                    type="button"
-                    onClick={() => openApplicant(person.applications[0])}
-                    className="flex min-w-0 items-start gap-3 text-left sm:w-[38%] sm:shrink-0"
-                  >
-                    <UserAvatar name={person.name} size={34} />
-                    <span className="min-w-0">
-                      <span className="block truncate text-sm font-medium text-neutral-100 hover:underline">
-                        {person.name}
-                      </span>
-                      <span className="block truncate text-xs text-neutral-500">
-                        {person.email}
-                      </span>
-                      {(tags.length > 0 || bounced) && (
-                        <span className="mt-1.5 flex flex-wrap gap-1">
-                          {tags.map((t) => {
-                            const meta = tagMeta(t);
-                            return (
-                              <Pill
-                                key={t}
-                                icon={meta?.icon}
-                                tone={
-                                  t === 'TOP' || t === 'HIRED'
-                                    ? 'positive'
-                                    : t === 'KEEP'
-                                      ? 'purple'
-                                      : 'neutral'
-                                }
-                              >
-                                {meta?.label ?? t}
-                              </Pill>
-                            );
-                          })}
-                          {bounced && (
-                            <Pill tone="danger" icon="unsubscribe">
-                              Email didn’t arrive
-                            </Pill>
-                          )}
-                        </span>
-                      )}
-                    </span>
-                  </button>
-                  <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    {person.applications.map((a) => {
-                      const opening = openingOf.get(a.openingId);
-                      const meta = STAGE_META[a.stage];
-                      return (
-                        <button
-                          key={a.id}
-                          type="button"
-                          onClick={() => openApplicant(a)}
-                          className="group flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-1.5 text-left transition-colors hover:border-white/15 hover:bg-white/[0.05]"
-                        >
-                          <span
-                            className="size-2 shrink-0 rounded-full"
-                            style={{ backgroundColor: meta?.color }}
-                          />
-                          <span className="min-w-0 flex-1 truncate text-xs text-neutral-200">
-                            {opening?.title ?? 'An opening'}
-                            {opening?.status === 'ARCHIVED' && (
-                              <span className="text-neutral-500">
-                                {' '}
-                                ·{' '}
-                                {OPENING_STATUS_META.ARCHIVED?.label ??
-                                  'Archived'}
-                              </span>
-                            )}
-                          </span>
-                          {a.taskSubmitted ? (
-                            <Icon
-                              name="task_alt"
-                              className="text-[14px] text-emerald-300"
-                            />
-                          ) : a.taskOpened ? (
-                            <Icon
-                              name="visibility"
-                              className="text-[14px] text-violet-300"
-                            />
-                          ) : null}
-                          {a.source && a.source !== 'direct' && (
-                            <span className="hidden text-[10px] text-neutral-500 md:inline">
-                              {sourceLabel(a.source)}
-                            </span>
-                          )}
-                          <Pill tone={meta?.tone}>{meta?.label}</Pill>
-                          <span className="hidden w-16 shrink-0 text-right text-[10px] text-neutral-500 sm:inline">
-                            {timeAgo(a.submittedAt)}
-                          </span>
-                          <Icon
-                            name="chevron_right"
-                            className="text-[16px] text-neutral-600 group-hover:text-neutral-300"
-                          />
-                        </button>
-                      );
-                    })}
-                  </div>
-                </li>
-              );
-            })}
+            {people.map((person) => (
+              <CandidateRow
+                key={person.email}
+                person={person}
+                openingOf={openingOf}
+                onOpen={openApplicant}
+              />
+            ))}
           </ul>
         )}
       </Panel>

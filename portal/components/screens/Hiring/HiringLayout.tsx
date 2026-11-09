@@ -32,7 +32,73 @@ export interface HiringNavGroup {
   action?: { icon: string; label: string; onClick: () => void };
   /** Shown under an empty group. */
   empty?: string;
+  /**
+   * A long list (openings): a filter box once it has more than a few items,
+   * and the list scrolls on its own so the groups below stay in reach.
+   */
+  searchable?: { placeholder: string };
 }
+
+const SEARCH_FROM = 6;
+
+const GroupItems = ({
+  group,
+  collapsed,
+  onNavigate,
+}: {
+  group: HiringNavGroup;
+  collapsed: boolean;
+  onNavigate: () => void;
+}) => {
+  const [filter, setFilter] = useState('');
+  const canSearch =
+    !!group.searchable && !collapsed && group.items.length >= SEARCH_FROM;
+  const words = filter.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const items =
+    canSearch && words.length
+      ? group.items.filter((item) =>
+          words.every((w) => item.label.toLowerCase().includes(w)),
+        )
+      : group.items;
+  const rows = items.map((item) => (
+    <NavRow
+      key={item.id}
+      item={item}
+      depth={0}
+      collapsed={collapsed}
+      onNavigate={onNavigate}
+    />
+  ));
+  if (!group.searchable) return <>{rows}</>;
+  return (
+    <>
+      {canSearch && (
+        <div className="relative mb-1 px-1">
+          <Icon
+            name="search"
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[15px] text-neutral-600"
+          />
+          <input
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setFilter('');
+            }}
+            placeholder={group.searchable.placeholder}
+            aria-label={group.searchable.placeholder}
+            className="h-7 w-full rounded-md border border-white/[0.07] bg-white/[0.03] pl-7 pr-2 text-xs text-neutral-200 placeholder:text-neutral-600 focus:border-white/20 focus:outline-none"
+          />
+        </div>
+      )}
+      <div className="custom-scrollbar flex max-h-[min(320px,40vh)] flex-col gap-0.5 overflow-y-auto">
+        {rows}
+        {canSearch && words.length > 0 && !items.length && (
+          <p className="px-2.5 py-1 text-xs text-neutral-600">No match</p>
+        )}
+      </div>
+    </>
+  );
+};
 
 const COLLAPSED_KEY = 'tmd-hiring-sidebar-collapsed';
 const FOLDED_KEY = 'tmd-hiring-folded-groups';
@@ -437,16 +503,13 @@ export const HiringLayout = ({
                   )}
                 </div>
               )}
-              {!isFolded &&
-                group.items.map((item) => (
-                  <NavRow
-                    key={item.id}
-                    item={item}
-                    depth={0}
-                    collapsed={isCollapsed}
-                    onNavigate={() => setMobileOpen(false)}
-                  />
-                ))}
+              {!isFolded && (
+                <GroupItems
+                  group={group}
+                  collapsed={isCollapsed}
+                  onNavigate={() => setMobileOpen(false)}
+                />
+              )}
               {!isFolded &&
                 !isCollapsed &&
                 !group.items.length &&

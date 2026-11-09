@@ -917,6 +917,7 @@ export const AdminHiring = ({
           }
         : undefined,
       empty: openingsLoading ? 'Loading…' : 'No openings yet',
+      searchable: { placeholder: 'Find an opening' },
       items: openings.map((o) => ({
         id: `opening:${o.id}`,
         label: o.title,
