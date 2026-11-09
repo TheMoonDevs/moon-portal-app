@@ -57,6 +57,11 @@ export interface AgreementSignature {
   userAgent?: Nullable<string>;
   /** `portal` is the built-in signing; another provider can sit behind it. */
   provider: string;
+  /**
+   * Applied from the signer's saved signature with the Approve button, while
+   * signed in to the portal, instead of typed or drawn on the spot.
+   */
+  saved?: Nullable<boolean>;
 }
 
 export interface AgreementSigner {
@@ -80,6 +85,10 @@ export interface AgreementSigner {
   signature?: Nullable<AgreementSignature>;
   declinedAt?: Nullable<string>;
   declineReason?: Nullable<string>;
+  /** Signs for the company (the owner or the hiring lead), not as a party. */
+  company?: Nullable<boolean>;
+  /** The automatic reminders already sent: `d2`, `d5`, `due`. */
+  autoReminders?: Nullable<string[]>;
 }
 
 /** One line of the audit trail. */
@@ -117,6 +126,11 @@ export type Agreement = Loose<
     expiresOn?: Nullable<string>;
     /** Email the sender and every signer the signed copy when complete. */
     ccEmails?: string[];
+    /**
+     * Pay letters and the like: only people with `confidential:read` (HR
+     * and owners) see it, besides the people who sign it.
+     */
+    confidential?: Nullable<boolean>;
     sentAt: string;
     completedAt?: Nullable<string>;
     voidedAt?: Nullable<string>;
@@ -141,6 +155,44 @@ export type AgreementTemplate = Loose<
     /** Signer roles the template expects, e.g. ["Client", "For the company"]. */
     signerRoles?: string[];
     createdById: string;
+    updatedById?: Nullable<string>;
+  }
+>;
+
+/**
+ * Someone's signature, saved once so later documents take one click: the
+ * owner signs the first time, then countersigns with an Approve button.
+ */
+export type SavedSignature = Loose<
+  BaseModel & {
+    userId: string;
+    /** Their full name as they sign it. */
+    name: string;
+    method: 'typed' | 'drawn';
+    /** A PNG data URL, for a drawn signature. */
+    image?: Nullable<string>;
+    initials?: Nullable<string>;
+  }
+>;
+
+/** Who signs for the company on one document type. */
+export type CompanySignerRule = 'owner' | 'lead' | 'none';
+
+export interface DocumentTypeSettings {
+  signer: CompanySignerRule;
+  confidential: boolean;
+}
+
+/** A company's signing rules, see lib/agreements/settings. */
+export type AgreementSettings = Loose<
+  BaseModel & {
+    companyId: string;
+    /** The owner who signs for the company. Defaults to the first owner. */
+    signatoryId?: Nullable<string>;
+    /** Keyed by document type (`NDA`, `onboarding:OFFER_LETTER`, …). */
+    types: Record<string, DocumentTypeSettings>;
+    /** Automatic reminders, after 2 and 5 days and the day before the deadline. */
+    autoReminders: boolean;
     updatedById?: Nullable<string>;
   }
 >;

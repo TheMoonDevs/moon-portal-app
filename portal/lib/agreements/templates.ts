@@ -100,7 +100,7 @@ export const STARTER_TEMPLATES: StarterTemplate[] = [
     name: 'Mutual NDA',
     category: AGREEMENT_CATEGORY.NDA,
     title: 'Mutual Non-Disclosure Agreement',
-    signerRoles: ['Other party', 'For the company'],
+    signerRoles: ['Other party'],
     body: `# Mutual Non-Disclosure Agreement
 
 This agreement is made on {{today}} between **{{companyName}}** and **{{signer1Name}}** ({{signer1Email}}), each a "party".
@@ -138,7 +138,7 @@ Signed electronically by the parties below.`,
     name: 'Contractor agreement',
     category: AGREEMENT_CATEGORY.CONTRACTOR,
     title: 'Independent Contractor Agreement',
-    signerRoles: ['Contractor', 'For the company'],
+    signerRoles: ['Contractor'],
     body: `# Independent Contractor Agreement
 
 This agreement is made on {{today}} between **{{companyName}}** (the "Company") and **{{signer1Name}}** ({{signer1Email}}) (the "Contractor").
@@ -174,7 +174,7 @@ Signed electronically by the parties below.`,
     name: 'Client services agreement',
     category: AGREEMENT_CATEGORY.CLIENT,
     title: 'Services Agreement with {{clientName}}',
-    signerRoles: ['Client', 'For the company'],
+    signerRoles: ['Client'],
     body: `# Services Agreement
 
 This agreement is made on {{today}} between **{{companyName}}** (the "Provider") and **{{clientName}}** (the "Client"), signed for the Client by {{signer1Name}}.

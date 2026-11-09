@@ -1,15 +1,10 @@
 'use client';
 
 import { Caveat, Plus_Jakarta_Sans } from 'next/font/google';
-import {
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import { type ReactNode, useCallback, useEffect, useState } from 'react';
 
 import { DocProse } from '@/components/shared/DocProse';
+import { SignaturePad } from '@/components/shared/SignaturePad';
 import type { SigningState } from '@/lib/agreements/server';
 import { formatDay } from '@/lib/onboarding/meta';
 import { cn } from '@/lib/utils';
@@ -125,104 +120,6 @@ const fieldClass = (bad?: boolean) =>
       : 'border-zinc-200 focus:border-zinc-400 focus:ring-zinc-100',
   );
 
-/* ------------------------------ drawing pad ------------------------------ */
-
-const W = 600;
-const H = 180;
-
-/** A pad to draw a signature on, with a mouse, finger or pen. */
-const SignaturePad = ({
-  onChange,
-}: {
-  onChange: (png: string | null) => void;
-}) => {
-  const canvas = useRef<HTMLCanvasElement>(null);
-  const drawing = useRef(false);
-  const [empty, setEmpty] = useState(true);
-
-  useEffect(() => {
-    const ctx = canvas.current?.getContext('2d');
-    if (!ctx) return;
-    ctx.lineWidth = 3;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = '#18181b';
-  }, []);
-
-  const point = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    return {
-      x: ((e.clientX - r.left) / r.width) * W,
-      y: ((e.clientY - r.top) / r.height) * H,
-    };
-  };
-
-  const down = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    const ctx = e.currentTarget.getContext('2d');
-    if (!ctx) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
-    drawing.current = true;
-    const p = point(e);
-    ctx.beginPath();
-    ctx.moveTo(p.x, p.y);
-    ctx.lineTo(p.x + 0.1, p.y + 0.1);
-    ctx.stroke();
-  };
-  const move = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!drawing.current) return;
-    const ctx = e.currentTarget.getContext('2d');
-    if (!ctx) return;
-    const p = point(e);
-    ctx.lineTo(p.x, p.y);
-    ctx.stroke();
-  };
-  const up = () => {
-    if (!drawing.current) return;
-    drawing.current = false;
-    setEmpty(false);
-    onChange(canvas.current?.toDataURL('image/png') ?? null);
-  };
-  const clear = () => {
-    const c = canvas.current;
-    c?.getContext('2d')?.clearRect(0, 0, W, H);
-    setEmpty(true);
-    onChange(null);
-  };
-
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="relative overflow-hidden rounded-xl border border-dashed border-zinc-300 bg-white">
-        <canvas
-          ref={canvas}
-          width={W}
-          height={H}
-          onPointerDown={down}
-          onPointerMove={move}
-          onPointerUp={up}
-          onPointerLeave={up}
-          className="block aspect-[10/3] w-full cursor-crosshair touch-none"
-          aria-label="Draw your signature"
-        />
-        {empty && (
-          <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-zinc-400">
-            Draw your signature here
-          </span>
-        )}
-        <span className="pointer-events-none absolute inset-x-6 bottom-8 border-b border-zinc-200" />
-      </div>
-      {!empty && (
-        <button
-          type="button"
-          onClick={clear}
-          className="self-start text-xs font-medium text-zinc-500 underline underline-offset-2 hover:text-zinc-800"
-        >
-          Clear and draw again
-        </button>
-      )}
-    </div>
-  );
-};
-
 /* ------------------------------- signatures ------------------------------ */
 
 type Signer = SigningState['signers'][number];
@@ -248,6 +145,7 @@ const SignatureMark = ({ signer }: { signer: Signer }) => {
       <p className="text-sm font-semibold text-zinc-900">{sig.name}</p>
       <p className="text-xs text-zinc-500">
         {signer.role ? `${signer.role} · ` : ''}Signed {when(sig.at)}
+        {sig.saved ? ' · approved in the Portal' : ''}
       </p>
     </div>
   );
@@ -386,6 +284,88 @@ const Certificate = ({ state }: { state: SigningState }) => (
 
 /* --------------------------------- signing ------------------------------- */
 
+/** Signed in with a saved signature: one click, after reading it. */
+const ApproveBox = ({
+  state,
+  onDone,
+  onByHand,
+}: {
+  state: SigningState;
+  onDone: (s: SigningState) => void;
+  onByHand: () => void;
+}) => {
+  const saved = state.viewer.savedSignature!;
+  const [agree, setAgree] = useState(false);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  return (
+    <Card className="flex flex-col gap-4 ring-amber-200/80 print:hidden">
+      <div id="sign-here">
+        <p className="text-base font-semibold text-zinc-900">
+          {state.you.company
+            ? `Approve for ${state.companyName}`
+            : 'Approve and sign'}
+        </p>
+        <p className="mt-1 text-sm text-zinc-600">
+          Your saved signature goes on it, as {state.you.name}
+          {state.you.role ? `, ${state.you.role}` : ''}.
+        </p>
+      </div>
+      <div className="flex h-16 items-end border-b border-zinc-300 pb-1">
+        {saved.image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={saved.image}
+            alt="Your saved signature"
+            className="h-16 w-auto object-contain object-left-bottom"
+          />
+        ) : (
+          <span className="text-[38px] leading-none text-zinc-900 [font-family:var(--sign-hand)]">
+            {saved.name}
+          </span>
+        )}
+      </div>
+      <label className="flex cursor-pointer items-start gap-3 text-sm text-zinc-700">
+        <input
+          type="checkbox"
+          checked={agree}
+          onChange={(e) => setAgree(e.target.checked)}
+          className="mt-0.5 size-5 shrink-0 accent-zinc-900"
+        />
+        I have read this agreement and agree to it
+        {state.you.company ? ` on behalf of ${state.companyName}` : ''}. I agree
+        that approving it here is the same as signing it by hand.
+      </label>
+      {error && <p className="text-sm font-medium text-rose-600">{error}</p>}
+      <Button
+        disabled={!agree || busy}
+        onClick={async () => {
+          setBusy(true);
+          setError('');
+          try {
+            onDone((await callSign(state.token, { action: 'approve' })).state);
+          } catch (err) {
+            setError((err as Error).message);
+          } finally {
+            setBusy(false);
+          }
+        }}
+        className="w-full"
+      >
+        {busy ? 'Approving…' : 'Approve'}
+        {!busy && <Symbol name="verified" className="text-[18px]" />}
+      </Button>
+      <button
+        type="button"
+        onClick={onByHand}
+        className="self-center text-xs font-medium text-zinc-500 underline underline-offset-2 hover:text-zinc-800"
+      >
+        Sign by hand instead
+      </button>
+    </Card>
+  );
+};
+
 const SignBox = ({
   state,
   onDone,
@@ -397,6 +377,8 @@ const SignBox = ({
   const [mode, setMode] = useState<'type' | 'draw'>('type');
   const [image, setImage] = useState<string | null>(null);
   const [agree, setAgree] = useState(false);
+  // Signed in as this signer: save it so the next one is one click.
+  const [save, setSave] = useState(state.viewer.signedIn);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [declining, setDeclining] = useState(false);
@@ -506,9 +488,40 @@ const SignBox = ({
           onChange={(e) => setAgree(e.target.checked)}
           className="mt-0.5 size-5 shrink-0 accent-zinc-900"
         />
-        I have read this agreement and agree to it. I agree that signing it
-        electronically is the same as signing it by hand.
+        I have read this agreement and agree to it
+        {state.you.company ? ` on behalf of ${state.companyName}` : ''}. I agree
+        that signing it electronically is the same as signing it by hand.
       </label>
+      {state.viewer.signedIn ? (
+        <label className="flex cursor-pointer items-start gap-3 text-sm text-zinc-700">
+          <input
+            type="checkbox"
+            checked={save}
+            onChange={(e) => setSave(e.target.checked)}
+            className="mt-0.5 size-5 shrink-0 accent-zinc-900"
+          />
+          <span>
+            Save this signature to my Portal profile
+            <span className="block text-xs text-zinc-500">
+              Next time it&apos;s one click: an Approve button instead of
+              signing again.
+            </span>
+          </span>
+        </label>
+      ) : (
+        state.you.company && (
+          <p className="text-xs text-zinc-500">
+            Signing for the company often?{' '}
+            <a
+              href={`/login?uri=${encodeURIComponent(`/sign/${state.token}`)}`}
+              className="font-medium text-zinc-800 underline underline-offset-2"
+            >
+              Sign in to the Portal
+            </a>{' '}
+            to save your signature, then approve the next ones in one click.
+          </p>
+        )
+      )}
       {error && <p className="text-sm font-medium text-rose-600">{error}</p>}
       <Button
         disabled={!ready || busy}
@@ -519,6 +532,7 @@ const SignBox = ({
             agree,
             hash: state.hash,
             image: mode === 'draw' ? image : null,
+            save: state.viewer.signedIn && save,
           })
         }
         className="w-full"
@@ -556,7 +570,7 @@ const Banner = ({ state }: { state: SigningState }) => {
         'task_alt',
         'bg-emerald-50 text-emerald-900 ring-1 ring-emerald-200',
         'Signed by everyone',
-        'This is your signed copy. Save it as a PDF or come back to this link any time.',
+        'This is your signed copy. Download the PDF or come back to this link any time.',
       );
     case AGREEMENT_STATUS.DECLINED:
       return row(
@@ -607,6 +621,7 @@ const Banner = ({ state }: { state: SigningState }) => {
 
 export const SignPage = ({ initial }: { initial: SigningState }) => {
   const [state, setState] = useState(initial);
+  const [byHand, setByHand] = useState(false);
 
   const noteView = useCallback(() => {
     if (initial.you.canSign && initial.you.status !== SIGNER_STATUS.SIGNED)
@@ -646,15 +661,14 @@ export const SignPage = ({ initial }: { initial: SigningState }) => {
               : ''}
           </p>
         </div>
-        {done && (
-          <button
-            type="button"
-            onClick={() => window.print()}
+        {done && state.pdfUrl && (
+          <a
+            href={state.pdfUrl}
             className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-white px-3 text-xs font-semibold text-zinc-800 ring-1 ring-black/10 hover:bg-zinc-50 print:hidden"
           >
             <Symbol name="download" className="text-[18px]" />
-            Save PDF
-          </button>
+            Download PDF
+          </a>
         )}
         {showSign && (
           <button
@@ -667,7 +681,7 @@ export const SignPage = ({ initial }: { initial: SigningState }) => {
             className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-zinc-900 px-3.5 text-xs font-semibold text-white print:hidden"
           >
             <Symbol name="signature" className="text-[18px]" />
-            Sign
+            {state.viewer.savedSignature && !byHand ? 'Approve' : 'Sign'}
           </button>
         )}
       </header>
@@ -693,7 +707,16 @@ export const SignPage = ({ initial }: { initial: SigningState }) => {
 
       <Signers state={state} />
 
-      {showSign && <SignBox state={state} onDone={setState} />}
+      {showSign &&
+        (state.viewer.savedSignature && !byHand ? (
+          <ApproveBox
+            state={state}
+            onDone={setState}
+            onByHand={() => setByHand(true)}
+          />
+        ) : (
+          <SignBox state={state} onDone={setState} />
+        ))}
 
       {done && <Certificate state={state} />}
 

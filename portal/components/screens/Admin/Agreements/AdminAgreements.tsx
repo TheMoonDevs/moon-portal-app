@@ -3,11 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-import type {
-  AgreementDetail,
-  AgreementView,
-  TemplateView,
-} from '@/lib/agreements/server';
+import { docTypeLabel, signerRuleLabel } from '@/lib/agreements/docTypes';
+import type { AgreementDetail, TemplateView } from '@/lib/agreements/server';
+import type { SettingsView } from '@/lib/agreements/signers';
 import {
   AGREEMENT_CATEGORIES,
   AUTO_PLACEHOLDERS,
@@ -15,12 +13,15 @@ import {
   fieldLabel,
   templateFields,
 } from '@/lib/agreements/templates';
+import type { VaultRow } from '@/lib/agreements/vault';
 import { cn } from '@/lib/utils';
 import {
   AGREEMENT_CATEGORY,
   AGREEMENT_STATUS,
+  type CompanySignerRule,
   SIGNER_STATUS,
 } from '@/models/agreements';
+import { useUser } from '@/utils/hooks/useUser';
 import { useWorkspace } from '@/utils/hooks/useWorkspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
@@ -31,15 +32,12 @@ import {
   ConfirmDialog,
   CopyButton,
   DateInput,
-  EmptyState,
   Field,
   Icon,
   IconAction,
   NativeSelect,
   Panel,
   Pill,
-  type PillTone,
-  SearchInput,
   Segmented,
   SkeletonRows,
   TextArea,
@@ -47,73 +45,17 @@ import {
   ToggleSwitch,
 } from '../shared/AdminUI';
 import { CompanyPicker, errorText, NeedsCompany } from '../Workspace/shared';
+import { day, SIGNER_META, STATUS_META, when } from './meta';
+import { PeopleView } from './PeopleView';
+import { SigningRulesView } from './SigningRulesView';
+import { VaultView } from './VaultView';
 
 /*
  * Admin > Agreements: send any agreement to sign (an NDA, a contractor or
- * client agreement, a policy), follow who has signed, and keep the signed
- * copy with its audit trail. Onboarding documents show here read-only.
+ * client agreement, a policy) with the company's own signature added by its
+ * rules, follow who has signed, and keep every signed document, onboarding
+ * ones included, in one searchable vault with each person's file.
  */
-
-const STATUS_META: Record<
-  AGREEMENT_STATUS,
-  { label: string; tone: PillTone; icon: string }
-> = {
-  [AGREEMENT_STATUS.SENT]: {
-    label: 'Out for signing',
-    tone: 'warning',
-    icon: 'pending',
-  },
-  [AGREEMENT_STATUS.COMPLETED]: {
-    label: 'Signed',
-    tone: 'positive',
-    icon: 'task_alt',
-  },
-  [AGREEMENT_STATUS.DECLINED]: {
-    label: 'Declined',
-    tone: 'danger',
-    icon: 'block',
-  },
-  [AGREEMENT_STATUS.VOIDED]: {
-    label: 'Withdrawn',
-    tone: 'neutral',
-    icon: 'cancel',
-  },
-  [AGREEMENT_STATUS.EXPIRED]: {
-    label: 'Expired',
-    tone: 'neutral',
-    icon: 'timer_off',
-  },
-};
-
-const SIGNER_META: Record<SIGNER_STATUS, { label: string; tone: PillTone }> = {
-  [SIGNER_STATUS.WAITING]: { label: 'Signs later', tone: 'neutral' },
-  [SIGNER_STATUS.PENDING]: { label: 'Sent', tone: 'info' },
-  [SIGNER_STATUS.VIEWED]: { label: 'Opened', tone: 'purple' },
-  [SIGNER_STATUS.SIGNED]: { label: 'Signed', tone: 'positive' },
-  [SIGNER_STATUS.DECLINED]: { label: 'Declined', tone: 'danger' },
-};
-
-const when = (iso?: string | null) =>
-  iso
-    ? new Date(iso).toLocaleString('en-GB', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-      })
-    : '—';
-
-const day = (iso?: string | null) =>
-  iso
-    ? new Date(iso).toLocaleDateString('en-GB', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      })
-    : '—';
-
-type Filter = 'all' | 'open' | 'signed' | 'closed';
 
 /* ------------------------------ send dialog ------------------------------ */
 
@@ -126,19 +68,34 @@ const blankSigner = (order: number, role = ''): SignerRow => ({
   order,
 });
 
+/** Who signs for the company on this one: as the rules say, or chosen. */
+type CompanyChoice = 'rules' | CompanySignerRule;
+
+export type SendPrefill = {
+  to?: { name: string; email: string };
+  category?: AGREEMENT_CATEGORY;
+};
+
 const SendDialog = ({
   open,
   onOpenChange,
   companyId,
+  companyName,
   templates,
+  settings,
+  prefill,
   onSent,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   companyId: string;
+  companyName: string;
   templates: TemplateView[];
+  settings: SettingsView | null;
+  prefill?: SendPrefill | null;
   onSent: () => void;
 }) => {
+  const { user } = useUser();
   const [step, setStep] = useState<'pick' | 'write' | 'preview'>('pick');
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
@@ -152,6 +109,9 @@ const SendDialog = ({
   const [message, setMessage] = useState('');
   const [expiresOn, setExpiresOn] = useState('');
   const [cc, setCc] = useState('');
+  const [companyChoice, setCompanyChoice] = useState<CompanyChoice>('rules');
+  const [companyFirst, setCompanyFirst] = useState(false);
+  const [confidential, setConfidential] = useState<boolean | null>(null);
   const [editText, setEditText] = useState(false);
   const [preview, setPreview] = useState<{
     title: string;
@@ -170,6 +130,9 @@ const SendDialog = ({
     setExpiresOn('');
     setCc('');
     setOrdered(false);
+    setCompanyChoice('rules');
+    setCompanyFirst(false);
+    setConfidential(null);
   }, [open]);
 
   const pick = (t: TemplateView) => {
@@ -177,13 +140,45 @@ const SendDialog = ({
     setTitle(t.title);
     setBody(t.body);
     setCategory(t.category);
-    setSigners(
-      t.signerRoles.length
-        ? t.signerRoles.map((r, i) => blankSigner(i + 1, r))
-        : [blankSigner(1)],
-    );
+    const rows = t.signerRoles.length
+      ? t.signerRoles.map((r, i) => blankSigner(i + 1, r))
+      : [blankSigner(1)];
+    // Sent to someone from their file: they're the first signer.
+    if (prefill?.to) rows[0] = { ...rows[0], ...prefill.to };
+    setSigners(rows);
     setStep('write');
   };
+
+  // From a person's file, "Send an NDA" opens on the starter NDA.
+  const own = templates.filter((t) => !t.builtIn);
+  const starters = templates.filter((t) => t.builtIn);
+  const preferred = prefill?.category
+    ? [...own, ...starters].filter((t) => t.category === prefill.category)
+    : [];
+
+  // The company's signer on this one, as the server will add them.
+  const rule: CompanySignerRule =
+    companyChoice === 'rules'
+      ? (settings?.types[category]?.signer ?? 'owner')
+      : companyChoice;
+  const companySigner =
+    rule === 'none'
+      ? null
+      : rule === 'lead' && user
+        ? { name: user.name || 'You', email: user.email ?? '' }
+        : settings?.signatory
+          ? {
+              name: settings.signatory.name,
+              email: settings.signatory.email ?? '',
+            }
+          : null;
+  const companyIsSigner =
+    !!companySigner &&
+    signers.some(
+      (s) => s.email.trim().toLowerCase() === companySigner.email.toLowerCase(),
+    );
+  const typeConfidential = !!settings?.types[category]?.confidential;
+  const isConfidential = confidential ?? typeConfidential;
 
   const fields = useMemo(() => templateFields(title, body), [title, body]);
 
@@ -202,6 +197,9 @@ const SendDialog = ({
     })),
     values,
     message,
+    companySigner: companyChoice === 'rules' ? null : companyChoice,
+    companyFirst: ordered && companyFirst,
+    confidential: confidential,
     expiresOn: expiresOn || null,
     ccEmails: cc
       .split(/[,\s]+/)
@@ -253,8 +251,7 @@ const SendDialog = ({
   const setSigner = (i: number, patch: Partial<SignerRow>) =>
     setSigners((all) => all.map((s, j) => (j === i ? { ...s, ...patch } : s)));
 
-  const own = templates.filter((t) => !t.builtIn);
-  const starters = templates.filter((t) => t.builtIn);
+  const total = signers.length + (companySigner && !companyIsSigner ? 1 : 0);
 
   return (
     <AdminModal
@@ -314,8 +311,7 @@ const SendDialog = ({
               loading={busy}
               onClick={send}
             >
-              Send to {signers.length}{' '}
-              {signers.length === 1 ? 'person' : 'people'}
+              Send to {total} {total === 1 ? 'person' : 'people'}
             </AdminButton>
           </>
         )
@@ -324,6 +320,14 @@ const SendDialog = ({
       {step === 'pick' && (
         <div className="flex flex-col gap-5">
           {[
+            ...(preferred.length
+              ? [
+                  {
+                    label: `For ${prefill?.to?.name ?? 'them'}`,
+                    list: preferred,
+                  },
+                ]
+              : []),
             { label: 'Your templates', list: own },
             { label: 'Starter drafts', list: starters },
           ]
@@ -384,7 +388,7 @@ const SendDialog = ({
               >
                 {AGREEMENT_CATEGORIES.map((c) => (
                   <option key={c} value={c}>
-                    {CATEGORY_LABEL[c]}
+                    {docTypeLabel(c)}
                   </option>
                 ))}
               </NativeSelect>
@@ -464,8 +468,65 @@ const SendDialog = ({
             )}
             <p className="text-xs text-neutral-500">
               Each person signs by typing their name exactly as written here.
-              Add yourself if the company signs too.
             </p>
+          </div>
+
+          <div className="flex flex-col gap-3 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3">
+            <div className="grid items-start gap-3 sm:grid-cols-[1fr_250px]">
+              <div>
+                <p className="flex items-center gap-1.5 text-sm font-medium text-white">
+                  <Icon
+                    name="approval"
+                    className="text-[16px] text-violet-300"
+                  />
+                  Signs for {companyName}
+                </p>
+                <p className="mt-0.5 text-xs text-neutral-500">
+                  {companySigner
+                    ? companyIsSigner
+                      ? `${companySigner.name} is already a signer above, and signs for the company.`
+                      : `${companySigner.name} gets it too, and approves it with their saved signature.`
+                    : 'Nobody signs for the company on this one.'}
+                </p>
+              </div>
+              <NativeSelect
+                aria-label="Who signs for the company"
+                value={companyChoice}
+                onChange={(e) =>
+                  setCompanyChoice(e.target.value as CompanyChoice)
+                }
+              >
+                <option value="rules">
+                  {`By the rules: ${signerRuleLabel(
+                    settings?.types[category]?.signer ?? 'owner',
+                    'agreements',
+                  )}`}
+                </option>
+                <option value="owner">
+                  {`The owner${settings?.signatory ? `: ${settings.signatory.name}` : ''}`}
+                </option>
+                <option value="lead">{`Me${user?.name ? `: ${user.name}` : ''}`}</option>
+                <option value="none">Nobody</option>
+              </NativeSelect>
+            </div>
+            {ordered && companySigner && !companyIsSigner && (
+              <ToggleSwitch
+                checked={companyFirst}
+                onChange={setCompanyFirst}
+                label="The company signs first"
+                description="Otherwise it signs after everyone else."
+              />
+            )}
+            <ToggleSwitch
+              checked={isConfidential}
+              onChange={setConfidential}
+              label="Confidential"
+              description={
+                isConfidential
+                  ? 'Only HR, owners and the signers see it. For pay letters and anything with pay in it.'
+                  : 'Everyone who can see agreements sees it.'
+              }
+            />
           </div>
 
           {fields.length > 0 && (
@@ -544,16 +605,47 @@ const SendDialog = ({
       {step === 'preview' && preview && (
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap gap-2">
+            {companySigner && !companyIsSigner && ordered && companyFirst && (
+              <Pill tone="purple" icon="approval">
+                {companySigner.name} · for {companyName}
+              </Pill>
+            )}
             {signers
               .slice()
               .sort((a, b) => a.order - b.order)
-              .map((s, i) => (
-                <Pill key={i} icon="draw">
-                  {ordered ? `${s.order}. ` : ''}
-                  {s.name}
-                  {s.role ? ` · ${s.role}` : ''}
+              .map((s, i) => {
+                const forCompany =
+                  companyIsSigner &&
+                  s.email.trim().toLowerCase() ===
+                    companySigner!.email.toLowerCase();
+                return (
+                  <Pill
+                    key={i}
+                    icon={forCompany ? 'approval' : 'draw'}
+                    tone={forCompany ? 'purple' : undefined}
+                  >
+                    {ordered ? `${s.order}. ` : ''}
+                    {s.name}
+                    {forCompany
+                      ? ` · for ${companyName}`
+                      : s.role
+                        ? ` · ${s.role}`
+                        : ''}
+                  </Pill>
+                );
+              })}
+            {companySigner &&
+              !companyIsSigner &&
+              !(ordered && companyFirst) && (
+                <Pill tone="purple" icon="approval">
+                  {companySigner.name} · for {companyName}
                 </Pill>
-              ))}
+              )}
+            {isConfidential && (
+              <Pill tone="warning" icon="lock">
+                Confidential
+              </Pill>
+            )}
           </div>
           <Paper title={preview.title} body={preview.body} />
         </div>
@@ -632,7 +724,6 @@ const DetailDialog = ({
 
   const open = detail?.status === AGREEMENT_STATUS.SENT;
   const meta = detail ? STATUS_META[detail.status] : null;
-  const firstLink = detail?.signers[0]?.signUrl;
 
   return (
     <>
@@ -642,7 +733,7 @@ const DetailDialog = ({
         title={detail?.title ?? 'Loading…'}
         description={
           detail
-            ? `${CATEGORY_LABEL[detail.category]} · sent by ${detail.sender.name} on ${day(detail.sentAt)}`
+            ? `${detail.typeLabel}${detail.confidential ? ' · confidential' : ''} · sent by ${detail.sender.name} on ${day(detail.sentAt)}`
             : undefined
         }
         icon="signature"
@@ -663,15 +754,13 @@ const DetailDialog = ({
                   </AdminButton>
                 )}
               <div className="flex-1" />
-              {detail.status === AGREEMENT_STATUS.COMPLETED && firstLink && (
+              {detail.pdfUrl && (
                 <a
-                  href={firstLink}
-                  target="_blank"
-                  rel="noreferrer"
+                  href={detail.pdfUrl}
                   className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-xs font-medium text-neutral-100 hover:bg-white/[0.09]"
                 >
                   <Icon name="download" className="text-[16px]" />
-                  Signed copy and certificate
+                  Signed PDF
                 </a>
               )}
               {open && canEdit && (
@@ -707,6 +796,11 @@ const DetailDialog = ({
               {meta && (
                 <Pill tone={meta.tone} icon={meta.icon}>
                   {meta.label}
+                </Pill>
+              )}
+              {detail.confidential && (
+                <Pill tone="warning" icon="lock">
+                  HR and owners
                 </Pill>
               )}
               <span className="text-xs text-neutral-500">
@@ -759,6 +853,11 @@ const DetailDialog = ({
                             </span>
                           )}
                           {s.name}
+                          {s.company && (
+                            <Pill tone="purple" icon="approval">
+                              For the company
+                            </Pill>
+                          )}
                           <Pill tone={SIGNER_META[s.status].tone}>
                             {SIGNER_META[s.status].label}
                           </Pill>
@@ -784,8 +883,9 @@ const DetailDialog = ({
                         )}
                         {sig && (
                           <p className="mt-1 text-[11px] text-neutral-600">
-                            {sig.method === 'drawn' ? 'Drawn' : 'Typed'}{' '}
-                            signature
+                            {sig.saved
+                              ? 'Approved with their saved signature'
+                              : `${sig.method === 'drawn' ? 'Drawn' : 'Typed'} signature`}
                             {sig.ip ? ` from ${sig.ip}` : ''}
                           </p>
                         )}
@@ -809,13 +909,14 @@ const DetailDialog = ({
                             }
                           />
                         )}
-                        {(up ||
-                          detail.status === AGREEMENT_STATUS.COMPLETED) && (
-                          <CopyButton
-                            value={s.signUrl}
-                            label="Copy their link"
-                          />
-                        )}
+                        {s.signUrl &&
+                          (up ||
+                            detail.status === AGREEMENT_STATUS.COMPLETED) && (
+                            <CopyButton
+                              value={s.signUrl}
+                              label="Copy their link"
+                            />
+                          )}
                       </div>
                     </li>
                   );
@@ -1203,6 +1304,8 @@ const TemplatesView = ({
 
 /* ---------------------------------- tab ---------------------------------- */
 
+type View = 'documents' | 'people' | 'templates' | 'rules';
+
 export const AdminAgreements = ({
   selectedCompanyId,
   onSelectCompany,
@@ -1217,76 +1320,74 @@ export const AdminAgreements = ({
   const companyId = readable.some((c) => c.company.id === selectedCompanyId)
     ? selectedCompanyId
     : (readable[0]?.company.id ?? null);
+  const companyName =
+    readable.find((c) => c.company.id === companyId)?.company.name ??
+    'the company';
 
-  const [view, setView] = useState<'agreements' | 'templates'>('agreements');
-  const [agreements, setAgreements] = useState<AgreementView[]>([]);
+  const [view, setView] = useState<View>('documents');
   const [templates, setTemplates] = useState<TemplateView[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<Filter>('all');
-  const [query, setQuery] = useState('');
-  const [sending, setSending] = useState(false);
+  const [settings, setSettings] = useState<SettingsView | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [sending, setSending] = useState<SendPrefill | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!companyId) return;
-    setLoading(true);
     try {
-      const [a, t] = await Promise.all([
-        PortalSdk.getData(`/api/agreements?companyId=${companyId}`, null),
+      const [t, r] = await Promise.all([
         PortalSdk.getData(
           `/api/agreements/templates?companyId=${companyId}`,
           null,
         ),
+        PortalSdk.getData(
+          `/api/agreements/settings?companyId=${companyId}`,
+          null,
+        ),
       ]);
-      setAgreements(a?.data?.agreements ?? []);
       setTemplates(t?.data?.templates ?? []);
+      setSettings(r?.data?.settings ?? null);
     } catch (err) {
       toast.error(errorText(err));
-    } finally {
-      setLoading(false);
     }
   }, [companyId]);
 
   useEffect(() => {
+    setSettings(null);
     load();
   }, [load]);
 
-  // Opened from an email or a link: ?agreement=<id>.
+  const changed = useCallback(() => {
+    setRefreshKey((k) => k + 1);
+    load();
+  }, [load]);
+
+  // Opened from an email or a link: ?agreement=<id>, or ?view=rules.
   useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get('agreement');
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('agreement');
     if (id && /^[a-f0-9]{24}$/i.test(id)) setOpenId(id);
+    const v = params.get('view');
+    if (v === 'people' || v === 'templates' || v === 'rules') setView(v);
   }, []);
 
   const closeDetail = useCallback(() => setOpenId(null), []);
 
+  const openRow = useCallback((row: VaultRow) => {
+    if (row.source === 'onboarding') {
+      if (row.link) window.location.href = row.link;
+      return;
+    }
+    setOpenId(row.id);
+  }, []);
+
   if (!companyId)
     return (
-      <NeedsCompany text="Agreements are sent by company owners and managers." />
+      <NeedsCompany text="Agreements are sent by company owners, HR and managers." />
     );
 
   const canCreate = can(companyId, 'agreements:create');
   const canEdit = can(companyId, 'agreements:edit');
   const canDelete = can(companyId, 'agreements:delete');
-
-  const matchesFilter = (a: AgreementView, f: Filter = filter) =>
-    f === 'all' ||
-    (f === 'open' && a.status === AGREEMENT_STATUS.SENT) ||
-    (f === 'signed' && a.status === AGREEMENT_STATUS.COMPLETED) ||
-    (f === 'closed' &&
-      a.status !== AGREEMENT_STATUS.SENT &&
-      a.status !== AGREEMENT_STATUS.COMPLETED);
-  const q = query.trim().toLowerCase();
-  const shown = agreements.filter(
-    (a) =>
-      matchesFilter(a) &&
-      (!q ||
-        a.title.toLowerCase().includes(q) ||
-        a.signers.some(
-          (s) => s.name.toLowerCase().includes(q) || s.email.includes(q),
-        )),
-  );
-  const count = (f: Filter) =>
-    agreements.filter((a) => matchesFilter(a, f)).length;
 
   return (
     <div className="flex flex-col gap-5">
@@ -1300,8 +1401,10 @@ export const AdminAgreements = ({
           value={view}
           onChange={setView}
           options={[
-            { value: 'agreements', label: 'Agreements', icon: 'signature' },
+            { value: 'documents', label: 'Documents', icon: 'folder_open' },
+            { value: 'people', label: 'People', icon: 'folder_shared' },
             { value: 'templates', label: 'Templates', icon: 'description' },
+            { value: 'rules', label: 'Signing rules', icon: 'approval' },
           ]}
         />
         <div className="flex-1" />
@@ -1310,7 +1413,7 @@ export const AdminAgreements = ({
             tone="primary"
             icon="send"
             disabled={!templates.length}
-            onClick={() => setSending(true)}
+            onClick={() => setSending({})}
           >
             Send an agreement
           </AdminButton>
@@ -1324,128 +1427,45 @@ export const AdminAgreements = ({
           canEdit={canEdit}
           onChanged={load}
         />
+      ) : view === 'rules' ? (
+        <SigningRulesView
+          companyId={companyId}
+          settings={settings}
+          canEdit={canEdit}
+          onSaved={setSettings}
+        />
+      ) : view === 'people' ? (
+        <PeopleView
+          companyId={companyId}
+          refreshKey={refreshKey}
+          onOpen={openRow}
+          canCreate={canCreate}
+          onSend={(to, category) => setSending({ to, category })}
+        />
       ) : (
-        <Panel>
-          <div className="flex flex-wrap items-center gap-3 border-b border-white/[0.07] px-4 py-3">
-            <Segmented
-              value={filter}
-              onChange={setFilter}
-              options={[
-                { value: 'all', label: 'All', count: count('all') },
-                {
-                  value: 'open',
-                  label: 'Out for signing',
-                  count: count('open'),
-                },
-                { value: 'signed', label: 'Signed', count: count('signed') },
-                { value: 'closed', label: 'Closed', count: count('closed') },
-              ]}
-            />
-            <div className="flex-1" />
-            <SearchInput
-              value={query}
-              onChange={setQuery}
-              placeholder="Title or signer"
-            />
-          </div>
-          {loading && !agreements.length ? (
-            <SkeletonRows rows={4} />
-          ) : !shown.length ? (
-            <EmptyState
-              icon="signature"
-              title={
-                agreements.length ? 'Nothing matches' : 'No agreements yet'
-              }
-              description={
-                agreements.length
-                  ? undefined
-                  : 'Send an NDA, a contractor or client agreement, or any document that needs a signature. Each person signs from their own link, no account needed.'
-              }
-              action={
-                !agreements.length && canCreate ? (
-                  <AdminButton
-                    size="sm"
-                    icon="send"
-                    onClick={() => setSending(true)}
-                  >
-                    Send the first one
-                  </AdminButton>
-                ) : undefined
-              }
-            />
-          ) : (
-            <ul className="divide-y divide-white/[0.05]">
-              {shown.map((a) => {
-                const meta = STATUS_META[a.status];
-                const row = (
-                  <>
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-[18px] text-neutral-400">
-                      <Icon
-                        name={
-                          a.source === 'onboarding'
-                            ? 'how_to_reg'
-                            : 'description'
-                        }
-                      />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-white">
-                        {a.title}
-                      </p>
-                      <p className="truncate text-xs text-neutral-500">
-                        {a.signers.map((s) => s.name).join(', ')} · sent{' '}
-                        {day(a.sentAt)}
-                        {a.source === 'onboarding' ? ' · from onboarding' : ''}
-                      </p>
-                    </div>
-                    <Pill className="hidden sm:inline-flex">
-                      {CATEGORY_LABEL[a.category]}
-                    </Pill>
-                    <span className="hidden w-20 text-right text-xs text-neutral-500 sm:block">
-                      {a.progress.signed}/{a.progress.total} signed
-                    </span>
-                    <Pill tone={meta.tone} icon={meta.icon}>
-                      {meta.label}
-                    </Pill>
-                  </>
-                );
-                return (
-                  <li key={a.id}>
-                    {a.source === 'onboarding' && a.link ? (
-                      <a
-                        href={a.link}
-                        className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-white/[0.03]"
-                      >
-                        {row}
-                      </a>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setOpenId(a.id)}
-                        className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.03]"
-                      >
-                        {row}
-                      </button>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </Panel>
+        <VaultView
+          companyId={companyId}
+          refreshKey={refreshKey}
+          onOpen={openRow}
+          canCreate={canCreate}
+          onSend={() => setSending({})}
+        />
       )}
 
       <SendDialog
-        open={sending}
-        onOpenChange={setSending}
+        open={!!sending}
+        onOpenChange={(o) => !o && setSending(null)}
         companyId={companyId}
+        companyName={companyName}
         templates={templates}
-        onSent={load}
+        settings={settings}
+        prefill={sending}
+        onSent={changed}
       />
       <DetailDialog
         id={openId}
         onClose={closeDetail}
-        onChanged={load}
+        onChanged={changed}
         canEdit={canEdit}
         canDelete={canDelete}
       />

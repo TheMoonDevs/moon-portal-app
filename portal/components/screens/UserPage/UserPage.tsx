@@ -3,6 +3,7 @@
 import dayjs from 'dayjs';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { toast, Toaster } from 'sonner';
 
@@ -28,6 +29,7 @@ import {
   UserAvatar,
 } from '../Admin/shared/AdminUI';
 import { CompanyMark, errorText } from '../Admin/Workspace/shared';
+import { DocumentsPanel } from '../Documents/MyDocuments';
 import { ActivityGrid } from './ActivityGrid';
 import { AgendaPanel } from './AgendaPanel';
 import { type Period, periodOf } from './work';
@@ -36,7 +38,9 @@ import { WorkView } from './WorkView';
 /*
  * A person's page: what they worked on (by company, project and task, with
  * how long it took), and what is ahead of them (tasks, plan steps, repeating
- * tasks and meetings) on a calendar.
+ * tasks and meetings) on a calendar. On your own page, a Documents tab holds
+ * everything you signed, what waits for your signature, and your saved
+ * signature (/user?tab=documents).
  */
 
 const Header = ({
@@ -121,6 +125,7 @@ const Profile = ({
 );
 
 type Tab = 'work' | 'ahead';
+type Section = 'overview' | 'documents';
 
 export const UserPage = ({ userId }: { userId?: string }) => {
   const { user } = useUser();
@@ -134,6 +139,20 @@ export const UserPage = ({ userId }: { userId?: string }) => {
   const [person, setPerson] = useState<PagePerson | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('work');
+
+  // Your own page has a Documents tab, kept in the URL so links can open it.
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const section: Section =
+    isSelf && params?.get('tab') === 'documents' ? 'documents' : 'overview';
+  const setSection = (next: Section) => {
+    const q = new URLSearchParams(params?.toString() ?? '');
+    if (next === 'documents') q.set('tab', 'documents');
+    else q.delete('tab');
+    const path = pathname ?? '/user';
+    router.replace(q.size ? `${path}?${q}` : path, { scroll: false });
+  };
 
   useEffect(() => {
     if (!personId) return;
@@ -252,34 +271,60 @@ export const UserPage = ({ userId }: { userId?: string }) => {
           <ActivityGrid data={activity} selected={period} onPick={pickDay} />
         </div>
 
-        <Segmented
-          className="mb-5 w-full lg:hidden [&>button]:flex-1 [&>button]:justify-center"
-          value={tab}
-          onChange={setTab}
-          options={[
-            { value: 'work', label: 'Work', icon: 'insights' },
-            { value: 'ahead', label: 'Up next', icon: 'event_upcoming' },
-          ]}
-        />
+        {isSelf && (
+          <Segmented
+            className="mb-6"
+            value={section}
+            onChange={setSection}
+            options={[
+              { value: 'overview', label: 'Work', icon: 'insights' },
+              { value: 'documents', label: 'Documents', icon: 'description' },
+            ]}
+          />
+        )}
 
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
-          <div className={cn('min-w-0', tab !== 'work' && 'hidden lg:block')}>
-            <WorkView
-              data={work}
-              period={period}
-              onPeriod={setPeriod}
-              onPointStatus={isSelf ? setPointStatus : undefined}
-            />
+        {section === 'documents' ? (
+          <div className="max-w-3xl">
+            <DocumentsPanel theme="dark" />
           </div>
-          <aside
-            className={cn(
-              'min-w-0 lg:sticky lg:top-16 lg:self-start',
-              tab !== 'ahead' && 'hidden lg:block',
-            )}
-          >
-            <AgendaPanel agenda={agenda} canTick={isSelf} onTick={tickTask} />
-          </aside>
-        </div>
+        ) : (
+          <>
+            <Segmented
+              className="mb-5 w-full lg:hidden [&>button]:flex-1 [&>button]:justify-center"
+              value={tab}
+              onChange={setTab}
+              options={[
+                { value: 'work', label: 'Work', icon: 'insights' },
+                { value: 'ahead', label: 'Up next', icon: 'event_upcoming' },
+              ]}
+            />
+
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+              <div
+                className={cn('min-w-0', tab !== 'work' && 'hidden lg:block')}
+              >
+                <WorkView
+                  data={work}
+                  period={period}
+                  onPeriod={setPeriod}
+                  onPointStatus={isSelf ? setPointStatus : undefined}
+                />
+              </div>
+              <aside
+                className={cn(
+                  'min-w-0 lg:sticky lg:top-16 lg:self-start',
+                  tab !== 'ahead' && 'hidden lg:block',
+                )}
+              >
+                <AgendaPanel
+                  agenda={agenda}
+                  canTick={isSelf}
+                  onTick={tickTask}
+                />
+              </aside>
+            </div>
+          </>
+        )}
       </motion.main>
       <Toaster theme="dark" position="bottom-right" richColors />
     </div>

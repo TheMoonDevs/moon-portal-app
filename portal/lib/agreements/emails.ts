@@ -11,7 +11,10 @@ import { formatDay } from '@/lib/onboarding/meta';
 
 export type AgreementEmailKind =
   | 'request'
+  | 'countersign'
   | 'reminder'
+  | 'due'
+  | 'signed'
   | 'completed'
   | 'declined'
   | 'voided';
@@ -32,6 +35,17 @@ export interface AgreementEmailContext {
   reason?: string | null;
   /** For `completed`: everyone who signed. */
   signedBy?: string[];
+  /** For `signed`: who just signed, and who it is waiting on now. */
+  justSigned?: string | null;
+  waitingOn?: string[];
+  /** Whether the recipient still has to sign (for `signed`). */
+  stillToSign?: boolean;
+  /** For `countersign`: the other parties who already signed. */
+  partiesSigned?: string[];
+  /** Written to the people who sent it, not a signer. */
+  forTeam?: boolean;
+  /** The signed PDF, for `completed`. */
+  pdf?: { filename: string; base64: string } | null;
 }
 
 export function agreementEmail(ctx: AgreementEmailContext): {
@@ -61,6 +75,47 @@ If anything in it looks wrong, reply to this email before signing.
 
 ${sign}`,
       };
+    case 'countersign':
+      return {
+        subject: `Countersign: ${ctx.title}`,
+        text: `${hi}
+
+"${ctx.title}" needs your signature for ${ctx.companyName}.${ctx.partiesSigned?.length ? ` ${ctx.partiesSigned.join(' and ')} already signed.` : ''}
+${note}
+Open it here. If you saved your signature in the Portal, it's one click to approve:
+
+${ctx.signUrl}
+${deadline}
+${sign}`,
+      };
+    case 'signed':
+      return {
+        subject: `${ctx.justSigned ?? 'Someone'} signed: ${ctx.title}`,
+        text: `${hi}
+
+${ctx.justSigned ?? 'Someone'} signed "${ctx.title}".${
+          ctx.stillToSign
+            ? ' It is still waiting for your signature:'
+            : ctx.waitingOn?.length
+              ? ` It is now waiting for ${ctx.waitingOn.join(', ')}.`
+              : ''
+        }
+${ctx.stillToSign ? `\n${ctx.signUrl}\n${deadline}` : ''}
+You'll get the signed copy as soon as everyone has signed.
+
+${sign}`,
+      };
+    case 'due':
+      return {
+        subject: `Due tomorrow: please sign ${ctx.title}`,
+        text: `${hi}
+
+"${ctx.title}" from ${ctx.companyName} must be signed by tomorrow${ctx.expiresOn ? `, ${formatDay(ctx.expiresOn)}` : ''}. After that the link stops working.
+
+${ctx.signUrl}
+
+${sign}`,
+      };
     case 'reminder':
       return {
         subject: `Reminder: please sign ${ctx.title}`,
@@ -79,7 +134,7 @@ ${sign}`,
 
 "${ctx.title}" is now signed by everyone${ctx.signedBy?.length ? ` (${ctx.signedBy.join(', ')})` : ''}.
 
-Your signed copy, with its audit trail, is here. Keep this email to find it again:
+${ctx.pdf ? 'The signed PDF is attached. The copy with its audit trail is also here:' : 'Your signed copy, with its audit trail, is here. Keep this email to find it again:'}
 
 ${ctx.signUrl}
 
@@ -92,7 +147,7 @@ ${sign}`,
 
 ${ctx.declinedBy ?? 'A signer'} declined to sign "${ctx.title}".${ctx.reason ? `\n\nTheir reason: ${ctx.reason}` : ''}
 
-Nobody else can sign it now. You can send a corrected one from the portal.
+${ctx.forTeam ? 'Nobody else can sign it now. You can send a corrected one from the portal.' : `Nobody else can sign it now, and you don't need to do anything. ${ctx.companyName} may send a corrected one.`}
 
 ${ctx.signUrl}`,
       };
@@ -128,6 +183,18 @@ export async function sendAgreementEmail(
         { name: 'source', value: 'portal-agreements' },
         { name: 'kind', value: `agreement-${ctx.kind}` },
       ],
+      ...(ctx.pdf
+        ? {
+            attachments: [
+              {
+                filename: ctx.pdf.filename,
+                content: ctx.pdf.base64,
+                contentType: 'application/pdf',
+                encoding: 'base64' as const,
+              },
+            ],
+          }
+        : {}),
     },
     idempotencyKey,
   );

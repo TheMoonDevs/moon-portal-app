@@ -10,6 +10,7 @@ import media from '@/styles/media';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { useUser } from '@/utils/hooks/useUser';
 
+import { ToSignSection } from '../Documents/MyDocuments';
 import { CompaniesSection } from './CompaniesSection';
 import { DailySection } from './DailySection';
 import { InWorkSection } from './InWorkSection';
@@ -69,6 +70,7 @@ export const HomePage = () => {
       </div>
       <div className="grid w-full grid-cols-3 max-sm:grid-cols-1">
         <div className="pt-8">
+          <ToSignSection />
           <CompaniesSection />
           <ProjectsSection />
           <TasksSection />

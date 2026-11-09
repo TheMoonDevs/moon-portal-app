@@ -1,3 +1,5 @@
+import { DOC_TYPES } from '@/lib/agreements/docTypes';
+import { myDocuments } from '@/lib/agreements/mine';
 import {
   agreementByToken,
   agreementDetail,
@@ -9,10 +11,12 @@ import {
   parseAgreementInput,
   remindSigners,
   renderAgreement,
+  seesConfidential,
   sendAgreement,
   voidAgreement,
 } from '@/lib/agreements/server';
 import { STARTER_TEMPLATES } from '@/lib/agreements/templates';
+import { personFile, searchVault, vaultPeople } from '@/lib/agreements/vault';
 import type { SessionUser } from '@/lib/permissions/server';
 import { AGREEMENT_CATEGORY, AGREEMENT_STATUS } from '@/models/agreements';
 import type { Company } from '@/models/workspace';
@@ -21,7 +25,9 @@ import { companiesWith, type Tool, ToolError } from './shared';
 
 /*
  * Agreements through Claude: the same steps as the Agreements tab. Send any
- * agreement to sign, follow it, remind or withdraw it.
+ * agreement to sign, follow it, remind or withdraw it; search the vault of
+ * signed documents and open a person's file. Claude never signs or approves:
+ * a signature is always the person's own click.
  */
 
 const canRead = async (user: SessionUser) =>
@@ -135,7 +141,9 @@ export const AGREEMENT_TOOLS: Tool[] = [
           'agreements:read',
         );
         const [rows, templates] = await Promise.all([
-          listAgreements(company.id, context.origin),
+          listAgreements(company.id, context.origin, {
+            confidential: await seesConfidential(user, company.id),
+          }),
           listTemplates(company.id),
         ]);
         return {
@@ -146,8 +154,9 @@ export const AGREEMENT_TOOLS: Tool[] = [
             .map((a) => ({
               id: a.id,
               title: a.title,
-              kind: a.category,
+              kind: a.typeLabel,
               status: a.status,
+              confidential: a.confidential || undefined,
               from: a.source,
               sentAt: a.sentAt,
               completedAt: a.completedAt,
@@ -155,6 +164,7 @@ export const AGREEMENT_TOOLS: Tool[] = [
                 name: s.name,
                 email: s.email,
                 status: s.status,
+                forCompany: s.company || undefined,
               })),
             })),
           templates: templates.map((t) => ({
@@ -203,7 +213,7 @@ export const AGREEMENT_TOOLS: Tool[] = [
     name: 'send_agreement',
     title: 'Send an agreement to sign',
     description:
-      "Sends an agreement for e-signing: each signer gets their own link by email and signs by typing (or drawing) their name. Give a template (its id or name from list_agreements, e.g. 'Mutual NDA') with values for its blanks, or your own title and Markdown text. Always call with preview: true first, show the person the text and the signers, and send only after they say yes. Never guess fees, dates or legal terms: ask.",
+      "Sends an agreement for e-signing: each signer gets their own link by email and signs by typing (or drawing) their name. Give a template (its id or name from list_agreements, e.g. 'Mutual NDA') with values for its blanks, or your own title and Markdown text. List only the other parties as signers: the company's signer is added by the document type's rule (the owner for most, the sender for minor ones such as policy acknowledgements) and countersigns after them, unless companySigner or companyFirst says otherwise. Always call with preview: true first, show the person the text and the signers, and send only after they say yes. Never guess fees, dates or legal terms: ask.",
     inputSchema: {
       type: 'object',
       properties: {
@@ -233,6 +243,22 @@ export const AGREEMENT_TOOLS: Tool[] = [
           description: 'Last day to sign, YYYY-MM-DD.',
         },
         ccEmails: { type: 'array', items: { type: 'string' } },
+        companySigner: {
+          type: 'string',
+          enum: ['owner', 'lead', 'none'],
+          description:
+            "Who signs for the company, if not the type's rule: the owner, the sender (lead), or nobody.",
+        },
+        companyFirst: {
+          type: 'boolean',
+          description:
+            'With ordered: the company signs first (an offer goes out signed), not last.',
+        },
+        confidential: {
+          type: 'boolean',
+          description:
+            "Only HR and owners see it (pay, fees). Defaults to the type's setting.",
+        },
         preview: {
           type: 'boolean',
           description: 'Return the text without sending.',
@@ -276,6 +302,9 @@ export const AGREEMENT_TOOLS: Tool[] = [
           message: args?.message,
           expiresOn: args?.expiresOn,
           ccEmails: args?.ccEmails,
+          companySigner: args?.companySigner,
+          companyFirst: args?.companyFirst === true,
+          confidential: args?.confidential,
         });
         if (args?.preview) {
           const r = await renderAgreement(input);
@@ -301,8 +330,10 @@ export const AGREEMENT_TOOLS: Tool[] = [
             name: s.name,
             email: s.email,
             status: s.status,
+            forCompany: s.company || undefined,
             signUrl: s.signUrl,
           })),
+          confidential: view.confidential,
           emailErrors,
           link: tabLink(context.origin, company.id, view.id),
         };
@@ -354,6 +385,181 @@ export const AGREEMENT_TOOLS: Tool[] = [
           return { withdrawn: true, status: updated.status };
         }
         throw new ToolError('action is remind or void.');
+      }),
+  },
+  {
+    name: 'search_documents',
+    title: 'Search signed documents',
+    description:
+      "The company's document vault: every agreement and onboarding document (offer, NDA, Trial Policy, work agreement), signed or out for signing. Filter by person (name is not enough: give their email or portal id), type, status (SENT, COMPLETED, DECLINED, VOIDED, EXPIRED, or WAITING_COMPANY for ones waiting on the company's countersignature), sent dates, project, or words in the text. Confidential ones (pay) only show for HR and owners.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        company: { type: 'string', description: 'Company id or name.' },
+        q: {
+          type: 'string',
+          description: 'Words in the title, text or names.',
+        },
+        person: { type: 'string', description: 'An email or portal user id.' },
+        type: {
+          type: 'string',
+          enum: DOC_TYPES.map((t) => t.key),
+          description: 'Document type.',
+        },
+        status: { type: 'string' },
+        from: { type: 'string', description: 'Sent on or after, YYYY-MM-DD.' },
+        to: { type: 'string', description: 'Sent on or before, YYYY-MM-DD.' },
+        project: {
+          type: 'string',
+          description: 'Project id: its team’s documents.',
+        },
+      },
+    },
+    annotations: { readOnlyHint: true },
+    visible: canRead,
+    run: async (user, args, context) =>
+      attempt(async () => {
+        const company = await findCompany(
+          user,
+          args?.company,
+          'agreements:read',
+        );
+        const str = (v: unknown) =>
+          typeof v === 'string' && v.trim() ? v.trim() : null;
+        const rows = await searchVault(
+          user,
+          company.id,
+          {
+            q: str(args?.q),
+            person: str(args?.person)?.toLowerCase() ?? null,
+            type: str(args?.type),
+            status: str(args?.status),
+            from: str(args?.from),
+            to: str(args?.to),
+            projectId: str(args?.project),
+          },
+          context.origin,
+        );
+        return {
+          company: { id: company.id, name: company.name },
+          count: rows.length,
+          documents: rows.slice(0, 100).map((r) => ({
+            ref: r.id,
+            title: r.title,
+            type: r.typeLabel,
+            status: r.status,
+            confidential: r.confidential || undefined,
+            sentAt: r.sentAt,
+            completedAt: r.completedAt,
+            signers: r.signers.map((s) => ({
+              name: s.name,
+              email: s.email,
+              status: s.status,
+              forCompany: s.company || undefined,
+              signedAt: s.signedAt,
+            })),
+            pdf: r.pdfUrl ? `${context.origin}${r.pdfUrl}` : null,
+          })),
+          vault: tabLink(context.origin, company.id),
+        };
+      }),
+  },
+  {
+    name: 'get_person_documents',
+    title: "Open a person's document file",
+    description:
+      "One person's file in a company: everything they signed or still have to sign, and what's missing (e.g. no NDA on file). Without person, lists the company's people with their counts.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        company: { type: 'string' },
+        person: {
+          type: 'string',
+          description: 'Their portal user id or email.',
+        },
+      },
+    },
+    annotations: { readOnlyHint: true },
+    visible: canRead,
+    run: async (user, args, context) =>
+      attempt(async () => {
+        const company = await findCompany(
+          user,
+          args?.company,
+          'agreements:read',
+        );
+        const people = await vaultPeople(user, company.id, context.origin);
+        const ref =
+          typeof args?.person === 'string'
+            ? args.person.trim().toLowerCase()
+            : '';
+        if (!ref)
+          return {
+            company: { id: company.id, name: company.name },
+            people: people.map((p) => ({
+              id: p.userId,
+              name: p.name,
+              email: p.email,
+              signed: p.signed,
+              waiting: p.waiting,
+            })),
+          };
+        const match = people.find(
+          (p) => p.userId === ref || p.email?.toLowerCase() === ref,
+        );
+        if (!match)
+          throw new ToolError(
+            `No one with "${args?.person}" in ${company.name}. Call without person for the list.`,
+          );
+        const file = await personFile(
+          user,
+          company.id,
+          match.userId,
+          context.origin,
+        );
+        return {
+          person: file.person,
+          missing: file.missing,
+          hiddenConfidential: file.hiddenConfidential || undefined,
+          documents: file.documents.map((r) => ({
+            ref: r.id,
+            title: r.title,
+            type: r.typeLabel,
+            status: r.status,
+            sentAt: r.sentAt,
+            completedAt: r.completedAt,
+            waitingOnThem: file.waitingOnThem.includes(r.id) || undefined,
+            pdf: r.pdfUrl ? `${context.origin}${r.pdfUrl}` : null,
+          })),
+        };
+      }),
+  },
+  {
+    name: 'my_documents',
+    title: 'My documents to sign',
+    description:
+      "The person's own documents: what's waiting for their signature or their approval for the company, and everything they signed. Claude can't sign or approve; point them to the link or to their Profile's Documents tab.",
+    inputSchema: { type: 'object', properties: {} },
+    annotations: { readOnlyHint: true },
+    run: async (user, _args, context) =>
+      attempt(async () => {
+        const mine = await myDocuments(user);
+        const row = (d: (typeof mine.documents)[number]) => ({
+          title: d.title,
+          company: d.companyName,
+          as: d.as === 'company' ? 'for the company' : 'party',
+          status: d.status,
+          sentAt: d.sentAt,
+          signedAt: d.signedAt,
+          link: d.signUrl ? `${context.origin}${d.signUrl}` : null,
+          pdf: d.pdfUrl ? `${context.origin}${d.pdfUrl}` : null,
+        });
+        return {
+          toSign: mine.toSign.map(row),
+          documents: mine.documents.slice(0, 100).map(row),
+          hasSavedSignature: !!mine.signature,
+          profile: `${context.origin}/user?tab=documents`,
+        };
       }),
   },
 ];

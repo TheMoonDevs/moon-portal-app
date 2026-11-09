@@ -118,6 +118,26 @@ export interface OnboardingDocument {
   sentAt: string;
   viewedAt?: Nullable<string>;
   signature?: Nullable<DocumentSignature>;
+  /**
+   * The company's countersignature, asked for once the hire has signed: the
+   * owner or the hiring lead, by document type (lib/agreements/settings).
+   */
+  countersign?: Nullable<DocumentCountersign>;
+}
+
+export interface DocumentCountersign {
+  userId: string;
+  name: string;
+  /** `owner` or `lead`: which rule picked them. */
+  as: 'owner' | 'lead';
+  requestedAt: string;
+  signature?: Nullable<
+    DocumentSignature & {
+      method: 'typed' | 'drawn';
+      image?: Nullable<string>;
+      saved?: Nullable<boolean>;
+    }
+  >;
 }
 
 /** The trial payment, worked out from the monthly pay when terms are set. */

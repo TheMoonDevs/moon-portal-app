@@ -3,6 +3,7 @@ import { cache } from 'react';
 
 import { SignLinkMissing, SignPage } from '@/components/screens/Sign/SignPage';
 import { agreementByToken, signingState } from '@/lib/agreements/server';
+import { getSessionUser } from '@/lib/permissions/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +13,9 @@ type Props = { params: { token: string } };
 const loadSign = cache(async (token: string) => {
   const found = await agreementByToken(token);
   if (!found) return null;
-  return signingState(found.agreement, token);
+  // Signed in as this signer, they can approve with a saved signature.
+  const viewer = await getSessionUser().catch(() => null);
+  return signingState(found.agreement, token, viewer);
 });
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

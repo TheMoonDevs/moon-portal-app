@@ -91,8 +91,16 @@ export const PERMISSION_RESOURCES: ResourceDefinition[] = [
     key: 'agreements',
     label: 'Agreements',
     description:
-      'Agreements the company sends out to be signed (NDAs, contractor and client agreements, policies) and their templates. `read` sees them and their audit trail; `create` sends new ones; `edit` reminds, withdraws and edits templates.',
+      "Agreements the company sends out to be signed (NDAs, contractor and client agreements, policies), the document vault of everything signed, and their templates. `read` sees them, their audit trail and every person's file; `create` sends new ones; `edit` reminds, withdraws, edits templates and sets who signs for the company.",
     actions: ['read', 'create', 'edit', 'delete'],
+    scope: 'company',
+  },
+  {
+    key: 'confidential',
+    label: 'Confidential documents',
+    description:
+      "Signed documents marked confidential, such as offer letters, pay letters and work agreements. `read` sees them in the vault and in people's files. Meant for HR and owners; people always see their own.",
+    actions: ['read'],
     scope: 'company',
   },
   {

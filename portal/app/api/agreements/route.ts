@@ -4,6 +4,7 @@ import {
   listAgreements,
   parseAgreementInput,
   requireAgreements,
+  seesConfidential,
   sendAgreement,
 } from '@/lib/agreements/server';
 import { originOf } from '@/lib/mcp/tokens';
@@ -21,7 +22,9 @@ export async function GET(request: Request) {
   try {
     await requireAgreements(actor, companyId, 'agreements:read');
     return ok({
-      agreements: await listAgreements(companyId, originOf(request)),
+      agreements: await listAgreements(companyId, originOf(request), {
+        confidential: await seesConfidential(actor, companyId),
+      }),
     });
   } catch (e) {
     return agreementFailure(e);
@@ -31,7 +34,9 @@ export async function GET(request: Request) {
 /**
  * Sends an agreement to sign: `{ companyId, title, body, category, signers:
  * [{ name, email, role?, order? }], ordered?, message?, expiresOn?, values?,
- * ccEmails?, templateId? }`.
+ * ccEmails?, templateId?, companySigner?: 'owner' | 'lead' | 'none',
+ * companyFirst?, confidential? }`. Who signs for the company follows the
+ * document type's rule unless `companySigner` says otherwise.
  */
 export async function POST(request: Request) {
   const actor = await getSessionUser();

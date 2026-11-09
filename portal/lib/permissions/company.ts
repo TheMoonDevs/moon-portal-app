@@ -108,6 +108,25 @@ export const DEFAULT_COMPANY_ROLES: CompanyRoleDefinition[] = [
     ],
   },
   {
+    key: 'hr',
+    name: 'HR',
+    description:
+      'Runs hiring and onboarding, sends agreements and sees every signed document, confidential ones (pay letters, offers) included.',
+    permissions: [
+      'companies:read',
+      'members:read',
+      'hiring:read',
+      'hiring:create',
+      'hiring:edit',
+      'hiring:delete',
+      'agreements:read',
+      'agreements:create',
+      'agreements:edit',
+      'agreements:delete',
+      'confidential:read',
+    ],
+  },
+  {
     key: 'viewer',
     name: 'Viewer',
     description:
