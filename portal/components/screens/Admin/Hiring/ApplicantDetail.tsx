@@ -241,8 +241,9 @@ const TaskSection = ({
           {due && (
             <span
               className={cn(
-                due < new Date() && !sent && 'text-rose-300',
-                application.taskDueOverride && 'text-amber-200',
+                due < new Date() && !sent
+                  ? 'text-rose-300'
+                  : application.taskDueOverride && 'text-amber-200',
               )}
               title={
                 application.taskDueOverride
