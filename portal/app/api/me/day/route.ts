@@ -1,6 +1,6 @@
 import { mergeCopies } from '@/lib/daywork/duplicates';
 import { isDay, loadDay } from '@/lib/daywork/server';
-import { syncMeetingTasks } from '@/lib/meet/meetingTasks';
+import { meetingFactsFor, syncMeetingTasks } from '@/lib/meet/meetingTasks';
 import { db } from '@/lib/mongodb/db-client';
 import { linkCandidates } from '@/lib/worklogs/linker';
 import { fail, ok, requireUser } from '@/lib/workspace/server';
@@ -86,8 +86,13 @@ export async function GET(request: Request) {
         : ((extra.find((p: { id: string }) => p.id === projectId)?.goals ??
             []) as ProjectGoal[]),
     );
+  // Meeting tasks carry their meeting: when (24-hour clock), who, how to join.
+  const meetings = await meetingFactsFor(day.tasks, user.id);
   return ok({
     ...day,
+    tasks: day.tasks.map((t) =>
+      meetings[t.id] ? { ...t, meeting: meetings[t.id] } : t,
+    ),
     projects: [
       ...candidates.projects.map((p) => ({
         id: p.id,

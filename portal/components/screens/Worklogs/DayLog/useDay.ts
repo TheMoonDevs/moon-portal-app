@@ -17,6 +17,10 @@ import { PortalSdk } from '@/utils/services/PortalSdk';
 export type DayTask = {
   id: string;
   title: string;
+  /** How the task is to be done, as whoever set it wrote it. */
+  description?: string | null;
+  /** Set on a meeting's task: when it is, who with, how to join. */
+  meeting?: DayMeeting | null;
   status: string;
   flag?: 'blocked' | 'waiting' | null;
   projectId?: string | null;
@@ -46,6 +50,19 @@ export type DayTask = {
   draft?: boolean;
   /** Only on the page: the row's key while it is open, kept once saved. */
   rowKey?: string;
+};
+
+export type DayMeeting = {
+  start: string;
+  end: string;
+  /** "14:30–15:00", 24-hour clock in the person's timezone. */
+  time: string;
+  timezone: string;
+  with: string;
+  interview: boolean;
+  joinUrl: string | null;
+  note: string | null;
+  status: string;
 };
 
 export type DayPoint = {
@@ -287,6 +304,8 @@ export function useDay(date: string) {
                   ? // Words typed while saving stay as typed.
                     {
                       ...task,
+                      // A saved task comes back without its meeting.
+                      meeting: t.meeting,
                       rowKey: t.rowKey,
                       title: 'title' in body ? t.title : task.title,
                     }
@@ -393,7 +412,12 @@ export function useDay(date: string) {
               ts
                 .map((t) =>
                   t.id === id || t.id === real
-                    ? { ...res.data.task, title: t.title, rowKey: t.rowKey }
+                    ? {
+                        ...res.data.task,
+                        meeting: t.meeting,
+                        title: t.title,
+                        rowKey: t.rowKey,
+                      }
                     : t,
                 )
                 .filter(onDay),

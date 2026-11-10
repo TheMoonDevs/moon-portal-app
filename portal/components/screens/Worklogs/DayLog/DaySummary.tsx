@@ -69,7 +69,8 @@ const TaskBlock = ({ task, day }: { task: DayTask; day: Day }) => {
     facts.push(`From ${dayjs(task.forDate).format('ddd D MMM')}`);
   if (task.forDate && task.forDate > day.date)
     facts.push(`Planned for ${dayjs(task.forDate).format('ddd D MMM')}`);
-  if (task.madeBy === 'meet') facts.push('From a meeting');
+  if (task.meeting) facts.push(`Meeting ${task.meeting.time}`);
+  else if (task.madeBy === 'meet') facts.push('From a meeting');
   else if (task.madeBy && task.madeBy !== 'person')
     facts.push('Added by Claude');
   if (task.size === 'MAJOR') facts.push('Major task');
