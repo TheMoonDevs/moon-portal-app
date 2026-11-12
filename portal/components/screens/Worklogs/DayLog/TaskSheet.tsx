@@ -579,7 +579,29 @@ export type SheetGroup = {
   add?: { place: PlaceInput | null; placeholder?: string } | null;
   /** Finished tasks: shown quieter. */
   quiet?: boolean;
+  /** Finished tasks: struck through as well. */
+  strike?: boolean;
+  /** Claude's tasks, mixed in with the person's: a bot after each. */
+  markClaude?: boolean;
 };
+
+/** A task Claude made. Meetings (made by Meet) are the person's own. */
+export const madeByClaude = (t: Pick<DayTask, 'madeBy'>) =>
+  !!t.madeBy && t.madeBy !== 'person' && t.madeBy !== 'meet';
+
+/** After a task of Claude's mixed in with the person's: a small bot. */
+const ClaudeMark = () => (
+  <span
+    title="Added by Claude"
+    aria-label="Added by Claude"
+    className="pointer-events-auto ml-1.5 inline-flex cursor-help align-[-2px]"
+  >
+    <Icon
+      name="smart_toy"
+      className="text-[14px] text-violet-300 auto-light:text-violet-600"
+    />
+  </span>
+);
 
 export const SheetHeading = ({ children }: { children: ReactNode }) => (
   <div className="flex items-center gap-1.5 px-2 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
@@ -795,6 +817,8 @@ export const TaskSheet = ({
     // In no project (and not kept personal on purpose).
     const unplaced =
       !task.draft && !task.projectId && task.placedBy !== 'personal';
+    // In a mixed list, Claude's tasks carry a bot where the star would be.
+    const bot = !!group.markClaude && !task.draft && madeByClaude(task);
     const moveOptions: PickerOption[] = tasks
       .filter((t) => t.id !== task.id && !t.draft && t.title.trim())
       .map((t) => ({
@@ -852,9 +876,13 @@ export const TaskSheet = ({
                 shut &&
                   group.quiet &&
                   'text-neutral-400 auto-light:text-neutral-500',
+                shut &&
+                  group.strike &&
+                  'line-through decoration-neutral-500/70 auto-light:decoration-neutral-400',
               )}
             />
             {(count > 0 ||
+              bot ||
               !!task.goalMissed ||
               linked ||
               unplaced ||
@@ -883,7 +911,9 @@ export const TaskSheet = ({
                     {count}
                   </span>
                 )}
-                {task.goalMissed ? (
+                {bot ? (
+                  <ClaudeMark />
+                ) : task.goalMissed ? (
                   <MissedStar missed={task.goalMissed} />
                 ) : (
                   (linked || goalOpen) && (
@@ -902,9 +932,10 @@ export const TaskSheet = ({
                     />
                   )
                 )}
-                {details && (task.goalMissed || !(linked || goalOpen)) && (
-                  <TaskInfo task={task} />
-                )}
+                {details &&
+                  (bot || task.goalMissed || !(linked || goalOpen)) && (
+                    <TaskInfo task={task} />
+                  )}
                 {unplaced && <UnplacedMark />}
                 {task.goalId && task.forDate && task.forDate !== day.date && (
                   // A goal's task done on another day: say which day it was for.
