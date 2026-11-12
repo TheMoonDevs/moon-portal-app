@@ -59,12 +59,12 @@ These need the Expo, Apple and Google accounts, so they are done by hand.
    `eas init` can't write into a dynamic config, so its "Cannot
    automatically write" message is expected.
 2. **Google sign-in client ids**, in the Google Cloud project behind the
-   `themoondevs` Firebase project:
-   - Web client id: Firebase console → Authentication → Sign-in method →
-     Google → Web SDK configuration. Set it as `GOOGLE_WEB_CLIENT_ID`.
-   - iOS: Google Cloud console → APIs & Services → Credentials → Create
-     OAuth client id → iOS, bundle id `com.themoondevs.portal`. Set it as
-     `GOOGLE_IOS_CLIENT_ID`.
+   `themoondevs` Firebase project. The web and iOS ids are set in
+   `app.config.ts` (they are not secrets):
+   - Web: `731981843950-5ng0…` (Firebase → Authentication → Sign-in method →
+     Google → Web SDK configuration).
+   - iOS: `731981843950-9gg7…`, an iOS OAuth client for
+     `com.themoondevs.portal`.
    - Android: Create OAuth client id → Android, package
      `com.themoondevs.portal`, with the keystore's SHA-1. Get it from
      `npx eas-cli@latest credentials -p android` → a build profile →
@@ -75,7 +75,6 @@ These need the Expo, Apple and Google accounts, so they are done by hand.
    - The Google Service Account key under credentials is only for
      uploading to Play Store (`eas submit`) and, as an FCM V1 key, for
      Android push. Neither is needed to sign in.
-   Add both variables to `.env.local` and the EAS environments.
 3. **Push (later step).** `EXPO_ACCESS_TOKEN` on the portal only if enhanced
    push security is turned on for the Expo project.
 
