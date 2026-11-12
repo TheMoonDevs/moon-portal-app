@@ -56,7 +56,8 @@ import { upcomingOf, useYourTasks, YourTasks } from './YourTasks';
 const fmt = (d: dayjs.Dayjs) => d.format('YYYY-MM-DD');
 
 const SHOW_POINTS_KEY = 'worklogs.points';
-const VIEW_KEY = 'worklogs.view';
+// A new key: choices saved before Projects became the default start over.
+const VIEW_KEY = 'worklogs.view.v2';
 
 /**
  * How the day's sheet is laid out: the plan (the day's tasks and what is
@@ -72,9 +73,8 @@ const VIEWS: { value: View; label: string }[] = [
   { value: 'projects', label: 'Projects' },
   { value: 'summary', label: 'Summary' },
 ];
-/** Plan and Work follow the day; the other views stay as picked. */
-const dayView = (date: string): View => (date > fmt(dayjs()) ? 'plan' : 'work');
-const followsDay = (v: View) => v === 'plan' || v === 'work';
+/** Every day opens by project, until the person picks another view. */
+const DEFAULT_VIEW: View = 'projects';
 
 /** Closed on this day: finished, let go or archived (not moved on). */
 const FINISHED: TaskRowStatus[] = ['done', 'not_done', 'archived'];
@@ -206,21 +206,16 @@ export const DayLogPage = ({
       // Storage can be blocked; the choice then lasts for this visit.
     }
   };
-  // Plan for a day ahead, Work for today or a day gone; Mixed, Projects and
-  // Summary are kept once picked.
-  const [view, setView] = useState<View>(() => dayView(date));
+  // Projects for every day; a view the person picks is kept.
+  const [view, setView] = useState<View>(DEFAULT_VIEW);
   useEffect(() => {
     try {
       const saved = localStorage.getItem(VIEW_KEY) as View | null;
-      if (saved && !followsDay(saved) && VIEWS.some((v) => v.value === saved))
-        setView(saved);
+      if (saved && VIEWS.some((v) => v.value === saved)) setView(saved);
     } catch {
       // Storage can be blocked; the choice then lasts for this visit.
     }
   }, []);
-  useEffect(() => {
-    setView((v) => (followsDay(v) ? dayView(date) : v));
-  }, [date]);
   const pickView = (next: View) => {
     setView(next);
     try {
@@ -417,10 +412,14 @@ export const DayLogPage = ({
     ].filter((k, i, all) => all.indexOf(k) === i);
     return keys
       .map((key): SheetGroup | null => {
-        const place = placeOfKey(key, day.projects, day.companies);
         const tasks = shown.filter(
           (t) => placeOf(t, day.projects, day.companies).key === key,
         );
+        // The place as its tasks have it: Personal's key alone loses its
+        // company, which the Personal filter goes by.
+        const place = tasks.length
+          ? placeOf(tasks[0], day.projects, day.companies)
+          : placeOfKey(key, day.projects, day.companies);
         if (!tasks.length && !extraPlaces.includes(key)) return null;
         if (filter && key !== filter && companyKeyOf(place) !== filter)
           return null;
