@@ -19,6 +19,11 @@ export function setApiToken(value: string | null) {
   token = value;
 }
 
+/** Headers that open portal files the app shows (chat photos). */
+export function authHeaders(): Record<string, string> {
+  return token ? { authorization: `Bearer ${token}` } : {};
+}
+
 /** Called when the portal says the token no longer works. */
 export function setOnSignedOut(handler: (() => void) | null) {
   onSignedOut = handler;
@@ -27,15 +32,32 @@ export function setOnSignedOut(handler: (() => void) | null) {
 type Options = {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
+  /** A file upload: sent as multipart instead of JSON. */
+  form?: FormData;
   /** Leave the token off (sign-in). */
   anonymous?: boolean;
 };
+
+/** A path with its query string, leaving out empty values. */
+export function withQuery(path: string, query: Record<string, string | number | null | undefined>) {
+  const parts = Object.entries(query)
+    .filter(([, v]) => v !== null && v !== undefined && v !== '')
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`);
+  return parts.length ? `${path}?${parts.join('&')}` : path;
+}
+
+/** A portal address for something the app opens outside itself. */
+export const portalUrl = (path: string) =>
+  /^https?:\/\//.test(path) ? path : `${PORTAL_URL}${path.startsWith('/') ? '' : '/'}${path}`;
 
 /**
  * Calls the portal API. Portal routes answer `{ status, data }` or
  * `{ status: 'fail', error }`; this returns `data` or throws an ApiError.
  */
-export async function api<T>(path: string, { method = 'GET', body, anonymous }: Options = {}): Promise<T> {
+export async function api<T>(
+  path: string,
+  { method = 'GET', body, form, anonymous }: Options = {},
+): Promise<T> {
   const headers: Record<string, string> = { accept: 'application/json' };
   if (body !== undefined) headers['content-type'] = 'application/json';
   if (token && !anonymous) headers.authorization = `Bearer ${token}`;
@@ -43,9 +65,9 @@ export async function api<T>(path: string, { method = 'GET', body, anonymous }: 
   let res: Response;
   try {
     res = await fetch(`${PORTAL_URL}${path}`, {
-      method,
+      method: form && method === 'GET' ? 'POST' : method,
       headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: form ?? (body === undefined ? undefined : JSON.stringify(body)),
     });
   } catch {
     throw new ApiError('Can’t reach the portal. Check your connection.', 0);
@@ -62,3 +84,7 @@ export async function api<T>(path: string, { method = 'GET', body, anonymous }: 
   }
   return (json && 'data' in json ? json.data : json) as T;
 }
+
+/** An error's message for the screen. */
+export const messageOf = (error: unknown) =>
+  error instanceof Error ? error.message : 'Something went wrong.';

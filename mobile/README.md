@@ -12,14 +12,18 @@ React 18; two copies of React in one app break at runtime).
 
 | Path | What |
 | --- | --- |
-| `src/app/` | Screens, one file per route (Expo Router). `(tabs)/` is the tab bar: Today, Tasks, Messages, More. |
-| `src/lib/auth.tsx` | Sign-in, the saved token, renewal, sign-out. |
+| `src/app/` | Screens, one file per route (Expo Router). `(tabs)/` is the tab bar: Today, Tasks, Messages, Work, More. Sheets (`log`, `new-task`, `company`, `chat/new`) open over it. |
+| `src/lib/auth.tsx` | Sign-in (Google or Apple), the saved token, renewal, sign-out. |
 | `src/lib/api.ts` | Calls to the portal API with the token. |
-| `src/lib/google.ts` | Google sign-in on the phone, swapped for a Firebase ID token. |
-| `src/lib/company.tsx` | The person's companies and the one the app shows. |
+| `src/lib/query.ts` | TanStack Query: the cache saved on the phone (offline), and work logged offline that is sent when back online. |
+| `src/lib/chat.tsx` | Messages over Ably, as on the website: live chats, ticks, typing, online. Polls when Ably is off. |
+| `src/lib/push.ts`, `src/components/push-bridge.tsx` | Push notifications: the token, Android channels, the badge, opening the right screen on tap. |
+| `src/lib/links.ts` | Website links (from notifications) to app screens. |
+| `src/lib/lock.tsx` | Face ID / fingerprint lock (Settings). |
+| `src/lib/updates.tsx` | Over-the-air updates, and the "please update" screen below the portal's minimum version. |
 | `src/lib/types.ts` | API shapes, copied from `portal/models`. |
 | `app.config.ts` | Name, bundle ids, icons, plugins; reads `.env.local`. |
-| `eas.json` | Build profiles: `development`, `preview`, `production`. |
+| `eas.json` | Build profiles (`development`, `preview`, `production`), each on its update channel. |
 
 ## How sign-in works
 
@@ -75,8 +79,27 @@ These need the Expo, Apple and Google accounts, so they are done by hand.
    - The Google Service Account key under credentials is only for
      uploading to Play Store (`eas submit`) and, as an FCM V1 key, for
      Android push. Neither is needed to sign in.
-3. **Push (later step).** `EXPO_ACCESS_TOKEN` on the portal only if enhanced
-   push security is turned on for the Expo project.
+3. **Sign in with Apple (iPhone).** The `usesAppleSignIn` setting turns the
+   capability on; EAS adds it to the App ID on the next iOS build. A person
+   links their Apple ID once in Settings (after signing in with Google);
+   after that they can sign in with their code and Apple. The portal checks
+   Apple's token against `APPLE_BUNDLE_IDS` (default `com.themoondevs.portal`).
+4. **Push on iPhone.** EAS makes the push key on the first iOS build (say yes
+   when it asks). `EXPO_ACCESS_TOKEN` on the portal only if enhanced push
+   security is turned on for the Expo project.
+5. **Android: `google-services.json`, before the first Android build.** In
+   the Firebase console (`themoondevs` project) → Project settings → Add app
+   → Android, package `com.themoondevs.portal`. Download
+   `google-services.json` into this folder and commit it (it is not a
+   secret: it ships inside the app). Or, to keep it out of git, upload it
+   as a file variable named `GOOGLE_SERVICES_JSON` on expo.dev (Project →
+   Environment variables, all environments). Android push needs it.
+6. **Android push key (FCM V1).** Firebase → Project settings → Service
+   accounts → Generate new private key. Then `npx eas-cli@latest credentials
+   -p android` → development → Google Service Account → "Manage your Google
+   Service Account Key for Push Notifications (FCM V1)" → upload that JSON.
+7. **Android Google sign-in.** After the first Android build, add an Android
+   OAuth client with the build's SHA-1 (step 2).
 
 ## Run it on your phone
 
@@ -93,8 +116,25 @@ Sign-in needs a portal with the mobile API (`portal/app/api/mobile`). Until
 that is deployed, point `EXPO_PUBLIC_PORTAL_URL` in `.env.local` at a portal
 that has it.
 
+## Updates without a new build
+
+Only native changes (a new package with native code, a permission, an icon)
+need a new build. Everything else ships as an update:
+
+- While developing: `npm start`, and the development build reloads.
+- To phones with a TestFlight, Play or store build:
+  `npx eas-cli@latest update --channel preview` (or `production`). The app
+  checks on launch and shows "Update ready · Restart".
+- `runtimeVersion` follows the app version, so an update only reaches builds
+  of the same version. Bump `version` in `app.config.ts` with every new
+  native build.
+- To stop old builds that can't take an update: set `MOBILE_MIN_VERSION` on
+  the portal (with `MOBILE_APP_STORE_URL` / `MOBILE_PLAY_STORE_URL`). Older
+  versions show a screen asking to update.
+
 ## Release
 
 `npm run build:prod -- --platform all`, then `npm run submit -- --platform ios`
 (or `android`). The store listing steps are in the plan doc linked from the
-pull request that added this folder.
+pull request that added this folder. App Review needs a demo sign-in code
+and account; account deletion is in Settings → Delete my account.

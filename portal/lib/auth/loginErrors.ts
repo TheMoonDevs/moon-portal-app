@@ -4,6 +4,8 @@ export const LOGIN_ERRORS = {
   GOOGLE_FAILED: 'GOOGLE_FAILED',
   EMAIL_NOT_LINKED: 'EMAIL_NOT_LINKED',
   INACTIVE: 'INACTIVE',
+  APPLE_FAILED: 'APPLE_FAILED',
+  APPLE_NOT_LINKED: 'APPLE_NOT_LINKED',
 } as const;
 
 export const LOGIN_ERROR_MESSAGES: Record<string, string> = {
@@ -13,4 +15,8 @@ export const LOGIN_ERROR_MESSAGES: Record<string, string> = {
   [LOGIN_ERRORS.EMAIL_NOT_LINKED]:
     'That Google account isn’t linked to this code. Pick another account, or ask an admin to link it.',
   [LOGIN_ERRORS.INACTIVE]: 'This account is inactive. Please contact an admin.',
+  [LOGIN_ERRORS.APPLE_FAILED]:
+    'Apple sign-in didn’t go through. Please try again.',
+  [LOGIN_ERRORS.APPLE_NOT_LINKED]:
+    'That Apple ID isn’t linked to this code yet. Sign in with Google once, then link Apple in the app’s Settings.',
 };

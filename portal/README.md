@@ -16,7 +16,7 @@ on the portal. A Next.js 14 app (App Router) in TypeScript.
 | **Resend** | Email: hiring emails and digests, meeting invites. A webhook reports delivered, opened and bounced. | `lib/hiring`, `lib/meet/emails.ts` | `RESEND_API_KEY`, `RESEND_DOMAIN`, `RESEND_WEBHOOK_SECRET` |
 | **Google Gemini** | AI help: matching logged work to tasks and goals. | `lib/worklogs/linker.ts`, `lib/workspace/goalFit.ts`, `utils/services/GenAiSdk.ts` | `GEMINI_API_KEY`, `GEMINI_MODEL` |
 | **MCP server + OAuth** | Lets AI assistants (Claude) read and log work in the portal for a signed-in person. | `app/api/mcp`, `app/api/oauth`, `lib/mcp` | |
-| **Mobile app API** | The Expo app in `/mobile` signs in with a sign-in code + Google like the website and gets a `pmob_` token (one per phone, listed with the connections in Settings). Every API route accepts it through `getSessionUser()`. | `app/api/mobile`, `lib/mobile`, `lib/auth/signIn.ts` | |
+| **Mobile app API** | The Expo app in `/mobile` signs in with a sign-in code + Google (or a linked Apple ID) like the website and gets a `pmob_` token (one per phone, listed with the connections in Settings). Every API route accepts it through `getSessionUser()`. The app's own routes: Apple sign-in and linking, a task with its history, asking for account deletion (tells the admins), and the minimum app version. | `app/api/mobile`, `lib/mobile`, `lib/auth/signIn.ts`, `lib/auth/appleIdToken.ts` | `APPLE_BUNDLE_IDS` (optional), `MOBILE_MIN_VERSION`, `MOBILE_APP_STORE_URL`, `MOBILE_PLAY_STORE_URL` (optional) |
 
 Production and CI settings live in dotenv-vault (see the root README).
 
