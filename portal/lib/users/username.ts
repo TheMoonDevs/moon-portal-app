@@ -106,5 +106,13 @@ export const usernameCandidate = (base: string, attempt: number): string =>
 export const normalizeSignInCode = (value: unknown): string =>
   typeof value === 'string' ? value.trim().toUpperCase() : '';
 
+/**
+ * The sign-in code App Store and Google Play reviewers type in the mobile app
+ * to sign in with an email and password instead of Google (see
+ * lib/mobile/testSignIn.ts). No person can take it as their own code. The
+ * app has the same value in mobile/src/app/sign-in.tsx.
+ */
+export const TEST_SIGN_IN_CODE = 'TEST12';
+
 export const isValidSignInCode = (code: string): boolean =>
   /^[A-Z0-9]{6}$/.test(code);

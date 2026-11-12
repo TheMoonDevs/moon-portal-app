@@ -6,6 +6,10 @@ export const LOGIN_ERRORS = {
   INACTIVE: 'INACTIVE',
   APPLE_FAILED: 'APPLE_FAILED',
   APPLE_NOT_LINKED: 'APPLE_NOT_LINKED',
+  TEST_OFF: 'TEST_OFF',
+  WRONG_PASSWORD: 'WRONG_PASSWORD',
+  TEST_NO_ACCOUNT: 'TEST_NO_ACCOUNT',
+  TOO_MANY_TRIES: 'TOO_MANY_TRIES',
 } as const;
 
 export const LOGIN_ERROR_MESSAGES: Record<string, string> = {
@@ -19,4 +23,11 @@ export const LOGIN_ERROR_MESSAGES: Record<string, string> = {
     'Apple sign-in didn’t go through. Please try again.',
   [LOGIN_ERRORS.APPLE_NOT_LINKED]:
     'That Apple ID isn’t linked to this code yet. Sign in with Google once, then link Apple in the app’s Settings.',
+  [LOGIN_ERRORS.TEST_OFF]: 'Test sign-in is turned off.',
+  [LOGIN_ERRORS.WRONG_PASSWORD]:
+    'That email and password don’t match. Please try again.',
+  [LOGIN_ERRORS.TEST_NO_ACCOUNT]:
+    'No Portal account uses the test email yet. Please contact an admin.',
+  [LOGIN_ERRORS.TOO_MANY_TRIES]:
+    'Too many wrong tries. Please wait 15 minutes and try again.',
 };
