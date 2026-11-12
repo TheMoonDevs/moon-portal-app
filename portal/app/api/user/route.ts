@@ -358,8 +358,8 @@ export async function PUT(request: Request) {
 }
 
 /**
- * Delete a user for good. Their company memberships and the work only they
- * could see go with them; their company tasks and points stay, so company
+ * Delete a user for good. Their company memberships, sign-ins and the work
+ * only they could see go with them; their company tasks and points stay, so company
  * history keeps its numbers.
  */
 export async function DELETE(request: NextRequest) {
@@ -389,6 +389,12 @@ export async function DELETE(request: NextRequest) {
   await db.companyMember.deleteMany({ where: { userId: id } });
   await db.userBadge.deleteMany({ where: { userId: id } });
   await deletePersonalWork(id);
+  // Their sign-ins go too: phone and assistant tokens (with push tokens),
+  // unused OAuth codes and browser push subscriptions. /delete-account
+  // promises this.
+  await db.apiToken.deleteMany({ where: { userId: id } });
+  await db.oauthCode.deleteMany({ where: { userId: id } });
+  await db.subscription.deleteMany({ where: { userId: id } });
   await db.user.delete({ where: { id } });
   return NextResponse.json({ status: 'success', data: { id } });
 }
