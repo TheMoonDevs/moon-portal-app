@@ -5,6 +5,10 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { teamAllows } from '@/lib/permissions/company';
 import { hasPermission } from '@/lib/permissions/matching';
+import {
+  projectLabel,
+  projectLabelInCompany,
+} from '@/lib/workspace/projectLabel';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import { useUser } from './useUser';
@@ -155,9 +159,38 @@ export const useWorkspace = () => {
     hasPermission(portalPermissions, p),
   );
 
+  /**
+   * A project's name to show: a core project's is its company's ("ZONE"),
+   * or "ZONE (Core)" with inCompany, where the company is in view too.
+   */
+  const labelProject = (
+    p:
+      | {
+          name?: string | null;
+          isCore?: boolean | null;
+          isPersonal?: boolean | null;
+          companyId?: string | null;
+        }
+      | null
+      | undefined,
+    opts?: { inCompany?: boolean; companyName?: string | null },
+  ): string => {
+    if (!p) return '';
+    const company = companies.find((c) => c.company.id === p.companyId);
+    const named = {
+      ...p,
+      isPersonal: !!p.isPersonal || !!company?.company.isPersonal,
+    };
+    const companyName = opts?.companyName ?? company?.company.name;
+    return opts?.inCompany
+      ? projectLabelInCompany(named, companyName)
+      : projectLabel(named, companyName);
+  };
+
   return {
     loading,
     companies,
+    labelProject,
     /** The companies they work for: every company but their PERSONAL. */
     workCompanies: work,
     /** Their own PERSONAL, once it has loaded. */

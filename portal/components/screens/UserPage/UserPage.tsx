@@ -11,12 +11,14 @@ import type {
   ActivityData,
   AgendaData,
   PagePerson,
+  PageProject,
   WorkData,
   WorkPoint,
 } from '@/lib/people/types';
 import { cn } from '@/lib/utils';
 import type { PointStatus } from '@/lib/worklogs/timeline';
 import { POINT_STATUSES } from '@/lib/worklogs/timeline';
+import { labelCoreProjects } from '@/lib/workspace/projectLabel';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
@@ -127,6 +129,19 @@ const Profile = ({
 type Tab = 'work' | 'ahead';
 type Section = 'overview' | 'documents';
 
+/** A core project shows as its company: "ZONE", not "CORE". */
+const withCoreNames = <
+  T extends {
+    projects: PageProject[];
+    companies: { id: string; name: string; logo?: string | null }[];
+  },
+>(
+  data: T,
+): T =>
+  data?.projects
+    ? { ...data, projects: labelCoreProjects(data.projects, data.companies) }
+    : data;
+
 export const UserPage = ({ userId }: { userId?: string }) => {
   const { user } = useUser();
   const personId = userId ?? user?.id;
@@ -162,7 +177,7 @@ export const UserPage = ({ userId }: { userId?: string }) => {
       null,
     )
       .then((res) => {
-        setWork(res.data);
+        setWork(withCoreNames(res.data));
         setPerson(res.data.person);
       })
       .catch((err) => setError(errorText(err, 'Could not load this page.')));
@@ -178,7 +193,7 @@ export const UserPage = ({ userId }: { userId?: string }) => {
   const loadAgenda = useCallback(() => {
     if (!personId) return;
     PortalSdk.getData(`/api/people/${personId}/agenda`, null)
-      .then((res) => setAgenda(res.data))
+      .then((res) => setAgenda(withCoreNames(res.data)))
       .catch(() =>
         setAgenda({
           isSelf: false,
@@ -222,7 +237,7 @@ export const UserPage = ({ userId }: { userId?: string }) => {
         `/api/people/${personId}/work?from=${period.from}&to=${period.to}`,
         null,
       );
-      setWork(res.data);
+      setWork(withCoreNames(res.data));
       toast.success(`${POINT_STATUSES[status].emoji} ${point.text}`);
     } catch (err) {
       toast.error(errorText(err, 'Could not change that point.'));

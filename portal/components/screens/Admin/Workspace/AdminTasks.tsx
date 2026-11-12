@@ -238,7 +238,11 @@ export const AdminTasks = ({
   selectedProjectId: string | null;
   onSelectProject: (projectId: string | null) => void;
 }) => {
-  const { workCompanies: companies, canInProject } = useWorkspace();
+  const {
+    workCompanies: companies,
+    canInProject,
+    labelProject,
+  } = useWorkspace();
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
@@ -359,7 +363,7 @@ export const AdminTasks = ({
             {!projects.length && <option value="">No projects yet</option>}
             {projects.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.name}
+                {labelProject(p, { inCompany: true })}
               </option>
             ))}
           </NativeSelect>

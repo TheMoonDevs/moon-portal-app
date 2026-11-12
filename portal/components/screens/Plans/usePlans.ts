@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { projectFamily } from '@/lib/workspace/plans';
+import { labelCoreProjects } from '@/lib/workspace/projectLabel';
 import { PLAN_STATUS, TASK_STATUS } from '@/models/workspace';
 import { useUser } from '@/utils/hooks/useUser';
 import { PortalSdk } from '@/utils/services/PortalSdk';
@@ -56,7 +57,13 @@ export const usePlans = (companyId: string | null | undefined) => {
         id === ALL_COMPANIES ? '/api/plans' : `/api/plans?companyId=${id}`,
         null,
       );
-      setData(res?.data ?? null);
+      const next: PlansData | null = res?.data ?? null;
+      // A plan names projects of its company: the core one reads "ZONE (Core)".
+      if (next)
+        next.projects = labelCoreProjects(next.projects, next.companies, {
+          inCompany: true,
+        });
+      setData(next);
     } catch (err) {
       toast.error(errorText(err, 'Could not load plans.'));
     } finally {

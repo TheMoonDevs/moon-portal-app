@@ -69,7 +69,7 @@ const plural = (n: number, one: string, many = `${one}s`) =>
  * their plans. Read-only; roles and policies are changed above and below.
  */
 export const AdminUserReach = ({ user }: { user: User }) => {
-  const { canPortal } = useWorkspace();
+  const { canPortal, labelProject } = useWorkspace();
   const [reach, setReach] = useState<Reach | null>(null);
   const canRead = canPortal('permissions:read');
 
@@ -152,7 +152,10 @@ export const AdminUserReach = ({ user }: { user: User }) => {
                           className="size-2 rounded-full"
                           style={{ backgroundColor: p.color || '#525252' }}
                         />
-                        {p.name}
+                        {labelProject(
+                          { ...p, companyId: c.id },
+                          { inCompany: true, companyName: c.name },
+                        )}
                         {p.lead && (
                           <span className="text-[10px] uppercase text-amber-300">
                             Lead

@@ -12,6 +12,7 @@ import {
   RESULT_METRICS,
   toDay,
 } from '@/lib/workspace/projects';
+import { useWorkspace } from '@/utils/hooks/useWorkspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
 import {
@@ -46,6 +47,7 @@ export const ProjectResults = ({
   onOpenChange: (open: boolean) => void;
   onSaved: () => void;
 }) => {
+  const { labelProject } = useWorkspace();
   const [results, setResults] = useState<ProjectResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [metric, setMetric] = useState('subscribers');
@@ -123,7 +125,7 @@ export const ProjectResults = ({
       onOpenChange={onOpenChange}
       size="lg"
       icon="insights"
-      title={`${project?.name ?? 'Project'} results`}
+      title={`${project ? labelProject(project) : 'Project'} results`}
       description="Record readings like earnings or subscribers. Projects are ranked on their latest reading."
     >
       <div className="flex flex-col gap-5">
@@ -254,6 +256,7 @@ export const ProjectRanking = ({
   projects: ProjectRow[];
   onOpen: (project: ProjectRow) => void;
 }) => {
+  const { labelProject } = useWorkspace();
   const metrics = useMemo(
     () =>
       metricsWithData(
@@ -304,13 +307,13 @@ export const ProjectRanking = ({
                 {standing!.rank}
               </span>
               <CompanyMark
-                name={project.name}
+                name={labelProject(project)}
                 color={project.color}
                 logo={project.logo}
                 size={28}
               />
               <span className="min-w-0 flex-1 truncate text-sm text-neutral-200">
-                {project.name}
+                {labelProject(project, { inCompany: true })}
               </span>
               {standing!.change !== null && (
                 <span

@@ -28,6 +28,9 @@ export type PageProject = {
   id: string;
   name: string;
   companyId: string;
+  /** Its company's core project, shown by the company's name. */
+  isCore?: boolean;
+  isPersonal?: boolean;
   color?: string | null;
   logo?: string | null;
 };

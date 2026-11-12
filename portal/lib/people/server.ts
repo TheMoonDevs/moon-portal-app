@@ -130,6 +130,8 @@ const projectView = (p: Project): PageProject => ({
   companyId: p.companyId,
   color: p.color ?? null,
   logo: p.logo ?? null,
+  ...(p.isCore && { isCore: true }),
+  ...(p.isPersonal && { isPersonal: true }),
 });
 
 const taskView = (t: Task): PageTask => ({

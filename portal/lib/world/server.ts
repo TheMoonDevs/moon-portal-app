@@ -3,6 +3,7 @@ import { todayFor } from '@/lib/mcp/worklog';
 import { db } from '@/lib/mongodb/db-client';
 import type { SessionUser } from '@/lib/permissions/server';
 import { tallyRowsFor } from '@/lib/workspace/goalTally';
+import { projectLabel } from '@/lib/workspace/projectLabel';
 import type { DoneTask } from '@/lib/workspace/projects';
 import {
   goalHistory,
@@ -402,7 +403,8 @@ export async function buildWorld(viewer: SessionUser): Promise<World> {
     ordered.forEach((p, i) =>
       worldProjects.push({
         id: p.id,
-        name: p.name,
+        // A core project shows as its town's company: "ZONE", not "CORE".
+        name: projectLabel(p, town.name),
         color: p.color ?? null,
         logo: p.logo ?? null,
         brand: brandOf(p as any, {

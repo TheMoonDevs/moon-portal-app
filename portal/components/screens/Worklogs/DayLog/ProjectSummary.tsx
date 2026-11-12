@@ -205,7 +205,9 @@ const Part = ({
               </p>
               <p className="truncate text-[11px] text-neutral-500">
                 {place.kind === 'project'
-                  ? (company?.name ?? 'Project')
+                  ? place.core
+                    ? 'Company work'
+                    : (company?.name ?? 'Project')
                   : place.kind === 'company'
                     ? 'Company work'
                     : place.kind === 'personal'

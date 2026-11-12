@@ -224,6 +224,8 @@ export type Place = {
   logo?: string | null;
   /** The company it is in, for a project or company work. */
   companyId?: string;
+  /** Its company's core project, named after the company. */
+  core?: boolean;
 };
 
 export const PERSONAL_ID = 'personal';
@@ -252,6 +254,7 @@ export function placeOf(
       color: project?.color,
       logo: project?.logo,
       companyId: project?.companyId,
+      core: !!project?.isCore,
       auto,
     };
   }
@@ -316,7 +319,10 @@ export function placeOptions(
       .map((p) => ({
         id: `project:${p.id}`,
         label: p.name,
-        hint: names.get(p.companyId) ?? p.companyName,
+        // A core project already carries its company's name.
+        hint: p.isCore
+          ? 'Company work'
+          : (names.get(p.companyId) ?? p.companyName),
         group: 'Projects',
         color: p.color,
       })),

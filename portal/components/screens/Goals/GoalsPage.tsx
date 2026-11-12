@@ -13,6 +13,7 @@ import {
   monthGrid,
   rangeTotals,
 } from '@/lib/workspace/goalCalendar';
+import { labelCoreProjects } from '@/lib/workspace/projectLabel';
 import {
   addDays,
   mondayOf,
@@ -303,6 +304,8 @@ export const GoalsPage = () => {
       .then((res) => {
         const next = res?.data as GoalsCalendarData | undefined;
         if (!next) throw new Error('empty');
+        // A core project shows as its company: "ZONE", not "CORE".
+        next.projects = labelCoreProjects(next.projects, next.companies);
         cache.set(key, next);
         setData(next);
       })

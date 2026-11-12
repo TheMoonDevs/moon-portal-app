@@ -11,6 +11,7 @@ import {
   GOAL_STATUS,
   type GoalStatus,
 } from '@/lib/workspace/goalCalendar';
+import { isCoreProject } from '@/lib/workspace/projectLabel';
 import type { GoalPeriod } from '@/models/workspace';
 
 import { Icon, UserAvatar } from '../Admin/shared/AdminUI';
@@ -330,7 +331,10 @@ export const GoalsFilters = ({
                     className="size-2 shrink-0 rounded-full"
                     style={{ backgroundColor: p.color || '#10b981' }}
                   />
-                  <span className="truncate">{p.name}</span>
+                  <span className="truncate">
+                    {/* Under its company, the core one reads "ZONE (Core)". */}
+                    {isCoreProject(p) ? `${p.name} (Core)` : p.name}
+                  </span>
                 </Option>
               ))}
             </Section>

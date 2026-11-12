@@ -67,6 +67,7 @@ export type CalendarProject = {
   status: string;
   effort?: PROJECT_EFFORT | null;
   isCore?: boolean | null;
+  isPersonal?: boolean | null;
   leadIds?: string[] | null;
   memberIds?: string[] | null;
   /** Whether the person may change its goals. */
