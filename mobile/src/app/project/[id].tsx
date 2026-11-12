@@ -1,15 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
+import { Icon } from '@/components/icon';
+import { BrandKitSection, ProjectHeader } from '@/components/project-header';
+import { ProjectWorklogs } from '@/components/project-worklogs';
 import { TaskRow } from '@/components/task-list';
 import { ThemedText } from '@/components/themed-text';
 import {
   Avatar,
-  Button,
   Card,
-  Dot,
+  IconButton,
   PressableCard,
   ProgressBar,
   QueryState,
@@ -18,19 +20,29 @@ import {
   Segmented,
 } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { api, messageOf } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { accentOf, pickKit } from '@/lib/brand';
 import { goalLine } from '@/lib/goals';
-import { useProjectLabel } from '@/lib/project-name';
+import { openWebsite } from '@/lib/links';
+import { isCoreProject, useCompanyLookup, useProjectLabel } from '@/lib/project-name';
+import { queryClient } from '@/lib/query';
 import { statusLabel } from '@/lib/tasks';
 import type { ChatConversation, ProjectDetail, ProjectPage, Task } from '@/lib/types';
 
 type TaskView = 'mine' | 'open' | 'done';
 
-/** A project: progress, goals, team, pages and tasks. */
+/**
+ * A project, like a channel page: its brand at the top (banner, logo,
+ * colours), then progress, goals, team, pages, tasks, the team's worklogs
+ * and the whole brand kit.
+ */
 export default function ProjectScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const theme = useTheme();
   const label = useProjectLabel();
+  const companyOf = useCompanyLookup();
   const { profile } = useAuth();
   const me = profile?.id ?? '';
   const [view, setView] = useState<TaskView>('mine');
@@ -76,6 +88,13 @@ export default function ProjectScreen() {
     }
   };
 
+  const company = companyOf(project?.companyId);
+  const core = isCoreProject(project);
+  // The project's own kit; the company's for its core project.
+  const kit = pickKit(project?.brandKit, core ? company?.brandKit : null);
+  const accent = accentOf(kit) ?? project?.color ?? company?.color ?? null;
+  const openCount = live.filter((t) => t.status !== 'DONE').length;
+
   const topPages = (pages.data?.pages ?? []).filter((p) => !p.parentId);
   const childCount = (pageId: string) => (pages.data?.pages ?? []).filter((p) => p.parentId === pageId).length;
 
@@ -88,6 +107,7 @@ export default function ProjectScreen() {
           onRefresh={() => {
             void query.refetch();
             void pages.refetch();
+            void queryClient.invalidateQueries({ queryKey: ['project', id, 'worklogs'] });
           }}
         />
       }>
@@ -100,17 +120,49 @@ export default function ProjectScreen() {
       />
       {project ? (
         <>
-          <View style={styles.head}>
-            <View style={styles.row}>
-              <Dot color={project.color} size={12} />
-              <ThemedText type="subtitle" style={styles.flex}>
-                {label(project).name}
-              </ThemedText>
-            </View>
-            {project.description ? (
-              <ThemedText themeColor="textSecondary">{project.description}</ThemedText>
-            ) : null}
-          </View>
+          <ProjectHeader
+            name={label(project).name}
+            handle={[
+              core ? 'Company work' : project.slug ? `@${project.slug}` : null,
+              core ? null : company?.name,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+            stats={[
+              `${people.length} ${people.length === 1 ? 'person' : 'people'}`,
+              `${openCount} open ${openCount === 1 ? 'task' : 'tasks'}`,
+              project.progress?.total ? `${Math.round(project.progress.percent)}% done` : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+            description={project.description ?? (core ? company?.description : null)}
+            kit={kit}
+            logo={core ? (company?.logo ?? null) : (project.logo ?? null)}
+            color={project.color ?? company?.color}
+            actions={
+              <>
+                {onTeam ? (
+                  <Pressable
+                    disabled={opening}
+                    onPress={() => void openChat()}
+                    style={({ pressed }) => [
+                      styles.chatPill,
+                      { backgroundColor: theme.accent, opacity: opening ? 0.6 : pressed ? 0.8 : 1 },
+                    ]}>
+                    <Icon name="chat" size={16} color={theme.onAccent} />
+                    <ThemedText type="smallBold" style={{ color: theme.onAccent }}>
+                      {opening ? 'Opening…' : 'Chat'}
+                    </ThemedText>
+                  </Pressable>
+                ) : null}
+                <IconButton
+                  name="globe"
+                  label="Open on the website"
+                  onPress={() => void openWebsite(`/projects/${project.id}`)}
+                />
+              </>
+            }
+          />
 
           {project.progress?.total ? (
             <Card>
@@ -120,16 +172,12 @@ export default function ProjectScreen() {
                 </ThemedText>
                 <ThemedText type="smallBold">{Math.round(project.progress.percent)}%</ThemedText>
               </View>
-              <ProgressBar percent={project.progress.percent} color={project.color} />
+              <ProgressBar percent={project.progress.percent} color={accent} />
               <ThemedText type="small" themeColor="textSecondary">
                 {project.progress.done} of {project.progress.total} tasks done
                 {project.progress.major ? ` · ${project.progress.majorDone} of ${project.progress.major} major` : ''}
               </ThemedText>
             </Card>
-          ) : null}
-
-          {onTeam ? (
-            <Button title="Project chat" kind="secondary" busy={opening} onPress={() => void openChat()} />
           ) : null}
 
           {project.goals?.length ? (
@@ -149,7 +197,7 @@ export default function ProjectScreen() {
                       })
                     }>
                     <ThemedText type="smallBold">{g.title}</ThemedText>
-                    {progress ? <ProgressBar percent={progress.percent} color={project.color} /> : null}
+                    {progress ? <ProgressBar percent={progress.percent} color={accent} /> : null}
                     <ThemedText type="small" themeColor="textSecondary">
                       {goalLine(g, progress)}
                     </ThemedText>
@@ -265,6 +313,10 @@ export default function ProjectScreen() {
               </ThemedText>
             )}
           </View>
+
+          <ProjectWorklogs projectId={project.id} me={me} color={accent} />
+
+          {kit ? <BrandKitSection kit={kit} title={core ? `${company?.name ?? 'Company'} brand kit` : 'Brand kit'} /> : null}
         </>
       ) : null}
     </Screen>
@@ -273,7 +325,14 @@ export default function ProjectScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  head: { gap: Spacing.one },
+  chatPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+  },
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   group: { gap: Spacing.two },
   team: { gap: Spacing.three },

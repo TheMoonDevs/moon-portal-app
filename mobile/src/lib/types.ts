@@ -24,6 +24,24 @@ export type Company = {
   logo?: string | null;
   color?: string | null;
   isPersonal?: boolean;
+  description?: string | null;
+  brandKit?: BrandKit | null;
+};
+
+/** A company's or project's brand: logos, colours, fonts and files. */
+export type BrandKit = {
+  name?: string;
+  note?: string;
+  logos?: { label: string; url: string; background?: string }[];
+  colors?: { name: string; hex: string; role?: string }[];
+  fonts?: { family: string; weight?: number; url?: string; role?: string }[];
+  assets?: {
+    label: string;
+    url: string;
+    kind: 'image' | 'video' | 'audio' | 'font' | 'document' | 'other';
+    group?: string;
+  }[];
+  guide?: string;
 };
 
 /** GET /api/workspace */
@@ -331,6 +349,8 @@ export type Project = {
   goals?: ProjectGoal[];
   progress?: Progress;
   goalProgress?: GoalProgress[];
+  slug?: string;
+  brandKit?: BrandKit | null;
 };
 
 /** A project on the projects page, with what is going on in it. */
@@ -517,4 +537,18 @@ export type Connection = {
   createdAt: string;
   lastUsedAt: string | null;
   expiresAt: string | null;
+};
+
+/** GET /api/projects/:id/worklogs?days= : who worked on what, a day each. */
+export type ProjectWorklogs = {
+  from: string;
+  to: string | null;
+  days: number;
+  entries: {
+    id: string;
+    date: string;
+    userId: string;
+    lines: { key: string; text: string; taskId: string | null; done: boolean }[];
+  }[];
+  users: PublicUser[];
 };

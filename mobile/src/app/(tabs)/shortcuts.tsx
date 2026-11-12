@@ -10,9 +10,12 @@ import { useTheme } from '@/hooks/use-theme';
 import { useChatUnread } from '@/lib/chat';
 import { openWebsite } from '@/lib/links';
 import { unreadCount, useNotifications } from '@/lib/notifications';
+import { countShortcut, useTopShortcuts } from '@/lib/shortcut-usage';
 
 type Item = {
   title: string;
+  /** A short name for the quick links at the top. */
+  short?: string;
   icon: IconName;
   /** The square's colour, as the system apps use. */
   color: string;
@@ -22,7 +25,19 @@ type Item = {
   words?: string;
 };
 
-/** Every part of the app in one list, like the phone's Settings. */
+/** The quick links before the person has used any: the everyday four. */
+const QUICK_DEFAULTS = ['Log work', 'Add a task', 'Chats', 'Projects'];
+
+const openItem = (item: Item) => {
+  void countShortcut(item.title);
+  if (typeof item.open === 'function') item.open();
+  else router.push(item.open);
+};
+
+/**
+ * Every part of the app in one list, like the phone's Settings, with the
+ * four the person uses most as big icons at the top.
+ */
 export default function ShortcutsScreen() {
   const theme = useTheme();
   const [search, setSearch] = useState('');
@@ -34,11 +49,12 @@ export default function ShortcutsScreen() {
       title: 'Today',
       items: [
         { title: 'Log work', icon: 'pencil', color: '#ff9500', open: '/log', words: 'update point' },
-        { title: 'Add a task', icon: 'add', color: '#007aff', open: '/new-task', words: 'new todo' },
-        { title: 'Today’s worklog', icon: 'checklist', color: '#34c759', open: '/work', words: 'day plan' },
-        { title: 'All my tasks', icon: 'checkCircle', color: '#30b0c7', open: '/tasks', words: 'open waiting archived' },
+        { title: 'Add a task', short: 'Add task', icon: 'add', color: '#007aff', open: '/new-task', words: 'new todo' },
+        { title: 'Today’s worklog', short: 'Worklog', icon: 'checklist', color: '#34c759', open: '/work', words: 'day plan' },
+        { title: 'All my tasks', short: 'My tasks', icon: 'checkCircle', color: '#30b0c7', open: '/tasks', words: 'open waiting archived' },
         {
           title: 'Notifications',
+          short: 'Alerts',
           icon: 'bell',
           color: '#ff3b30',
           open: '/notifications',
@@ -66,7 +82,7 @@ export default function ShortcutsScreen() {
           detail: chats ? String(chats) : null,
           words: 'messages',
         },
-        { title: 'New chat or group', icon: 'plusBubble', color: '#32ade6', open: '/chat/new', words: 'message' },
+        { title: 'New chat or group', short: 'New chat', icon: 'plusBubble', color: '#32ade6', open: '/chat/new', words: 'message' },
         { title: 'Leaderboard', icon: 'trophy', color: '#ffcc00', open: '/leaderboard', words: 'points rank' },
       ],
     },
@@ -97,6 +113,7 @@ export default function ShortcutsScreen() {
         { title: 'Settings', icon: 'settings', color: '#8e8e93', open: '/settings', words: 'theme face id' },
         {
           title: 'Portal website',
+          short: 'Website',
           icon: 'globe',
           color: '#0a84ff',
           open: () => void openWebsite('/'),
@@ -105,6 +122,15 @@ export default function ShortcutsScreen() {
       ],
     },
   ];
+
+  const everything = groups.flatMap((g) => g.items);
+  const quickKeys = useTopShortcuts(
+    QUICK_DEFAULTS,
+    everything.map((i) => i.title),
+  );
+  const quick = quickKeys
+    .map((k) => everything.find((i) => i.title === k))
+    .filter((i): i is Item => !!i);
 
   const words = search.trim().toLowerCase();
   const shown = groups
@@ -121,6 +147,30 @@ export default function ShortcutsScreen() {
       <ThemedText type="title" style={styles.title}>
         Shortcuts
       </ThemedText>
+      {!words ? (
+        <View style={styles.quick}>
+          {quick.map((item) => (
+            <Pressable
+              key={item.title}
+              accessibilityRole="button"
+              accessibilityLabel={item.title}
+              onPress={() => openItem(item)}
+              style={({ pressed }) => [styles.quickItem, { opacity: pressed ? 0.6 : 1 }]}>
+              <View style={[styles.quickIcon, { backgroundColor: item.color }]}>
+                <Icon name={item.icon} size={26} color="#fff" />
+                {item.detail ? (
+                  <View style={[styles.quickBadge, { borderColor: theme.grouped }]}>
+                    <ThemedText style={styles.quickBadgeText}>{item.detail}</ThemedText>
+                  </View>
+                ) : null}
+              </View>
+              <ThemedText type="small" numberOfLines={1} style={styles.quickLabel}>
+                {item.short ?? item.title}
+              </ThemedText>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
       <View style={[styles.search, { backgroundColor: theme.backgroundSelected }]}>
         <Icon name="search" size={16} color={theme.textSecondary} />
         <TextInput
@@ -158,7 +208,7 @@ function ShortcutRow({ item, last }: { item: Item; last: boolean }) {
   const theme = useTheme();
   return (
     <Pressable
-      onPress={() => (typeof item.open === 'function' ? item.open() : router.push(item.open))}
+      onPress={() => openItem(item)}
       style={({ pressed }) => [styles.row, pressed && { backgroundColor: theme.backgroundSelected }]}>
       <View style={[styles.square, { backgroundColor: item.color }]}>
         <Icon name={item.icon} size={17} color="#fff" />
@@ -182,6 +232,30 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   screen: { gap: Spacing.four },
   title: { marginBottom: -Spacing.two },
+  quick: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: Spacing.one },
+  quickItem: { width: '23%', alignItems: 'center', gap: 6 },
+  quickIcon: {
+    width: 62,
+    height: 62,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    paddingHorizontal: 5,
+    backgroundColor: '#ff3b30',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickBadgeText: { color: '#fff', fontSize: 12, lineHeight: 15, fontWeight: '700' },
+  quickLabel: { textAlign: 'center' },
   search: {
     flexDirection: 'row',
     alignItems: 'center',
