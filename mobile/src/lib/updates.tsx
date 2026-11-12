@@ -12,11 +12,13 @@ import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { api } from './api';
+import { useAuth } from './auth';
 import { APP_VERSION } from './config';
 
 /*
  * Keeping the app current. Small fixes arrive through EAS Update: they
- * download in the background and a "Restart to update" pill offers them. A
+ * download in the background and a "Restart to update" pill offers them
+ * (signed out, they start at once). A
  * store build older than the portal's `minVersion` (/api/mobile/config) is
  * asked to update from the store instead.
  */
@@ -48,6 +50,14 @@ export function UpdateGate({ children }: { children: ReactNode }) {
     staleTime: 60 * 60 * 1000,
   });
   const { isUpdatePending } = Updates.useUpdates();
+  const { status } = useAuth();
+
+  // On the sign-in screen there's nothing to lose, so a downloaded fix starts
+  // at once. People signing in for the first time, such as store reviewers,
+  // then get the latest version without restarting the app.
+  useEffect(() => {
+    if (isUpdatePending && status === 'signedOut') void Updates.reloadAsync().catch(() => null);
+  }, [isUpdatePending, status]);
 
   // Look for a fix each time the app comes back to the front.
   useEffect(() => {

@@ -3,6 +3,7 @@ import { db } from '@/lib/mongodb/db-client';
 
 import {
   normalizeSignInCode,
+  TEST_SIGN_IN_CODE,
   usernameBase,
   usernameCandidate,
   usernameProblem,
@@ -120,6 +121,7 @@ export async function signInCodeTaken(
   code: string,
   exceptUserId?: string,
 ): Promise<boolean> {
+  if (normalizeSignInCode(code) === TEST_SIGN_IN_CODE) return true;
   const found = await db.user.findFirst({ where: { code } });
   return !!found && found.id !== exceptUserId;
 }

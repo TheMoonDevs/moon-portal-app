@@ -26,6 +26,8 @@ type AuthValue = {
   signIn: (code: string) => Promise<boolean>;
   /** Sign-in code + Apple (iPhone). Resolves false when they closed Apple. */
   signInWithApple: (code: string) => Promise<boolean>;
+  /** The test code + an email and password, for App Store and Play reviewers. */
+  signInWithPassword: (code: string, email: string, password: string) => Promise<boolean>;
   signOut: () => Promise<void>;
   /** Signs out without asking the portal (after the account was closed). */
   forget: () => Promise<void>;
@@ -158,6 +160,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [start],
   );
 
+  const signInWithPassword = useCallback(
+    async (code: string, email: string, password: string) => {
+      const session = await api<SignedIn>('/api/mobile/auth/sign-in/password', {
+        method: 'POST',
+        anonymous: true,
+        body: { code: code.trim(), email: email.trim(), password, device: device() },
+      });
+      await start(session);
+      return true;
+    },
+    [start],
+  );
+
   const signOut = useCallback(async () => {
     await api('/api/mobile/auth/sign-out', { method: 'POST' }).catch(() => null);
     await googleSignOut();
@@ -170,12 +185,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profile,
       signIn,
       signInWithApple,
+      signInWithPassword,
       signOut,
       forget,
       setProfile,
       refreshProfile,
     }),
-    [status, profile, signIn, signInWithApple, signOut, forget, setProfile, refreshProfile],
+    [
+      status,
+      profile,
+      signIn,
+      signInWithApple,
+      signInWithPassword,
+      signOut,
+      forget,
+      setProfile,
+      refreshProfile,
+    ],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

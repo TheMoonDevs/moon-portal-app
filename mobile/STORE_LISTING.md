@@ -63,11 +63,7 @@ The screenshots come from the app itself, filled with sample data and made-up pe
 - **Export compliance:** already answered in the build (`ITSAppUsesNonExemptEncryption: false`).
 - **Sign in with Apple:** already in the app, which Apple requires because Google sign-in is offered.
 - **Account deletion:** already in the app (Settings → Delete my account), which Apple requires.
-- **App Review information:** the app needs a sign-in, so Apple asks for a demo account that never expires. The app only offers Google and Apple sign-in, so here are two options:
-  1. Make a Google account for reviewers, add it to a demo company in the Portal with sample data, and give its email and password in the review notes. Turn off 2-step verification for it. Google may still ask the reviewer to verify, which could get the app rejected.
-  2. Add a reviewer sign-in (email and a one-time code) to the app. This always works for reviewers, but it needs a small code change and a new build.
-
-  Google Play asks for the same thing under **App access**.
+- **App Review information:** sign-in is required, so use the test sign-in (see [Reviewer sign-in](#reviewer-sign-in)). Put the reviewer email and password in the sign-in fields, and the steps in the notes.
 
 ## Google Play (Play Console)
 
@@ -94,7 +90,7 @@ The screenshots come from the app itself, filled with sample data and made-up pe
 
 ### Other Play Console forms (under "App content")
 
-- **App access:** sign-in is required, so give reviewers a login. This is the same demo account as for Apple.
+- **Sign-in details** (once called App access): answer "Yes, parts are restricted" and add the test sign-in (see [Reviewer sign-in](#reviewer-sign-in)).
 - **Ads:** no ads.
 - **Content rating:** fill in the questionnaire. Say yes to people being able to message each other.
 - **Target audience:** 18 and over (a work app).
@@ -102,6 +98,36 @@ The screenshots come from the app itself, filled with sample data and made-up pe
   - Data collected: name, email, user ID, messages and other content people write, and files they choose to send. It's used for app functionality, not shared, and encrypted in transit.
   - People can ask for their data to be deleted. The account deletion URL is `https://portal.themoondevs.com/delete-account` (live once PR #447 is merged).
 - **Testing before production:** a personal developer account made after Nov 2023 needs a closed test with 12 testers for 14 days before it can go to production. An organization account doesn't.
+
+## Reviewer sign-in
+
+Reviewers can't use our Google accounts, so the app has a test sign-in. They type the code `TEST12`, and the app asks for an email and password instead of Google. Only one Portal account can sign in this way, and the portal checks the password (`portal/lib/mobile/testSignIn.ts`).
+
+Set it up once:
+
+1. In the Portal, create a user for reviewers, such as `review@themoondevs.com` (no real mailbox needed). Add them to a demo company with sample projects, tasks, goals and chats. Don't make them an admin.
+2. In Vercel, under the portal project's environment variables, add `MOBILE_TEST_EMAIL` (that email) and `MOBILE_TEST_PASSWORD` (a long random password). Remove either one to turn the test sign-in off.
+3. Use a build that has the test sign-in for review. Builds made before it get it after an `eas update` and a restart.
+
+What to enter in the store forms:
+
+| Field | Value |
+| --- | --- |
+| Name (Play) | `Reviewer test account` |
+| Username / email | The reviewer email |
+| Password | The reviewer password |
+| Other information / review notes | The text below (400 characters, Play allows 500) |
+
+```
+Portal is a work app for company members. To sign in:
+1. Open the app.
+2. In "Your sign-in code", type TEST12.
+3. Email and Password fields appear. Enter the email and password above.
+4. Tap Sign in. Don't use "Continue with Google".
+The account belongs to a demo company with sample projects, tasks, goals and chats, so every screen can be reviewed. No 2-step verification or other steps are needed.
+```
+
+The portal allows 5 wrong passwords per address (30 in all) every 15 minutes, then asks to wait.
 
 ## Description
 

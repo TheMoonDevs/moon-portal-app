@@ -1,7 +1,4 @@
-import {
-  LOGIN_ERROR_MESSAGES,
-  LOGIN_ERRORS,
-} from '@/lib/auth/loginErrors';
+import { LOGIN_ERROR_MESSAGES, LOGIN_ERRORS } from '@/lib/auth/loginErrors';
 import { fail } from '@/lib/workspace/server';
 
 import { userFromMobileHeader } from './auth';
@@ -40,7 +37,14 @@ export const refusedSignIn = (code: string) =>
       code,
       error: LOGIN_ERROR_MESSAGES[code] ?? 'Sign-in failed.',
     },
-    { status: code === LOGIN_ERRORS.INACTIVE ? 403 : 401 },
+    {
+      status:
+        code === LOGIN_ERRORS.INACTIVE
+          ? 403
+          : code === LOGIN_ERRORS.TOO_MANY_TRIES
+            ? 429
+            : 401,
+    },
   );
 
 /** The phone a sign-in came from, as the app sends it. */
