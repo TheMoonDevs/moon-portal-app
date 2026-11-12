@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import type { PointStatus } from '@/lib/worklogs/timeline';
+import { isCoreProject, projectLabel } from '@/lib/workspace/projectLabel';
 import type { GoalPeriod, GoalSlot } from '@/models/workspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
@@ -85,6 +86,8 @@ export type DayProject = {
   companyName?: string;
   /** The person's own PERSONAL project. */
   isPersonal?: boolean;
+  /** Its company's core project, shown by the company's name. */
+  isCore?: boolean;
   /** Its goals, which its tasks can be linked to. */
   goals?: DayGoal[];
 };
@@ -183,8 +186,28 @@ export function useDay(date: string) {
         ...current.filter((t) => t.draft && !realId.current.has(t.id)),
       ]);
       setPoints(data.points ?? []);
-      setProjects(data.projects ?? []);
-      setCompanies(data.companies ?? []);
+      const companies: DayCompany[] = data.companies ?? [];
+      const cores = new Map(
+        companies.map((c) => [c.coreProjectId, c] as const),
+      );
+      // A core project shows as its company: "ZONE", not "CORE".
+      setProjects(
+        (data.projects ?? []).map((p: DayProject) => {
+          const company = cores.get(p.id);
+          return company || isCoreProject(p)
+            ? {
+                ...p,
+                isCore: true,
+                name: projectLabel(
+                  { ...p, isCore: true },
+                  company?.name ?? p.companyName,
+                ),
+                logo: p.logo || company?.logo,
+              }
+            : p;
+        }),
+      );
+      setCompanies(companies);
       setToday(data.today ?? null);
     } catch {
       if (!quiet) toast.error('Could not load this day.');

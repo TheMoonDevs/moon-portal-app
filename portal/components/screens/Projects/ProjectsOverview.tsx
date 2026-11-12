@@ -11,6 +11,10 @@ import {
 } from 'react';
 
 import { cn } from '@/lib/utils';
+import {
+  isCoreProject,
+  projectLabelInCompany,
+} from '@/lib/workspace/projectLabel';
 import { childrenOf, descendantsOf } from '@/lib/workspace/projectProgress';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { useUser } from '@/utils/hooks/useUser';
@@ -407,6 +411,24 @@ const Chip = ({
  * says what it means. New projects are made here, or asked for when the
  * person may not make them.
  */
+/** Core projects read "ZONE (Core)", beside the company's other projects. */
+const withCoreLabels = (data: Overview | null): Overview | null => {
+  if (!data) return data;
+  const companies = new Map(data.companies.map((c) => [c.id, c]));
+  return {
+    ...data,
+    projects: data.projects.map((p) => {
+      if (!isCoreProject(p)) return p;
+      const company = companies.get(p.companyId);
+      return {
+        ...p,
+        name: projectLabelInCompany(p, company?.name),
+        logo: p.logo || company?.logo || null,
+      };
+    }),
+  };
+};
+
 export const ProjectsOverview = () => {
   const { user } = useUser();
   const [data, setData] = useState<Overview | null>(cached);
@@ -423,7 +445,7 @@ export const ProjectsOverview = () => {
   const load = useCallback(() => {
     PortalSdk.getData('/api/projects/overview', null)
       .then((res) => {
-        cached = res?.data ?? null;
+        cached = withCoreLabels(res?.data ?? null);
         setData(cached);
       })
       .catch(() => setFailed(!cached));

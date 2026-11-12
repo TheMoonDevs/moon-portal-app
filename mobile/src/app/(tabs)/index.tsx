@@ -19,7 +19,7 @@ import { useAuth } from '@/lib/auth';
 import { useCompany } from '@/lib/company';
 import { fromKey, monthOf, todayKey } from '@/lib/dates';
 import { joinMeeting } from '@/lib/meet';
-import { projectName } from '@/lib/project-name';
+import { projectNameInCompany } from '@/lib/project-name';
 import { unreadCount, useNotifications } from '@/lib/notifications';
 import type { Company, Day, LeaderboardRow, Project, Task, Workspace } from '@/lib/types';
 
@@ -321,7 +321,7 @@ function CompanyItem({
               style={({ pressed }) => [styles.project, { opacity: pressed ? 0.6 : 1 }]}>
               <Dot color={p.color} size={10} />
               <ThemedText type="small" numberOfLines={1} style={styles.flex}>
-                {projectName(p, company.name)}
+                {projectNameInCompany(p, company.name)}
               </ThemedText>
               {mine(p) ? (
                 <ThemedText type="small" themeColor="textSecondary">

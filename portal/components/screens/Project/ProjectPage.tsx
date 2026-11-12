@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast, Toaster } from 'sonner';
 
 import { cn } from '@/lib/utils';
+import { projectLabelInCompany } from '@/lib/workspace/projectLabel';
 import {
   ancestorPages,
   childPages,
@@ -311,6 +312,11 @@ const Sidebar = ({
   const parent = tree.find((p) => p.id === project.parentId);
   const core = tree.find((p) => p.isCore);
   const subs = tree.filter((p) => p.parentId === project.id);
+  // The company's core project reads "ZONE (Core)".
+  const name = projectLabelInCompany(
+    { ...project, isCore: core?.id === project.id, isPersonal: personal },
+    companyName,
+  );
   const status =
     PROJECT_STATUS_META[project.status] ?? PROJECT_STATUS_META.ACTIVE;
   const all = useMemo(
@@ -330,14 +336,14 @@ const Sidebar = ({
         </Link>
         <div className="flex items-center gap-3">
           <CompanyMark
-            name={project.name}
+            name={name}
             color={project.color}
             logo={project.logo}
             size={40}
           />
           <div className="min-w-0 flex-1">
             <p className="truncate text-[15px] font-semibold text-white">
-              {project.name}
+              {name}
             </p>
             {parent ? (
               <Link
@@ -355,7 +361,7 @@ const Sidebar = ({
             ) : core && core.id !== project.id ? (
               <Link
                 href={`${APP_ROUTES.projects}/${core.id}`}
-                title={`Open ${companyName ?? 'the company'}'s main project`}
+                title={`Open ${companyName ?? 'the company'}'s core project`}
                 className="block truncate text-xs text-neutral-500 hover:text-neutral-200"
               >
                 {companyName}
@@ -995,6 +1001,11 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
   const { project, tasks, people } = data;
   // The company's name opens its CORE project.
   const coreId = data.tree?.find((p) => p.isCore)?.id;
+  // The company's core project reads "ZONE (Core)".
+  const projectName = projectLabelInCompany(
+    { ...project, isCore: coreId === project.id, isPersonal: personal },
+    companyName,
+  );
   const canEdit = can(project.companyId, 'projects:edit');
   // The project's group chat is for its team (everyone, for CORE).
   const onTeam =
@@ -1160,7 +1171,7 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
             {coreId && coreId !== project.id ? (
               <Link
                 href={`${APP_ROUTES.projects}/${coreId}`}
-                title={`Open ${companyName ?? 'the company'}'s main project`}
+                title={`Open ${companyName ?? 'the company'}'s core project`}
                 className="truncate text-neutral-500 transition-colors hover:text-white"
               >
                 {companyName}
@@ -1173,7 +1184,7 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
               className="text-[16px] text-neutral-700"
             />
           </span>
-          <ProjectSwitcher projectId={project.id} name={project.name} />
+          <ProjectSwitcher projectId={project.id} name={projectName} />
           <Icon name="chevron_right" className="text-[16px] text-neutral-700" />
           <button
             type="button"
@@ -1313,7 +1324,7 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
           onOpenChange={setSharing}
           itemLabel="page"
           title={pageTitle(page)}
-          everyoneTitle={`Everyone who can open ${project.name}`}
+          everyoneTitle={`Everyone who can open ${projectName}`}
           everyoneHint="It follows the project: anyone who can open the project can open this page."
           insideNote="Pages inside this one follow it: whoever cannot open it cannot open them either."
           sharing={page.sharing}

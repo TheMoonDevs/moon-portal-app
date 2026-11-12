@@ -654,7 +654,7 @@ export const WORKSPACE_TOOLS: Tool[] = [
       const project = await findProject(user, args?.project, 'projects:edit');
       if (project.isCore)
         throw new ToolError(
-          `${project.name} is its company's main project and stays with it.`,
+          `${project.name} is its company's CORE project and stays with it.`,
         );
       const targets = await companiesWith(user, 'projects:create');
       const ref = text(args?.company, 200);

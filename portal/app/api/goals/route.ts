@@ -305,6 +305,7 @@ export async function GET(request: Request) {
       status: p.status,
       effort: p.effort ?? null,
       isCore: !!p.isCore,
+      isPersonal: !!p.isPersonal,
       leadIds: p.leadIds ?? [],
       memberIds: p.memberIds ?? [],
       canEdit: may(p, 'projects:edit'),

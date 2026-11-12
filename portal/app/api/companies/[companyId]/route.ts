@@ -1,6 +1,5 @@
 import { brandKitDefaults, sanitizeBrandKit } from '@/lib/brandKit';
 import { db } from '@/lib/mongodb/db-client';
-import { renameCoreWithCompany } from '@/lib/workspace/coreProject';
 import { requireSuperAdmin } from '@/lib/permissions/server';
 import {
   fail,
@@ -52,15 +51,13 @@ export async function PATCH(request: Request, { params }: Params) {
   if (typeof data.name === 'string' && !data.name.trim()) {
     return fail(400, 'Company name is required.');
   }
-  if (typeof data.name === 'string') data.name = data.name.trim();
-  const current =
-    'brandKit' in data || 'name' in data
-      ? await db.company.findFirst({ where: { id: params.companyId } })
-      : null;
   if ('brandKit' in data) {
     const kit = sanitizeBrandKit(data.brandKit);
     data.brandKit = kit;
     // A kit fills in the logo and color when the company has none yet.
+    const current = await db.company.findFirst({
+      where: { id: params.companyId },
+    });
     const defaults = brandKitDefaults(kit);
     if (!(data.logo ?? current?.logo) && defaults.logo)
       data.logo = defaults.logo;
@@ -72,9 +69,6 @@ export async function PATCH(request: Request, { params }: Params) {
     where: { id: params.companyId },
     data: { ...data, updatedAt: nowIso() },
   });
-  // Its core project carries the company's name.
-  if (typeof data.name === 'string' && data.name !== current?.name)
-    await renameCoreWithCompany(params.companyId, current?.name, data.name);
   return ok({ company });
 }
 

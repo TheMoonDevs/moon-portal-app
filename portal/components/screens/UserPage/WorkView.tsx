@@ -352,7 +352,12 @@ const ProjectCard = ({
         />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-white">
-            {project?.name ?? noProjectName}
+            {/* Under its company, the core one reads "ZONE (Core)". */}
+            {project
+              ? project.isCore && !project.isPersonal
+                ? `${project.name} (Core)`
+                : project.name
+              : noProjectName}
           </p>
           <p className="truncate text-[11px] text-neutral-500">
             {countText(group)}

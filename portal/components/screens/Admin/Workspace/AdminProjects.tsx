@@ -331,7 +331,12 @@ export const AdminProjects = ({
   onSelectCompany: (companyId: string) => void;
   onOpenTasks: (projectId: string) => void;
 }) => {
-  const { workCompanies: companies, can, canInProject } = useWorkspace();
+  const {
+    workCompanies: companies,
+    can,
+    canInProject,
+    labelProject,
+  } = useWorkspace();
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -527,7 +532,7 @@ export const AdminProjects = ({
                   <div className="flex items-start gap-3">
                     {project.logo ? (
                       <CompanyMark
-                        name={project.name}
+                        name={labelProject(project, { inCompany: true })}
                         logo={project.logo}
                         size={32}
                       />
@@ -539,7 +544,7 @@ export const AdminProjects = ({
                     )}
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-white">
-                        {project.name}
+                        {labelProject(project, { inCompany: true })}
                       </p>
                       {project.parentId &&
                         projectById.has(project.parentId) && (

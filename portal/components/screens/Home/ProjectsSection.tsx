@@ -24,7 +24,7 @@ export const ProjectsSection = () => {
   // In the user's order: the companies they work in most first.
   // Their PERSONAL is not a company tab: its project is pinned under
   // every tab instead.
-  const { workCompanies: companies, personal } = useWorkspace();
+  const { workCompanies: companies, personal, labelProject } = useWorkspace();
   const projectPoints = useMyPoints()?.projects;
   const [projects, setProjects] = useState<ProjectRow[] | null>(null);
   // The tab the user clicked; until then the top company is shown.
@@ -128,7 +128,7 @@ export const ProjectsSection = () => {
                         )}
                       >
                         <CompanyMark
-                          name={project.name}
+                          name={labelProject(project, { inCompany: true })}
                           color={project.color}
                           logo={project.logo}
                           size={32}
@@ -136,7 +136,8 @@ export const ProjectsSection = () => {
                         <span className="min-w-0 flex-1">
                           <span className="flex items-center gap-1.5">
                             <span className="truncate text-sm font-medium text-neutral-900">
-                              {project.name}
+                              {/* Under the company tabs: "ZONE (Core)". */}
+                              {labelProject(project, { inCompany: true })}
                             </span>
                             {isPersonal ? (
                               <span

@@ -4,6 +4,7 @@ import { getMongoDb } from '@/lib/db/mongoose';
 import { db } from '@/lib/mongodb/db-client';
 import { sortByRecentPoints } from '@/lib/progress/myPoints';
 import { sendPushToUsers } from '@/lib/push/server';
+import { projectLabel } from '@/lib/workspace/projectLabel';
 import {
   CHAT_LIMITS,
   type ChatAttachment,
@@ -535,8 +536,11 @@ function groupInfo(
   const forProject = kindOf(room) === 'project';
   const adminIds = room.adminIds ?? [];
   return {
+    // A core project's group is named after its company.
     name: forProject
-      ? project?.name || room.name || 'Project'
+      ? (project && projectLabel(project, companyName)) ||
+        room.name ||
+        'Project'
       : room.name || 'Group',
     avatar: forProject ? (project?.logo ?? null) : (room.avatar ?? null),
     description: room.description ?? null,
@@ -1344,7 +1348,13 @@ async function notifyNewMessage(
       groupName = room.name || 'Group';
       if (kindOf(room) === 'project' && room.projectId) {
         const team = await projectTeam(room.projectId);
-        groupName = team?.project.name || groupName;
+        const names = team
+          ? await companyNames([team.project.companyId])
+          : new Map<string, string>();
+        groupName =
+          (team &&
+            projectLabel(team.project, names.get(team.project.companyId))) ||
+          groupName;
       }
     }
     const body = previewText(doc).slice(0, 180);

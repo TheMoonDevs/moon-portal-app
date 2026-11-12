@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { WorkData, WorkPoint } from '@/lib/people/types';
 import { cn } from '@/lib/utils';
 import { MOVED_EMOJI, POINT_STATUSES } from '@/lib/worklogs/timeline';
+import { labelCoreProjects } from '@/lib/workspace/projectLabel';
 import media from '@/styles/media';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { PortalSdk } from '@/utils/services/PortalSdk';
@@ -61,7 +62,10 @@ const dayLabel = (date: string) => {
 
 /** The person's tasks as days of lines, newest day first. */
 function workDays(data: WorkData): Day[] {
-  const projects = new Map(data.projects.map((p) => [p.id, p.name]));
+  // A core project shows as its company: "ZONE", not "CORE".
+  const projects = new Map(
+    labelCoreProjects(data.projects, data.companies).map((p) => [p.id, p.name]),
+  );
   const companies = new Map(data.companies.map((c) => [c.id, c]));
   const sectionOf = (p: WorkPoint) => {
     if (p.projectId && projects.has(p.projectId))

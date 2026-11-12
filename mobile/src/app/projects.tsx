@@ -14,7 +14,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { descendantsOf, goalLines, monthTasks, PULSES, type Pulse, pulseOf } from '@/lib/overview';
-import { isCoreProject, projectName } from '@/lib/project-name';
+import { isCoreProject, projectNameInCompany } from '@/lib/project-name';
 import type { OverviewProject, ProjectsOverview, PublicUser } from '@/lib/types';
 
 /**
@@ -160,7 +160,8 @@ function ProjectCard({
   const theme = useTheme();
   // A company's general work goes by the company's name and mark.
   const core = isCoreProject(p);
-  const name = projectName(p, company?.name);
+  // Listed under its company: "ZONE (Core)".
+  const name = projectNameInCompany(p, company?.name);
   const color = p.color || company?.color || '#10b981';
   const pulse = pulseOf(p);
   const month = monthTasks(p, all);

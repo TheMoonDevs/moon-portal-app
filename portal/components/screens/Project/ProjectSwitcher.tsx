@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
 import { cn } from '@/lib/utils';
+import { projectLabelInCompany } from '@/lib/workspace/projectLabel';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 import { useWorkspace } from '@/utils/hooks/useWorkspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
@@ -59,6 +60,15 @@ export const ProjectSwitcher = ({
     const companyName = new Map(
       companies.map((c) => [c.company.id, c.company.name]),
     );
+    const personal = new Set(
+      companies.filter((c) => c.company.isPersonal).map((c) => c.company.id),
+    );
+    // Listed under its company, the core project reads "ZONE (Core)".
+    const label = (p: LiteProject) =>
+      projectLabelInCompany(
+        { ...p, isPersonal: personal.has(p.companyId) },
+        companyName.get(p.companyId),
+      );
     const byId = new Map(projects.map((p) => [p.id, p]));
     const order = new Map(companies.map((c, i) => [c.company.id, i]));
     return [...projects]
@@ -72,8 +82,8 @@ export const ProjectSwitcher = ({
         const parent = p.parentId ? byId.get(p.parentId) : null;
         return {
           id: p.id,
-          label: p.id === projectId ? `${p.name} (here)` : p.name,
-          hint: parent ? `in ${parent.name}` : undefined,
+          label: p.id === projectId ? `${label(p)} (here)` : label(p),
+          hint: parent ? `in ${label(parent)}` : undefined,
           group: companyName.get(p.companyId) ?? 'Other',
           color: p.color,
         };

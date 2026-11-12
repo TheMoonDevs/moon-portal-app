@@ -233,6 +233,8 @@ export type Place = {
   logo?: string | null;
   /** The company it is in, for a project or company work. */
   companyId?: string;
+  /** Its company's core project, named after the company. */
+  core?: boolean;
 };
 
 export const PERSONAL_ID = 'personal';
@@ -261,6 +263,7 @@ export function placeOf(
       color: project?.color,
       logo: project?.logo,
       companyId: project?.companyId,
+      core: !!project?.isCore,
       auto,
     };
   }
@@ -318,7 +321,6 @@ export function placeOptions(
   companies: DayCompany[],
 ): PickerOption[] {
   const names = new Map(companies.map((c) => [c.id, c.name]));
-  const cores = new Set(companies.map((c) => c.coreProjectId).filter(Boolean));
   return [
     // Their PERSONAL project is the Personal choice below.
     ...projects
@@ -326,14 +328,14 @@ export function placeOptions(
       .map((p) => ({
         id: `project:${p.id}`,
         label: p.name,
-        // The core project carries its company's name already.
-        hint: cores.has(p.id)
-          ? 'Company work, on none of its projects'
+        // A core project already carries its company's name.
+        hint: p.isCore
+          ? 'Company work'
           : (names.get(p.companyId) ?? p.companyName),
         group: 'Projects',
         color: p.color,
       })),
-    // A company with a core project takes its company work there.
+    // A company with a CORE project takes its company work there.
     ...companies
       .filter((c) => !c.coreProjectId && !c.isPersonal)
       .map((c) => ({

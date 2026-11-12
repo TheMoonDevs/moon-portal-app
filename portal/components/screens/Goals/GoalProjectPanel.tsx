@@ -5,6 +5,7 @@ import { useState } from 'react';
 
 import { cn } from '@/lib/utils';
 import { GOAL_STATUS } from '@/lib/workspace/goalCalendar';
+import { isCoreProject } from '@/lib/workspace/projectLabel';
 import { isTarget, PERIOD_NOUN } from '@/lib/workspace/projects';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
 
@@ -188,7 +189,7 @@ export const GoalProjectPanel = ({
     <div className="flex flex-col">
       <PanelHead
         kicker={company?.name ?? 'Project'}
-        title={project.name}
+        title={isCoreProject(project) ? `${project.name} (Core)` : project.name}
         lead={<ProjectLogo project={project} size={44} className="mt-0.5" />}
         onClose={onClose}
       >

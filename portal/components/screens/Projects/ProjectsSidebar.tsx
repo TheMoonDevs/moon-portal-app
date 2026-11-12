@@ -72,11 +72,6 @@ const Row = ({
             style={{ backgroundColor: project.color || '#737373' }}
           />
           <span className="truncate">{project.name}</span>
-          {project.isCore && !project.isPersonal && (
-            <span className="shrink-0 rounded bg-white/[0.06] px-1 text-[9px] font-semibold uppercase tracking-wider text-neutral-500">
-              Core
-            </span>
-          )}
           <span
             className={cn(
               'ml-auto size-1.5 shrink-0 rounded-full',
