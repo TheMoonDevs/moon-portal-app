@@ -54,11 +54,10 @@ to it.
 
 These need the Expo, Apple and Google accounts, so they are done by hand.
 
-1. **Expo project.** Sign in at expo.dev, then from this folder run
-   `npx eas-cli@latest init`. Put the project id and account name in
-   `.env.local` as `EAS_PROJECT_ID` and `EAS_OWNER` (copy `.env.example`),
-   and add both as EAS environment variables on expo.dev for the
-   development, preview and production environments.
+1. **Expo project.** Done: the project is `themoondevs/portal`
+   (`d32170fe-08dc-48ed-8b16-fe310cec6c6a`), set in `app.config.ts`.
+   `eas init` can't write into a dynamic config, so its "Cannot
+   automatically write" message is expected.
 2. **Google sign-in client ids**, in the Google Cloud project behind the
    `themoondevs` Firebase project:
    - Web client id: Firebase console → Authentication → Sign-in method →
@@ -67,9 +66,15 @@ These need the Expo, Apple and Google accounts, so they are done by hand.
      OAuth client id → iOS, bundle id `com.themoondevs.portal`. Set it as
      `GOOGLE_IOS_CLIENT_ID`.
    - Android: Create OAuth client id → Android, package
-     `com.themoondevs.portal`, with the SHA-1 from
-     `npx eas-cli@latest credentials -p android` (and later the Play App
-     Signing SHA-1 from Play Console). Android needs no variable.
+     `com.themoondevs.portal`, with the keystore's SHA-1. Get it from
+     `npx eas-cli@latest credentials -p android` → a build profile →
+     Keystore → Set up a new keystore (or run the first Android build,
+     which makes one), then the SHA-1 shows in the credentials summary.
+     Add the Play App Signing SHA-1 from Play Console later as a second
+     Android client. Android needs no variable.
+   - The Google Service Account key under credentials is only for
+     uploading to Play Store (`eas submit`) and, as an FCM V1 key, for
+     Android push. Neither is needed to sign in.
    Add both variables to `.env.local` and the EAS environments.
 3. **Push (later step).** `EXPO_ACCESS_TOKEN` on the portal only if enhanced
    push security is turned on for the Expo project.
