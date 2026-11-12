@@ -11,7 +11,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { api, withQuery } from '@/lib/api';
 import { useCompany } from '@/lib/company';
 import { todayKey } from '@/lib/dates';
-import { isCoreProject, projectName } from '@/lib/project-name';
+import { isCoreProject, projectNameInCompany } from '@/lib/project-name';
 import type { PlaceInput } from '@/lib/query';
 import type { Day, ProjectRef, Workspace } from '@/lib/types';
 
@@ -176,7 +176,7 @@ export function ProjectPicker({
                         <CompanyMark id={p.id} name={p.name} color={p.color} logo={p.logo} size={40} />
                       )
                     }
-                    title={projectName(p, item.name)}
+                    title={projectNameInCompany(p, item.name)}
                     detail={
                       isCoreProject(p)
                         ? 'The company’s general work'

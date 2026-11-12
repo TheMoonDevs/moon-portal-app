@@ -11,7 +11,7 @@ import { Avatar, Button, Field, QueryState, Screen, Segmented } from '@/componen
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { api, messageOf } from '@/lib/api';
-import { isCoreProject, projectName } from '@/lib/project-name';
+import { isCoreProject, projectNameInCompany } from '@/lib/project-name';
 import { queryClient } from '@/lib/query';
 import type { ChatConversation, ChatPerson, ProjectRef } from '@/lib/types';
 
@@ -147,7 +147,7 @@ export default function NewChatSheet() {
                       <CompanyMark id={p.id} name={p.name} color={p.color} logo={p.logo} size={40} />
                     )}
                     <ThemedText style={styles.flex} numberOfLines={1}>
-                      {projectName(p, t.name)}
+                      {projectNameInCompany(p, t.name)}
                     </ThemedText>
                     <Icon name="chat" size={18} color={theme.textSecondary} />
                   </Pressable>

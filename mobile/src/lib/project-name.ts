@@ -8,16 +8,25 @@ import type { Workspace } from './types';
  * know it by the company's name, so that is what the app shows.
  */
 
-type Named = { name?: string | null; isCore?: boolean | null };
+type Named = { name?: string | null; isCore?: boolean | null; isPersonal?: boolean | null };
 
-/** The company's core project (its general work). */
+/** The company's core project (its general work), not someone's Personal. */
 export const isCoreProject = (p?: Named | null) =>
-  !!p && (!!p.isCore || (p.name ?? '').trim().toUpperCase() === 'CORE');
+  !!p && !p.isPersonal && (!!p.isCore || (p.name ?? '').trim().toUpperCase() === 'CORE');
 
 /** A project's name to show: the company's name for its core project. */
 export function projectName(p: Named | null | undefined, companyName?: string | null) {
   if (!p) return '';
   return isCoreProject(p) ? companyName || 'Company work' : (p.name ?? '');
+}
+
+/**
+ * A project's name where its company is in view too, like a list of the
+ * company's projects: "ZONE (Core)" for its core project.
+ */
+export function projectNameInCompany(p: Named | null | undefined, companyName?: string | null) {
+  if (!p) return '';
+  return isCoreProject(p) ? (companyName ? `${companyName} (Core)` : 'Core') : (p.name ?? '');
 }
 
 /** The person's companies by id, from the workspace (cached). */
