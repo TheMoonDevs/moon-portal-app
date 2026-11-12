@@ -268,6 +268,8 @@ export default function SettingsScreen() {
             }`}
             onPress={checking ? undefined : () => void checkForUpdate()}
           />
+          <Row icon="page" title="Privacy Policy" chevron onPress={() => void openWebsite('/privacy')} />
+          <Row icon="page" title="Terms & Conditions" chevron onPress={() => void openWebsite('/terms')} />
         </Card>
         <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
           Portal {APP_VERSION}
