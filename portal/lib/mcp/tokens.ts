@@ -21,20 +21,26 @@ export async function createApiToken({
   name,
   clientId = null,
   days = null,
+  prefix = TOKEN_PREFIX,
+  extra = {},
 }: {
   userId: string;
   name: string;
   clientId?: string | null;
   days?: number | null;
+  /** Tokens for the portal's own mobile app use their own prefix. */
+  prefix?: string;
+  /** More fields to store on the token record. */
+  extra?: Record<string, unknown>;
 }) {
-  const token = `${TOKEN_PREFIX}${randomSecret()}`;
+  const token = `${prefix}${randomSecret()}`;
   const now = new Date();
   const record: ApiToken = await db.apiToken.create({
     data: {
       userId,
       name: name.trim().slice(0, 60) || 'Token',
       tokenHash: sha256(token),
-      prefix: token.slice(0, TOKEN_PREFIX.length + 4),
+      prefix: token.slice(0, prefix.length + 4),
       clientId,
       expiresAt: days
         ? new Date(now.getTime() + days * 86400000).toISOString()
@@ -43,6 +49,7 @@ export async function createApiToken({
       revokedAt: null,
       createdAt: now.toISOString(),
       updatedAt: now.toISOString(),
+      ...extra,
     },
   });
   return { token, record };

@@ -1,3 +1,4 @@
+import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 
@@ -57,6 +58,10 @@ export async function rolePermissionsFor(
  * no longer active, so their old session stops working straight away.
  */
 export async function getSessionUser(): Promise<SessionUser | null> {
+  // The mobile app sends `Authorization: Bearer pmob_…` instead of a cookie.
+  const mobile = await mobileUserFromRequest();
+  if (mobile !== undefined) return mobile;
+
   const session = (await getServerSession(authOptions as any)) as any;
   const sessionUser = session?.user as
     | { id?: string; email?: string; googleEmail?: string | null }
@@ -75,9 +80,30 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 }
 
 /**
+ * The mobile app's user when the request carries a mobile token: the user, or
+ * null when the token is not valid. `undefined` when there is no mobile token,
+ * or no request at all (a cron job or build step).
+ */
+async function mobileUserFromRequest(): Promise<
+  SessionUser | null | undefined
+> {
+  let authorization: string | null = null;
+  try {
+    authorization = headers().get('authorization');
+  } catch {
+    return undefined;
+  }
+  if (!/^Bearer\s+pmob_/i.test(authorization ?? '')) return undefined;
+  // Imported here: lib/mobile/auth imports this file.
+  const { userFromMobileHeader } = await import('@/lib/mobile/auth');
+  return (await userFromMobileHeader(authorization))?.user ?? null;
+}
+
+/**
  * A user record hydrated for permission checks, or null when it is missing
  * or not active. `googleEmail` is the Google account verified at sign-in;
- * callers without one (API tokens) never get super-admin powers.
+ * callers without one (assistant tokens) never get super-admin powers. The
+ * mobile app passes the Google account it signed in with, like a session.
  */
 export async function sessionUserFromRecord(
   record: any,

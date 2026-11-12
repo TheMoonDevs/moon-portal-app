@@ -2,6 +2,8 @@ import webpush, { type PushSubscription, WebPushError } from 'web-push';
 
 import { db } from '@/lib/mongodb/db-client';
 
+import { sendExpoPushToUsers } from './expo';
+
 /** What the service worker (app/sw.ts) shows. */
 export type PushMessage = {
   title: string;
@@ -85,10 +87,25 @@ export async function removePushSubscriptions(
 }
 
 /**
- * Send a push notification to every device of the given users. Subscriptions
- * the push service reports as gone (404/410) are removed.
+ * Send a push notification to every device of the given users: browsers
+ * (web push) and phones with the mobile app (Expo push, ./expo.ts).
  */
 export async function sendPushToUsers(userIds: string[], message: PushMessage) {
+  const [web, mobile] = await Promise.all([
+    sendWebPushToUsers(userIds, message),
+    sendExpoPushToUsers(userIds, message).catch((error) => {
+      console.error('Expo push failed:', error);
+      return { sent: 0, failed: 0 };
+    }),
+  ]);
+  return { sent: web.sent + mobile.sent, failed: web.failed + mobile.failed };
+}
+
+/**
+ * Web push to every browser of the given users. Subscriptions the push
+ * service reports as gone (404/410) are removed.
+ */
+async function sendWebPushToUsers(userIds: string[], message: PushMessage) {
   if (!ensureVapid()) return { sent: 0, failed: 0 };
 
   const docs = await Promise.all(

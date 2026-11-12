@@ -7,7 +7,8 @@ import {
 
 /*
  * How AI assistants (Claude and others) act for a person through the portal's
- * MCP server. Only hashes of secrets are stored.
+ * MCP server, and how the portal's mobile app stays signed in (one token per
+ * phone, see lib/mobile/auth.ts). Only hashes of secrets are stored.
  */
 
 /** A personal access token. Apps connected through OAuth get one too. */
@@ -25,6 +26,12 @@ export type ApiToken = Loose<
     expiresAt?: Nullable<string>;
     lastUsedAt?: Nullable<string>;
     revokedAt?: Nullable<string>;
+    /** Mobile app only: the Google account checked when the phone signed in. */
+    googleEmail?: Nullable<string>;
+    /** Mobile app only: "ios" or "android". */
+    platform?: Nullable<string>;
+    /** Mobile app only: where this phone's notifications go (Expo push). */
+    expoPushToken?: Nullable<string>;
   }
 >;
 

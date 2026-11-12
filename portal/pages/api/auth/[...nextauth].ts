@@ -1,22 +1,13 @@
 import NextAuth, { type NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 
-import {
-  getSignInEmails,
-  GoogleTokenError,
-  verifyGoogleIdToken,
-} from '@/lib/auth/googleIdToken';
-import { LOGIN_ERRORS } from '@/lib/auth/loginErrors';
+import { SignInError, verifyPortalSignIn } from '@/lib/auth/signIn';
 import { isSuperAdminEmail } from '@/lib/permissions/superAdmin';
-import { findUserBySignInCode } from '@/lib/users/server';
 
 /*
- * Sign-in needs two things together:
- *   1. the person's six-character sign-in code (e.g. ABC123), and
- *   2. a Google sign-in with ANY Google account linked to that user
- *      (their primary email or one of `linkedEmails`).
- * The Google token is verified on the server, so a code alone never opens a
- * session.
+ * Sign-in is a sign-in code plus a Google sign-in with an account linked to
+ * that user; see lib/auth/signIn.ts. The mobile app signs in the same way
+ * through /api/mobile/auth/sign-in.
  */
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -27,29 +18,16 @@ export const authOptions: NextAuthOptions = {
         idToken: { label: 'idToken', type: 'text' },
       },
       async authorize(credentials) {
-        if (!credentials?.code) throw new Error(LOGIN_ERRORS.INVALID_CODE);
-        if (!credentials.idToken) {
-          throw new Error(LOGIN_ERRORS.GOOGLE_FAILED);
-        }
-
-        const user = await findUserBySignInCode(credentials.code);
-        if (!user) throw new Error(LOGIN_ERRORS.INVALID_CODE);
-        if (user.status && user.status !== 'ACTIVE') {
-          throw new Error(LOGIN_ERRORS.INACTIVE);
-        }
-
+        let user;
         let googleEmail: string;
         try {
-          googleEmail = await verifyGoogleIdToken(credentials.idToken);
+          ({ user, googleEmail } = await verifyPortalSignIn(
+            credentials?.code,
+            credentials?.idToken,
+          ));
         } catch (e) {
-          if (e instanceof GoogleTokenError) {
-            throw new Error(LOGIN_ERRORS.GOOGLE_FAILED);
-          }
+          if (e instanceof SignInError) throw new Error(e.code);
           throw e;
-        }
-
-        if (!getSignInEmails(user).includes(googleEmail)) {
-          throw new Error(LOGIN_ERRORS.EMAIL_NOT_LINKED);
         }
 
         return {
