@@ -46,9 +46,10 @@ The screenshots come from the app itself, filled with sample data and made-up pe
 
 | Field | Needed? | Value |
 | --- | --- | --- |
-| Privacy Policy URL | **Yes** | `https://portal.themoondevs.com/privacy` (live once PR #447 is merged) |
+| Privacy Policy URL | **Yes** | `https://portal.themoondevs.com/privacy` |
 | Support URL | **Yes** | A page where people can reach you, such as the company website's contact page |
 | Marketing URL | Optional | The company website |
+| License agreement | Optional | Apple's standard EULA, or `https://portal.themoondevs.com/terms` |
 
 ### Other forms in App Store Connect
 
@@ -58,7 +59,7 @@ The screenshots come from the app itself, filled with sample data and made-up pe
   - messages, and the tasks and worklogs people write
   - files they choose to send
   
-  This should match the privacy page from PR #447.
+  This should match the privacy page at `https://portal.themoondevs.com/privacy`.
 - **Age rating:** answer the questionnaire. The app has chat between people, so say yes to messaging and user-generated content.
 - **Export compliance:** already answered in the build (`ITSAppUsesNonExemptEncryption: false`).
 - **Sign in with Apple:** already in the app, which Apple requires because Google sign-in is offered.
@@ -96,7 +97,7 @@ The screenshots come from the app itself, filled with sample data and made-up pe
 - **Target audience:** 18 and over (a work app).
 - **Data safety:**
   - Data collected: name, email, user ID, messages and other content people write, and files they choose to send. It's used for app functionality, not shared, and encrypted in transit.
-  - People can ask for their data to be deleted. The account deletion URL is `https://portal.themoondevs.com/delete-account` (live once PR #447 is merged).
+  - People can ask for their data to be deleted. The account deletion URL is `https://portal.themoondevs.com/delete-account`.
 - **Testing before production:** a personal developer account made after Nov 2023 needs a closed test with 12 testers for 14 days before it can go to production. An organization account doesn't.
 
 ## Reviewer sign-in
