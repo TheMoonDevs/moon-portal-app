@@ -38,6 +38,14 @@ export type User = Loose<
      * Stored lower-cased.
      */
     linkedEmails?: Nullable<string[]>;
+    /**
+     * Their Apple ID (the `sub` of a Sign in with Apple token), linked from
+     * the mobile app's settings. With it, the app also signs in with Apple:
+     * sign-in code plus that Apple ID (lib/auth/appleIdToken.ts).
+     */
+    appleSub?: Nullable<string>;
+    /** When they asked from the mobile app for their account to be deleted. */
+    deletionRequestedAt?: Nullable<string>;
     name?: Nullable<string>;
     avatar?: Nullable<string>;
     positionTitle?: Nullable<string>;

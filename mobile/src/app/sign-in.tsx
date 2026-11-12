@@ -1,5 +1,13 @@
-import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import { useEffect, useState } from 'react';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  TextInput,
+  useColorScheme,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PortalMark } from '@/components/portal-mark';
@@ -7,30 +15,38 @@ import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { appleAvailable } from '@/lib/apple';
 import { useAuth } from '@/lib/auth';
 import { googleReady } from '@/lib/google';
 
 /**
  * Sign in as on the website: the six-character sign-in code from the portal,
- * then a Google account linked to that code.
+ * then a Google account linked to that code. On iPhones, an Apple ID linked
+ * in Settings works instead of Google.
  */
 export default function SignInScreen() {
   const theme = useTheme();
-  const { signIn } = useAuth();
+  const dark = useColorScheme() === 'dark';
+  const { signIn, signInWithApple } = useAuth();
   const [code, setCode] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<'google' | 'apple' | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [apple, setApple] = useState(false);
   const ready = googleReady();
 
-  const submit = async () => {
-    setBusy(true);
+  useEffect(() => {
+    void appleAvailable().then(setApple);
+  }, []);
+
+  const submit = async (via: 'google' | 'apple') => {
+    setBusy(via);
     setError(null);
     try {
-      await signIn(code);
+      await (via === 'apple' ? signInWithApple(code) : signIn(code));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Sign-in failed. Please try again.');
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   };
 
@@ -62,7 +78,7 @@ export default function SignInScreen() {
               autoComplete="off"
               maxLength={12}
               returnKeyType="go"
-              onSubmitEditing={() => code.trim() && ready && submit()}
+              onSubmitEditing={() => code.trim() && ready && submit('google')}
               style={[
                 styles.input,
                 {
@@ -74,10 +90,26 @@ export default function SignInScreen() {
             />
             <Button
               title="Continue with Google"
-              onPress={submit}
-              busy={busy}
-              disabled={!code.trim() || !ready}
+              onPress={() => void submit('google')}
+              busy={busy === 'google'}
+              disabled={!code.trim() || !ready || !!busy}
             />
+            {apple ? (
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+                buttonStyle={
+                  dark
+                    ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                    : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+                }
+                cornerRadius={Radius.medium}
+                style={[styles.apple, (!code.trim() || !!busy) && styles.dim]}
+                onPress={() => {
+                  if (code.trim() && !busy) void submit('apple');
+                  else if (!code.trim()) setError('Enter your sign-in code first.');
+                }}
+              />
+            ) : null}
             {error ? (
               <ThemedText type="small" themeColor="danger" style={styles.center}>
                 {error}
@@ -90,7 +122,7 @@ export default function SignInScreen() {
             ) : null}
             <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
               Your code is in the email you got when you joined, and in Settings on the portal website. Use a Google account linked
-              to it.
+              to it{apple ? ', or an Apple ID you linked in the app' : ''}.
             </ThemedText>
           </View>
         </View>
@@ -124,4 +156,6 @@ const styles = StyleSheet.create({
     fontWeight: 600,
   },
   center: { textAlign: 'center' },
+  apple: { height: 48 },
+  dim: { opacity: 0.5 },
 });

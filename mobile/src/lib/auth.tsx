@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query';
 import * as Device from 'expo-device';
 import {
   createContext,
@@ -12,7 +11,9 @@ import {
 import { Platform } from 'react-native';
 
 import { api, setApiToken, setOnSignedOut } from './api';
+import { appleIdentityToken } from './apple';
 import { googleFirebaseIdToken, googleSignOut } from './google';
+import { clearCache } from './query';
 import { KEYS, read, write } from './secure';
 import type { Profile } from './types';
 
@@ -23,7 +24,14 @@ type AuthValue = {
   profile: Profile | null;
   /** Sign-in code + Google. Resolves false when the person closed Google. */
   signIn: (code: string) => Promise<boolean>;
+  /** Sign-in code + Apple (iPhone). Resolves false when they closed Apple. */
+  signInWithApple: (code: string) => Promise<boolean>;
   signOut: () => Promise<void>;
+  /** Signs out without asking the portal (after the account was closed). */
+  forget: () => Promise<void>;
+  /** Saves a changed profile (name, photo…) on the phone. */
+  setProfile: (profile: Profile) => void;
+  refreshProfile: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthValue | null>(null);
@@ -41,23 +49,27 @@ async function remember(session: SignedIn | null) {
   ]);
 }
 
+const device = () => ({
+  name: Device.deviceName ?? Device.modelName ?? '',
+  platform: Platform.OS,
+});
+
 /**
  * Keeps the phone signed in to the portal: the token lives in secure storage,
  * is sent with every API call, and is renewed while the app is in use.
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const queryClient = useQueryClient();
   const [status, setStatus] = useState<Status>('loading');
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfileState] = useState<Profile | null>(null);
 
   const forget = useCallback(async () => {
     setApiToken(null);
     await remember(null);
     await write(KEYS.companyId, null);
-    queryClient.clear();
-    setProfile(null);
+    await clearCache().catch(() => null);
+    setProfileState(null);
     setStatus('signedOut');
-  }, [queryClient]);
+  }, []);
 
   // The portal said the token stopped working (signed out in Settings, or
   // the account was deactivated).
@@ -65,6 +77,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setOnSignedOut(() => void forget());
     return () => setOnSignedOut(null);
   }, [forget]);
+
+  const setProfile = useCallback((next: Profile) => {
+    setProfileState(next);
+    void write(KEYS.profile, JSON.stringify(next));
+  }, []);
+
+  const refreshProfile = useCallback(async () => {
+    const me = await api<{ user: Profile }>('/api/mobile/me');
+    setProfile(me.user);
+  }, [setProfile]);
 
   // On launch: pick up the saved sign-in, then refresh it in the background.
   useEffect(() => {
@@ -79,13 +101,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       setApiToken(token);
-      setProfile(saved ? (JSON.parse(saved) as Profile) : null);
+      setProfileState(saved ? (JSON.parse(saved) as Profile) : null);
       setStatus('signedIn');
 
       try {
         const me = await api<{ user: Profile }>('/api/mobile/me');
         setProfile(me.user);
-        await write(KEYS.profile, JSON.stringify(me.user));
         const left = expiresAt ? new Date(expiresAt).getTime() - Date.now() : 0;
         if (left < RENEW_WHEN_LEFT_MS) {
           const fresh = await api<{ token: string; expiresAt: string }>('/api/mobile/auth/renew', {
@@ -98,26 +119,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Offline: keep the saved sign-in. A 401 already signed out.
       }
     })();
-  }, []);
+  }, [setProfile]);
 
-  const signIn = useCallback(async (code: string) => {
-    const idToken = await googleFirebaseIdToken();
-    if (!idToken) return false;
-    const session = await api<SignedIn>('/api/mobile/auth/sign-in', {
-      method: 'POST',
-      anonymous: true,
-      body: {
-        code: code.trim(),
-        idToken,
-        device: { name: Device.deviceName ?? Device.modelName ?? '', platform: Platform.OS },
-      },
-    });
+  const start = useCallback(async (session: SignedIn) => {
     setApiToken(session.token);
     await remember(session);
-    setProfile(session.user);
+    setProfileState(session.user);
     setStatus('signedIn');
-    return true;
   }, []);
+
+  const signIn = useCallback(
+    async (code: string) => {
+      const idToken = await googleFirebaseIdToken();
+      if (!idToken) return false;
+      const session = await api<SignedIn>('/api/mobile/auth/sign-in', {
+        method: 'POST',
+        anonymous: true,
+        body: { code: code.trim(), idToken, device: device() },
+      });
+      await start(session);
+      return true;
+    },
+    [start],
+  );
+
+  const signInWithApple = useCallback(
+    async (code: string) => {
+      const identityToken = await appleIdentityToken();
+      if (!identityToken) return false;
+      const session = await api<SignedIn>('/api/mobile/auth/sign-in/apple', {
+        method: 'POST',
+        anonymous: true,
+        body: { code: code.trim(), identityToken, device: device() },
+      });
+      await start(session);
+      return true;
+    },
+    [start],
+  );
 
   const signOut = useCallback(async () => {
     await api('/api/mobile/auth/sign-out', { method: 'POST' }).catch(() => null);
@@ -126,8 +165,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [forget]);
 
   const value = useMemo(
-    () => ({ status, profile, signIn, signOut }),
-    [status, profile, signIn, signOut],
+    () => ({
+      status,
+      profile,
+      signIn,
+      signInWithApple,
+      signOut,
+      forget,
+      setProfile,
+      refreshProfile,
+    }),
+    [status, profile, signIn, signInWithApple, signOut, forget, setProfile, refreshProfile],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

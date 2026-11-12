@@ -83,6 +83,10 @@ export async function sendExpoPushToUsers(
         chat: message.chat ?? null,
       },
       ...(message.tag && { collapseId: message.tag }),
+      // Android channels and the iPhone's "Mark as read" button live in the
+      // app (mobile/src/lib/push.ts).
+      channelId: message.chat ? 'messages' : 'default',
+      ...(message.chat && { categoryId: 'chat' }),
     }));
 
     try {

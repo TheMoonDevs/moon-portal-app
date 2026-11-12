@@ -94,7 +94,8 @@ const deviceLabel = (device?: MobileDevice) => {
 /** A new token for a phone that just signed in. */
 export async function issueMobileToken(
   userId: string,
-  googleEmail: string,
+  /** The Google account checked at sign-in; null after Sign in with Apple. */
+  googleEmail: string | null,
   device?: MobileDevice,
 ) {
   const { token, record } = await createApiToken({

@@ -1,3 +1,6 @@
+/// <reference types="node" />
+import { existsSync } from "node:fs";
+
 import type { ConfigContext, ExpoConfig } from "expo/config";
 
 /*
@@ -32,6 +35,18 @@ const GOOGLE_IOS_URL_SCHEME = GOOGLE_IOS_CLIENT_ID
   ? `com.googleusercontent.apps.${GOOGLE_IOS_CLIENT_ID.replace(".apps.googleusercontent.com", "")}`
   : undefined;
 
+/**
+ * Firebase's Android config, needed for push on Android. EAS builds can get
+ * it from a file environment variable (GOOGLE_SERVICES_JSON); locally it is
+ * mobile/google-services.json. Without it Android builds still work, only
+ * without push.
+ */
+const GOOGLE_SERVICES_JSON =
+  env.GOOGLE_SERVICES_JSON ||
+  (existsSync("./google-services.json") ? "./google-services.json" : undefined);
+
+const PROJECT_ID = EAS_PROJECT_ID || "d32170fe-08dc-48ed-8b16-fe310cec6c6a";
+
 const DARK = "#0a0a0b";
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
@@ -48,6 +63,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     bundleIdentifier: "com.themoondevs.portal",
     supportsTablet: false,
+    usesAppleSignIn: true,
     infoPlist: {
       // The app uses only standard HTTPS, so no export compliance forms.
       ITSAppUsesNonExemptEncryption: false,
@@ -61,6 +77,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       monochromeImage: "./assets/images/android-icon-monochrome.png",
     },
     predictiveBackGestureEnabled: false,
+    ...(GOOGLE_SERVICES_JSON && { googleServicesFile: GOOGLE_SERVICES_JSON }),
+  },
+  // Small fixes reach phones without a store update (EAS Update). A new
+  // native piece needs a new build: bump `version` and the runtime follows.
+  runtimeVersion: { policy: "appVersion" },
+  updates: {
+    url: `https://u.expo.dev/${PROJECT_ID}`,
+    checkAutomatically: "ON_LOAD",
+    fallbackToCacheTimeout: 0,
   },
   web: {
     output: "single",
@@ -78,6 +103,41 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     "expo-secure-store",
+    "expo-apple-authentication",
+    [
+      "expo-local-authentication",
+      { faceIDPermission: "Portal uses Face ID to keep your work locked." },
+    ],
+    [
+      "expo-notifications",
+      {
+        icon: "./assets/images/notification-icon.png",
+        color: DARK,
+        defaultChannel: "default",
+      },
+    ],
+    [
+      "expo-image-picker",
+      {
+        photosPermission:
+          "Portal uses your photos to set your profile photo and send photos in chats.",
+        cameraPermission:
+          "Portal uses the camera to take your profile photo and photos for chats.",
+        microphonePermission:
+          "Portal uses the microphone when you record a video for a chat.",
+      },
+    ],
+    [
+      "expo-calendar",
+      {
+        writeOnlyAccess: true,
+        writeOnlyCalendarPermission: "Portal adds your meetings to your calendar.",
+        calendarPermission: "Portal adds your meetings to your calendar.",
+      },
+    ],
+    "expo-sharing",
+    "expo-video",
+    "expo-updates",
     ...(GOOGLE_IOS_URL_SCHEME
       ? [
           [
@@ -92,12 +152,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     reactCompiler: true,
   },
   extra: {
-    eas: {
-      projectId: "d32170fe-08dc-48ed-8b16-fe310cec6c6a",
-    },
+    eas: { projectId: PROJECT_ID },
     portalUrl: PORTAL_URL,
     googleWebClientId: GOOGLE_WEB_CLIENT_ID ?? null,
     googleIosClientId: GOOGLE_IOS_CLIENT_ID ?? null,
-    ...(EAS_PROJECT_ID && { eas: { projectId: EAS_PROJECT_ID } }),
   },
 });

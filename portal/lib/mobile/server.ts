@@ -1,3 +1,7 @@
+import {
+  LOGIN_ERROR_MESSAGES,
+  LOGIN_ERRORS,
+} from '@/lib/auth/loginErrors';
 import { fail } from '@/lib/workspace/server';
 
 import { userFromMobileHeader } from './auth';
@@ -22,4 +26,29 @@ export const mobileProfile = (record: any) => ({
   username: record.username ?? null,
   email: record.email ?? null,
   avatar: record.avatar ?? null,
+  positionTitle: record.positionTitle ?? null,
+  timezone: record.timezone ?? null,
+  appleLinked: !!record.appleSub,
+  deletionRequestedAt: record.deletionRequestedAt ?? null,
 });
+
+/** A failed sign-in, with the same error codes the website's login uses. */
+export const refusedSignIn = (code: string) =>
+  Response.json(
+    {
+      status: 'fail',
+      code,
+      error: LOGIN_ERROR_MESSAGES[code] ?? 'Sign-in failed.',
+    },
+    { status: code === LOGIN_ERRORS.INACTIVE ? 403 : 401 },
+  );
+
+/** The phone a sign-in came from, as the app sends it. */
+export const deviceFrom = (body: any) => {
+  const platform = body?.device?.platform;
+  return {
+    name: typeof body?.device?.name === 'string' ? body.device.name : '',
+    platform:
+      platform === 'ios' || platform === 'android' ? platform : undefined,
+  };
+};
