@@ -6,14 +6,12 @@ import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useHeaderHeight } from 'expo-router/react-navigation';
 import * as Sharing from 'expo-sharing';
-import { useEffect, useMemo, useState } from 'react';
+import { type ComponentRef, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   FlatList,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   StyleSheet,
   TextInput,
@@ -26,6 +24,7 @@ import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { Avatar, Notice, QueryState } from '@/components/ui';
 import { Radius, Spacing } from '@/constants/theme';
+import { useKeyboardRoom } from '@/hooks/use-keyboard-room';
 import { useTheme } from '@/hooks/use-theme';
 import { api, authHeaders, messageOf, portalUrl, withQuery } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -64,6 +63,9 @@ export default function ChatScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
+  // The screen's real place on screen: clear of the header and the keyboard.
+  const box = useRef<ComponentRef<typeof View>>(null);
+  const room = useKeyboardRoom(box, headerHeight);
   const { profile } = useAuth();
   const me = profile?.id ?? '';
   const { live, setOpenChat, typingUserId, partnerOnline, notifyTyping } = useChat();
@@ -256,11 +258,19 @@ export default function ChatScreen() {
             : (chat.partner.positionTitle ?? '')
         : `${chat.group?.members.length ?? 0} people${chat.group?.companyName ? ` · ${chat.group.companyName}` : ''}`;
 
-
   return (
-    <View style={[styles.flex, { backgroundColor: theme.chatBackground }]}>
+    <View
+      ref={box}
+      onLayout={room.onLayout}
+      style={[
+        styles.flex,
+        { backgroundColor: theme.chatBackground, paddingTop: room.top, paddingBottom: room.bottom },
+      ]}>
       <Stack.Screen
         options={{
+          // A solid header with no blur: messages never show through it.
+          headerStyle: { backgroundColor: theme.backgroundElement },
+          scrollEdgeEffects: { top: 'hidden', bottom: 'hidden', left: 'hidden', right: 'hidden' },
           headerTitle: () =>
             !chat ? (
               <ThemedText type="smallBold">Chat</ThemedText>
@@ -286,10 +296,7 @@ export default function ChatScreen() {
             ),
         }}
       />
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior="padding"
-        keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}>
+      <View style={styles.flex}>
         {messages.isPending || (messages.error && !messages.data) ? (
           <View style={styles.flex}>
             <QueryState
@@ -302,11 +309,15 @@ export default function ChatScreen() {
         ) : (
           <FlatList
             inverted
+            // Upside down, the system's automatic insets land on the wrong edge;
+            // the screen pads itself instead.
+            contentInsetAdjustmentBehavior="never"
+            automaticallyAdjustKeyboardInsets={false}
             style={styles.flex}
             data={list}
             keyExtractor={(m) => m.id}
             contentContainerStyle={styles.list}
-            keyboardDismissMode="interactive"
+            keyboardDismissMode="on-drag"
             keyboardShouldPersistTaps="handled"
             onEndReachedThreshold={0.4}
             onEndReached={() => {
@@ -397,7 +408,8 @@ export default function ChatScreen() {
             {
               borderColor: theme.border,
               backgroundColor: theme.backgroundElement,
-              paddingBottom: Math.max(insets.bottom, Spacing.two),
+              // On the keyboard, no room for the home indicator.
+              paddingBottom: room.bottom ? Spacing.two : Math.max(insets.bottom, Spacing.two),
             },
           ]}>
           <TextInput
@@ -427,7 +439,7 @@ export default function ChatScreen() {
             <Icon name="paperplane" size={19} color="#fff" />
           </Pressable>
         </View>
-      </KeyboardAvoidingView>
+      </View>
 
       {/* Long press: react, reply, copy, edit, delete. */}
       <Modal visible={!!acting} transparent animationType="fade" onRequestClose={() => setActing(null)}>
