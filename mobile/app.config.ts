@@ -1,4 +1,4 @@
-import type { ConfigContext, ExpoConfig } from 'expo/config';
+import type { ConfigContext, ExpoConfig } from "expo/config";
 
 /*
  * The app's settings. Values that differ per machine or build come from
@@ -9,7 +9,8 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
 const env = process.env;
 
 /** The portal the app talks to. */
-const PORTAL_URL = env.EXPO_PUBLIC_PORTAL_URL || 'https://portal.themoondevs.com';
+const PORTAL_URL =
+  env.EXPO_PUBLIC_PORTAL_URL || "https://portal.themoondevs.com";
 
 /** Set by `eas init`; needed for builds, push notifications and updates. */
 const EAS_PROJECT_ID = env.EAS_PROJECT_ID;
@@ -22,24 +23,24 @@ const EAS_PROJECT_ID = env.EAS_PROJECT_ID;
 const GOOGLE_WEB_CLIENT_ID = env.GOOGLE_WEB_CLIENT_ID;
 const GOOGLE_IOS_CLIENT_ID = env.GOOGLE_IOS_CLIENT_ID;
 const GOOGLE_IOS_URL_SCHEME = GOOGLE_IOS_CLIENT_ID
-  ? `com.googleusercontent.apps.${GOOGLE_IOS_CLIENT_ID.replace('.apps.googleusercontent.com', '')}`
+  ? `com.googleusercontent.apps.${GOOGLE_IOS_CLIENT_ID.replace(".apps.googleusercontent.com", "")}`
   : undefined;
 
-const DARK = '#0a0a0b';
+const DARK = "#0a0a0b";
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: 'Portal',
-  slug: 'portal',
-  owner: env.EAS_OWNER || undefined,
-  version: '0.1.0',
-  orientation: 'portrait',
-  icon: './assets/images/icon.png',
-  scheme: 'portal',
-  userInterfaceStyle: 'automatic',
+  name: "Portal",
+  slug: "portal",
+  owner: env.EAS_OWNER || "themoondevs" || undefined,
+  version: "0.1.0",
+  orientation: "portrait",
+  icon: "./assets/images/icon.png",
+  scheme: "portal",
+  userInterfaceStyle: "automatic",
   backgroundColor: DARK,
   ios: {
-    bundleIdentifier: 'com.themoondevs.portal',
+    bundleIdentifier: "com.themoondevs.portal",
     supportsTablet: false,
     infoPlist: {
       // The app uses only standard HTTPS, so no export compliance forms.
@@ -47,34 +48,34 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
   },
   android: {
-    package: 'com.themoondevs.portal',
+    package: "com.themoondevs.portal",
     adaptiveIcon: {
       backgroundColor: DARK,
-      foregroundImage: './assets/images/android-icon-foreground.png',
-      monochromeImage: './assets/images/android-icon-monochrome.png',
+      foregroundImage: "./assets/images/android-icon-foreground.png",
+      monochromeImage: "./assets/images/android-icon-monochrome.png",
     },
     predictiveBackGestureEnabled: false,
   },
   web: {
-    output: 'single',
-    favicon: './assets/images/favicon.png',
+    output: "single",
+    favicon: "./assets/images/favicon.png",
   },
   plugins: [
-    'expo-router',
+    "expo-router",
     [
-      'expo-splash-screen',
+      "expo-splash-screen",
       {
         backgroundColor: DARK,
-        image: './assets/images/splash-icon.png',
+        image: "./assets/images/splash-icon.png",
         imageWidth: 120,
         dark: { backgroundColor: DARK },
       },
     ],
-    'expo-secure-store',
+    "expo-secure-store",
     ...(GOOGLE_IOS_URL_SCHEME
       ? [
           [
-            '@react-native-google-signin/google-signin',
+            "@react-native-google-signin/google-signin",
             { iosUrlScheme: GOOGLE_IOS_URL_SCHEME },
           ] as [string, Record<string, string>],
         ]
@@ -85,6 +86,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     reactCompiler: true,
   },
   extra: {
+    eas: {
+      projectId: "d32170fe-08dc-48ed-8b16-fe310cec6c6a",
+    },
     portalUrl: PORTAL_URL,
     googleWebClientId: GOOGLE_WEB_CLIENT_ID ?? null,
     googleIosClientId: GOOGLE_IOS_CLIENT_ID ?? null,
