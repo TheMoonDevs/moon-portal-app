@@ -33,15 +33,15 @@ export function screenFor(link: string | null | undefined): Href | null {
     return parts[1] ? { pathname: '/chat/[id]', params: { id: parts[1] } } : '/messages';
   if (parts[0] === 'user' && parts[1] === 'worklogs') {
     const date = q.get('date');
-    if (date && DAY.test(date) && date !== todayKey())
-      return { pathname: '/day/[date]', params: { date } };
-    return '/';
+    if (date && DAY.test(date) && date !== todayKey()) return { pathname: '/work', params: { date } };
+    return '/work';
   }
-  if (parts[0] === 'rest-day') return '/';
+  if (parts[0] === 'user') return { pathname: '/person/[id]', params: { id: parts[1] ?? 'me' } };
+  if (parts[0] === 'rest-day') return '/work';
   if (parts[0] === 'meet' && !parts[1]) return '/meetings';
   if (parts[0] === 'projects' && parts[1])
     return { pathname: '/project/[id]', params: { id: parts[1] } };
-  if (parts[0] === 'projects') return '/work';
+  if (parts[0] === 'projects') return '/projects';
   if (parts[0] === 'goals') return '/goals';
   if (parts[0] === 'plans') {
     const plan = q.get('plan_id') ?? q.get('plan') ?? parts[1];

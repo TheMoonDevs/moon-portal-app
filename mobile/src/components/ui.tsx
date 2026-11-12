@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import type { ReactNode } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   type PressableProps,
   ScrollView,
@@ -32,14 +33,22 @@ export function Screen({
 }: ScrollViewProps & { edgeTop?: boolean }) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  // iOS insets the scroll view for the status bar, header and tab bar itself
+  // (native tabs turn this on for a tab's first scroll view whatever it
+  // asks), so padding for them as well would leave a gap. Elsewhere the
+  // screen pads for them.
+  const ios = Platform.OS === 'ios';
   return (
     <ScrollView
       style={{ backgroundColor: theme.background }}
-      contentInsetAdjustmentBehavior={edgeTop ? 'never' : 'automatic'}
+      contentInsetAdjustmentBehavior={ios || !edgeTop ? 'automatic' : 'never'}
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={[
         styles.screen,
-        { paddingTop: (edgeTop ? insets.top : 0) + Spacing.three, paddingBottom: insets.bottom + Spacing.five },
+        {
+          paddingTop: (edgeTop && !ios ? insets.top : 0) + Spacing.three,
+          paddingBottom: (ios ? 0 : insets.bottom) + Spacing.five,
+        },
         contentContainerStyle,
       ]}
       {...rest}>

@@ -1,9 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import { useState } from 'react';
-import { RefreshControl, StyleSheet, View } from 'react-native';
+import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 
 import { CompanyChip } from '@/components/company-chip';
+import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { Avatar, Card, IconButton, Notice, QueryState, Screen } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
@@ -78,12 +80,16 @@ export default function LeaderboardScreen() {
       {query.data && !rows.length ? <Notice title="No points yet this month" /> : null}
       <View>
         {rows.map((r) => (
-          <View
+          <Pressable
             key={r.user.id}
-            style={[
+            accessibilityRole="button"
+            accessibilityHint="Opens their page and work"
+            onPress={() => router.push({ pathname: '/person/[id]', params: { id: r.user.id } })}
+            style={({ pressed }) => [
               styles.row,
               { borderColor: theme.border },
               r.user.id === profile?.id && { backgroundColor: theme.backgroundSelected },
+              { opacity: pressed ? 0.6 : 1 },
             ]}>
             <ThemedText type="smallBold" style={styles.rank}>
               {MEDALS[r.rank - 1] ?? r.rank}
@@ -96,7 +102,8 @@ export default function LeaderboardScreen() {
               </ThemedText>
             </View>
             <ThemedText type="smallBold">{r.points.toLocaleString()}</ThemedText>
-          </View>
+            <Icon name="forward" size={12} color={theme.textSecondary} />
+          </Pressable>
         ))}
       </View>
     </Screen>

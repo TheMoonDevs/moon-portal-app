@@ -12,7 +12,13 @@ export type BotState = 'waiting' | 'blocked' | 'working' | 'done' | 'asleep';
 
 export type BotTool = 'crane' | 'hammer' | 'laptop';
 
-export type PointStatus = 'doing' | 'done' | 'not_done' | 'blocked' | 'waiting';
+export type PointStatus =
+  | 'doing'
+  | 'paused'
+  | 'done'
+  | 'not_done'
+  | 'blocked'
+  | 'waiting';
 
 export type BotPoint = { text: string; status: PointStatus | null };
 
@@ -244,6 +250,7 @@ export const BOT_STATE_COLOR: Record<BotState, string> = {
 
 export const STATUS_EMOJI: Record<PointStatus, string> = {
   doing: '🟡',
+  paused: '⏸️',
   done: '✅',
   not_done: '❌',
   blocked: '🔴',

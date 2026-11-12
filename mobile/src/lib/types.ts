@@ -31,13 +31,18 @@ export type Workspace = {
   isSuperAdmin: boolean;
   isAdmin: boolean;
   permissions: string[];
-  companies: { company: Company; permissions: string[] }[];
+  companies: {
+    company: Company;
+    permissions: string[];
+    /** Their membership, with their roles in the company. */
+    member?: { roleKeys?: string[] | null } | null;
+  }[];
 };
 
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'IGNORED' | 'ARCHIVED';
 
 /** What a work point can move its task to. */
-export type PointStatus = 'doing' | 'done' | 'not_done' | 'blocked' | 'waiting';
+export type PointStatus = 'doing' | 'paused' | 'done' | 'not_done' | 'blocked' | 'waiting';
 
 /** What the app can set on a task (PATCH /api/me/day/tasks/:id). */
 export type TaskMove = PointStatus | 'todo' | 'archived';
@@ -71,8 +76,8 @@ export type Task = {
   createdAt?: string;
   updatedAt?: string;
   goalId?: string | null;
-  /** "waiting" or "blocked": a status the task's last point set. */
-  flag?: 'waiting' | 'blocked' | null;
+  /** "waiting", "blocked" or "paused": a status the task's last point set. */
+  flag?: 'waiting' | 'blocked' | 'paused' | null;
   ownerId?: string | null;
   assigneeIds?: string[];
   madeBy?: string | null;
@@ -326,6 +331,42 @@ export type Project = {
   goals?: ProjectGoal[];
   progress?: Progress;
   goalProgress?: GoalProgress[];
+};
+
+/** A project on the projects page, with what is going on in it. */
+export type OverviewProject = Project & {
+  activity: {
+    from: string;
+    /** Work logged on each of the last 7 days, oldest first. */
+    days: number[];
+    /** Who logged work this week, most recent first. */
+    people: string[];
+    lastDate: string | null;
+  };
+  tasks: { open: number; overdue: number };
+  today: { total: number; done: number };
+  month?: {
+    from: string;
+    days: number[];
+    /** Tasks finished this month. */
+    done: number;
+    major: number;
+  };
+};
+
+/** GET /api/projects/overview */
+export type ProjectsOverview = {
+  companies: {
+    id: string;
+    name: string;
+    color: string | null;
+    logo: string | null;
+    description?: string | null;
+    memberIds?: string[];
+    isPersonal?: boolean;
+  }[];
+  projects: OverviewProject[];
+  users: PublicUser[];
 };
 
 /** GET /api/projects/:id */

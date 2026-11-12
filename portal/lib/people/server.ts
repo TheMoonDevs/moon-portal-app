@@ -163,7 +163,7 @@ const POINT_STATUS_OF: Record<string, PointStatus> = {
   [TASK_STATUS.IN_REVIEW]: 'doing',
 };
 
-/** A task's status as a point's: blocked or waiting when flagged. */
+/** A task's status as a point's: blocked, waiting or paused when flagged. */
 const statusOfTask = (task: Task, points: DayPoint[]): PointStatus | null => {
   if (task.status !== TASK_STATUS.DONE && task.flag) return task.flag;
   const status = POINT_STATUS_OF[task.status];

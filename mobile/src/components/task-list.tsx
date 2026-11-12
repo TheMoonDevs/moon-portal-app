@@ -9,6 +9,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { statusLabel, useChangeTask } from '@/lib/tasks';
 import type { ProjectRef, Task } from '@/lib/types';
+import { projectName } from '@/lib/project-name';
 
 /** One task: a circle to tick it done, its title and status. Opens the task. */
 export function TaskRow({ task, showDay }: { task: Task; showDay?: boolean }) {
@@ -66,7 +67,10 @@ export function TaskList({
   for (const task of tasks) {
     byProject.set(task.projectId || '', [...(byProject.get(task.projectId || '') ?? []), task]);
   }
-  const name = (id: string) => projects.find((p) => p.id === id)?.name ?? (id ? 'Other' : 'No project');
+  const name = (id: string) => {
+    const project = projects.find((p) => p.id === id);
+    return project ? projectName(project, project.companyName) : id ? 'Other' : 'No project';
+  };
   const groups = Array.from(byProject.entries()).sort((a, b) => name(a[0]).localeCompare(name(b[0])));
 
   return (

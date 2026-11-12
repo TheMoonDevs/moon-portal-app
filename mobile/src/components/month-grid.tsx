@@ -84,7 +84,7 @@ export function MonthGrid({
                 <View style={styles.mark}>{mark?.(day)}</View>
               </Pressable>
             ) : (
-              <View key={`blank-${i}`} style={styles.day} />
+              <View key={`blank-${i}`} style={[styles.day, styles.blank]} />
             ),
           )}
         </View>
@@ -108,5 +108,6 @@ const styles = StyleSheet.create({
     borderRadius: Radius.small,
     borderWidth: 1.5,
   },
+  blank: { borderColor: 'transparent' },
   mark: { height: 10, alignItems: 'center', justifyContent: 'center' },
 });
