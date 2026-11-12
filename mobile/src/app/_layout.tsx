@@ -105,14 +105,14 @@ function RootStack() {
           />
           <Stack.Screen
             name="new-task"
-            options={{ ...sheet, title: 'New task', sheetAllowedDetents: [0.6, 1] }}
+            options={{ ...sheet, title: 'New task', sheetAllowedDetents: [0.8, 1] }}
           />
           <Stack.Screen name="task/[id]" options={{ title: 'Task' }} />
-          <Stack.Screen name="history" options={{ title: 'Worklog' }} />
-          <Stack.Screen name="day/[date]" options={{ title: 'Day' }} />
+          <Stack.Screen name="tasks" options={{ title: 'All my tasks' }} />
           <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
           <Stack.Screen name="chat/[id]" options={{ title: '' }} />
           <Stack.Screen name="chat/new" options={{ ...sheet, title: 'New chat', sheetAllowedDetents: [1] }} />
+          <Stack.Screen name="projects" options={{ title: 'Projects' }} />
           <Stack.Screen name="project/[id]" options={{ title: 'Project' }} />
           <Stack.Screen name="page/[projectId]/[pageId]" options={{ title: '' }} />
           <Stack.Screen name="goals" options={{ title: 'Goals' }} />
@@ -122,8 +122,8 @@ function RootStack() {
           <Stack.Screen name="leaderboard" options={{ title: 'Leaderboard' }} />
           <Stack.Screen name="badges" options={{ title: 'Badges' }} />
           <Stack.Screen name="meetings" options={{ title: 'Meetings' }} />
-          <Stack.Screen name="profile" options={{ title: 'Profile' }} />
-          <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+          <Stack.Screen name="profile" options={{ title: 'Edit profile' }} />
+          <Stack.Screen name="person/[id]" options={{ title: '' }} />
           <Stack.Screen name="delete-account" options={{ title: 'Delete account' }} />
         </Stack.Protected>
         <Stack.Protected guard={!signedIn}>

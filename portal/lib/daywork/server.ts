@@ -103,8 +103,9 @@ export const stillNamedByWords = (task: Task) =>
     Date.now() - new Date(task.completedAt as any).getTime() < 86400000);
 
 /**
- * Moves a task: to do, under way, blocked or waiting, done, not done (it
- * stays open) or archived, with a work point that says so.
+ * Moves a task: to do, under way, paused (started, then back to do),
+ * blocked or waiting, done, not done (it stays open) or archived, with a
+ * work point that says so.
  */
 export async function moveTask(
   task: Task,
@@ -141,7 +142,11 @@ export async function moveTask(
     data.completedByIds = [];
     if (to === 'archived') data.status = TASK_STATUS.ARCHIVED;
     else if (to === 'todo') data.status = TASK_STATUS.TODO;
-    else if (to === 'not_done')
+    else if (to === 'paused') {
+      // Started, then put down: to do again, marked so it reads as paused.
+      data.status = TASK_STATUS.TODO;
+      data.flag = 'paused';
+    } else if (to === 'not_done')
       // Not done today: it stays to do (or under way) for another day.
       data.status =
         task.status === TASK_STATUS.IN_PROGRESS ||
@@ -253,6 +258,7 @@ export function readPlace(value: any): PlaceInput | null {
 export const TASK_MOVES: TaskMove[] = [
   'todo',
   'doing',
+  'paused',
   'done',
   'not_done',
   'blocked',

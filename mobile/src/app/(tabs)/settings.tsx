@@ -4,25 +4,33 @@ import * as Updates from 'expo-updates';
 import { type ReactNode, useEffect, useState } from 'react';
 import { Alert, Linking, Platform, StyleSheet, Switch, View } from 'react-native';
 
+import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
-import { Card, Row, Screen, Segmented } from '@/components/ui';
+import { Avatar, Card, PressableCard, Row, Screen, Segmented } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { api, messageOf } from '@/lib/api';
 import { appleAvailable, appleIdentityToken } from '@/lib/apple';
 import { useAuth } from '@/lib/auth';
-import { APP_VERSION } from '@/lib/config';
+import { APP_VERSION, PORTAL_URL } from '@/lib/config';
 import { timeAgo } from '@/lib/dates';
+import { openWebsite } from '@/lib/links';
 import { biometricsAvailable, confirmWithBiometrics } from '@/lib/lock';
+import { unreadCount, useNotifications } from '@/lib/notifications';
 import { setPreference, type ThemeChoice, usePreferences } from '@/lib/preferences';
 import { registerForPush, unregisterPush } from '@/lib/push';
 import { queryClient } from '@/lib/query';
 import type { Connection } from '@/lib/types';
 import { nativeVersion } from '@/lib/updates';
 
-/** Theme, Face ID, notifications, Apple, connected apps and the account. */
+/**
+ * The person: their page, then the app's settings (theme, Face ID,
+ * notifications, Apple, connected apps) and the account. Companies aren't
+ * picked here: the app shows every company at once.
+ */
 export default function SettingsScreen() {
   const theme = useTheme();
+  const unread = unreadCount(useNotifications().data);
   const prefs = usePreferences();
   const { profile, refreshProfile, signOut } = useAuth();
   const [canLock, setCanLock] = useState(false);
@@ -126,7 +134,41 @@ export default function SettingsScreen() {
   const switchColors = { true: theme.success };
 
   return (
-    <Screen edgeTop={false}>
+    <Screen>
+      <ThemedText type="title">Settings</ThemedText>
+
+      <PressableCard
+        onPress={() => router.push({ pathname: '/person/[id]', params: { id: 'me' } })}
+        style={styles.me}>
+        <Avatar uri={profile?.avatar} name={profile?.name} size={60} />
+        <View style={styles.flex}>
+          <ThemedText type="subtitle" numberOfLines={1}>
+            {profile?.name || 'You'}
+          </ThemedText>
+          <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+            {[profile?.positionTitle, profile?.username ? `@${profile.username}` : null]
+              .filter(Boolean)
+              .join(' · ') || 'Your page'}
+          </ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            Your page, activity and what’s next
+          </ThemedText>
+        </View>
+        <Icon name="chevron" size={14} color={theme.textSecondary} />
+      </PressableCard>
+
+      <Card style={styles.list}>
+        <Row icon="pencil" title="Edit profile" detail="Name, photo, title and timezone" chevron onPress={() => router.push('/profile')} />
+        <Row
+          icon="bell"
+          title="Notifications"
+          detail={unread ? `${unread} unread` : null}
+          chevron
+          onPress={() => router.push('/notifications')}
+        />
+        <Row icon="video" title="Meetings" detail="Upcoming, and your booking link" chevron onPress={() => router.push('/meetings')} />
+      </Card>
+
       <Section title="Appearance">
         <Segmented<ThemeChoice>
           value={prefs.theme}
@@ -213,6 +255,12 @@ export default function SettingsScreen() {
       <Section title="About">
         <Card style={styles.list}>
           <Row
+            icon="globe"
+            title="Open the portal website"
+            detail={PORTAL_URL.replace(/^https?:\/\//, '')}
+            onPress={() => void openWebsite('/')}
+          />
+          <Row
             icon="bolt"
             title={checking ? 'Checking…' : 'Check for updates'}
             detail={`Version ${nativeVersion()}${Updates.updateId ? ` · update ${Updates.updateId.slice(0, 8)}` : ''}${
@@ -241,6 +289,8 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  me: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   section: { gap: Spacing.two },
   list: { paddingVertical: 0, gap: 0 },
   center: { textAlign: 'center' },

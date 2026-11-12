@@ -1,4 +1,5 @@
 import { db } from '@/lib/mongodb/db-client';
+import { markdownToDoc } from '@/lib/workspace/pageMarkdown';
 import {
   asEmoji,
   asPageContent,
@@ -47,7 +48,8 @@ export async function GET(_request: Request, { params }: Params) {
 }
 
 /**
- * Adds a page: `{ kind, title?, emoji?, content?, parentId? }`. A project has
+ * Adds a page: `{ kind, title?, emoji?, content?, markdown?, parentId? }`,
+ * its body as the editor's document or as Markdown (from the app). A project has
  * one objective, so asking for another returns the one it has; the objective
  * sits outside the page tree.
  */
@@ -62,7 +64,11 @@ export async function POST(request: Request, { params }: Params) {
   const body = await request.json().catch(() => ({}));
   const kind = body.kind as PROJECT_PAGE_KIND;
   if (!PAGE_KINDS.includes(kind)) return fail(400, 'Unknown page kind.');
-  const content = asPageContent(body.content ?? null);
+  const content = asPageContent(
+    typeof body.markdown === 'string'
+      ? markdownToDoc(body.markdown)
+      : (body.content ?? null),
+  );
   if (content === undefined) return fail(400, 'That page is not valid.');
 
   if (kind === PROJECT_PAGE_KIND.OBJECTIVE) {

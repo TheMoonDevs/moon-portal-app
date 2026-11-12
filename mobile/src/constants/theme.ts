@@ -16,6 +16,18 @@ export const Colors = {
     onAccent: '#f2f0e8',
     danger: '#c2410c',
     success: '#15803d',
+    /* Chat, in WhatsApp's colours. */
+    chatBackground: '#efeae2',
+    bubbleMine: '#d9fdd3',
+    bubbleTheirs: '#ffffff',
+    chatGreen: '#1daa61',
+    chatBadge: '#25d366',
+    tickRead: '#53bdeb',
+    chatPill: '#ffffff',
+    chipOn: '#d8fdd2',
+    chipOnText: '#15603e',
+    /* The grouped lists of iOS Settings. */
+    grouped: '#f2f2f7',
   },
   dark: {
     text: '#f2f0e8',
@@ -28,6 +40,16 @@ export const Colors = {
     onAccent: '#0a0a0b',
     danger: '#fb923c',
     success: '#4ade80',
+    chatBackground: '#0b141a',
+    bubbleMine: '#144d37',
+    bubbleTheirs: '#1f2c34',
+    chatGreen: '#21c063',
+    chatBadge: '#21c063',
+    tickRead: '#53bdeb',
+    chatPill: '#182229',
+    chipOn: '#103529',
+    chipOnText: '#d8fdd2',
+    grouped: '#0a0a0b',
   },
 } as const;
 

@@ -11,6 +11,7 @@ import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { api, messageOf, withQuery } from '@/lib/api';
 import { todayKey } from '@/lib/dates';
+import { projectName } from '@/lib/project-name';
 import { refreshWork } from '@/lib/query';
 import { isOpen, POINT_STATUSES, statusLabel, useLogPoint } from '@/lib/tasks';
 import type { Day, MyTasks, PointStatus, ProjectRef, Task } from '@/lib/types';
@@ -106,7 +107,7 @@ export default function LogWorkSheet() {
           <View style={styles.flex}>
             <ThemedText>{chosen.title}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              {projectOf(chosen)?.name ?? 'No project'} · {statusLabel(chosen)} · tap to change
+              {projectName(projectOf(chosen), projectOf(chosen)?.companyName) || 'No project'} · {statusLabel(chosen)} · tap to change
             </ThemedText>
           </View>
         </Pressable>
@@ -131,7 +132,7 @@ export default function LogWorkSheet() {
                 <View style={styles.flex}>
                   <ThemedText numberOfLines={2}>{t.title}</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
-                    {projectOf(t)?.name ?? 'No project'} · {statusLabel(t)}
+                    {projectName(projectOf(t), projectOf(t)?.companyName) || 'No project'} · {statusLabel(t)}
                   </ThemedText>
                 </View>
                 <Icon name="chevron" size={14} color={theme.textSecondary} />

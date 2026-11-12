@@ -33,6 +33,10 @@ const STATUS_ICON: Record<
     icon: 'clock_loader_40',
     className: 'text-amber-300 auto-light:text-amber-700',
   },
+  paused: {
+    icon: 'pause_circle',
+    className: 'text-neutral-400 auto-light:text-neutral-500',
+  },
   done: {
     icon: 'check_circle',
     className: 'text-emerald-400 auto-light:text-emerald-600',
@@ -110,7 +114,12 @@ export function rowStatus(
   if (task.status === 'DONE') return 'done';
   if (task.status === 'ARCHIVED' || task.status === 'IGNORED')
     return 'archived';
-  if (task.flag === 'blocked' || task.flag === 'waiting') return task.flag;
+  if (
+    task.flag === 'blocked' ||
+    task.flag === 'waiting' ||
+    task.flag === 'paused'
+  )
+    return task.flag;
   if (task.status === 'IN_PROGRESS' || task.status === 'IN_REVIEW')
     return 'doing';
   const last = points

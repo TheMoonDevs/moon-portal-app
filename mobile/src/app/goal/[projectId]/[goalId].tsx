@@ -13,6 +13,7 @@ import { api, messageOf } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { dayTitle, monthOf, todayKey } from '@/lib/dates';
 import { goalLine, PERIOD_EACH, useGoals } from '@/lib/goals';
+import { projectName, useCompanyName } from '@/lib/project-name';
 import { queryClient, refreshWork } from '@/lib/query';
 import type { GoalsCalendar } from '@/lib/types';
 
@@ -26,6 +27,7 @@ export default function GoalScreen() {
   const { projectId, goalId } = useLocalSearchParams<{ projectId: string; goalId: string }>();
   const theme = useTheme();
   const { profile } = useAuth();
+  const companyOf = useCompanyName();
   const today = todayKey();
   const [month, setMonth] = useState(monthOf(today));
   const [amount, setAmount] = useState('');
@@ -128,7 +130,7 @@ export default function GoalScreen() {
             <View style={styles.row}>
               <Dot color={project?.color} />
               <ThemedText type="small" themeColor="textSecondary">
-                {project?.name} ·{' '}
+                {projectName(project, companyOf(project?.companyId))} ·{' '}
                 {scheduled ? `${goal.target} ${PERIOD_EACH[goal.period] ?? ''}` : `Target ${goal.target.toLocaleString()}`}
               </ThemedText>
             </View>

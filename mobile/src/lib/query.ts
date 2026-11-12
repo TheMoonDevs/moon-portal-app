@@ -52,13 +52,17 @@ export type LogPointInput = {
   date?: string;
 };
 
-/** What changing a task sends (title, day, status). */
+/** Where a task goes: a project, the person's Personal, or nowhere yet. */
+export type PlaceInput = { projectId: string } | { personal: true } | { none: true };
+
+/** What changing a task sends (title, day, status, project). */
 export type TaskChangeInput = {
   taskId: string;
   title?: string;
   forDate?: string | null;
   status?: TaskMove;
   note?: string;
+  place?: PlaceInput;
 };
 
 export const MUTATIONS = {

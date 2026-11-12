@@ -8,6 +8,7 @@ import type { Day, MyTasks, PointStatus, Task, TaskMove, TaskStatus } from './ty
 export function statusLabel(task: Pick<Task, 'status' | 'flag'>) {
   if (task.flag === 'blocked') return 'Blocked';
   if (task.flag === 'waiting') return 'Waiting';
+  if (task.flag === 'paused') return 'Paused';
   return STATUS_LABEL[task.status] ?? task.status;
 }
 
@@ -23,14 +24,16 @@ export const STATUS_LABEL: Record<TaskStatus, string> = {
 /** The statuses a work point can set, in the order the log sheet shows. */
 export const POINT_STATUSES: { value: PointStatus; label: string }[] = [
   { value: 'doing', label: 'Doing' },
-  { value: 'done', label: 'Done' },
-  { value: 'waiting', label: 'Waiting' },
+  { value: 'paused', label: 'Pause' },
+  { value: 'waiting', label: 'Wait' },
   { value: 'blocked', label: 'Blocked' },
+  { value: 'done', label: 'Done' },
   { value: 'not_done', label: 'Not done' },
 ];
 
 export const POINT_LABEL: Record<string, string> = {
   doing: 'Doing',
+  paused: 'Paused',
   done: 'Done',
   not_done: 'Not done',
   blocked: 'Blocked',
@@ -48,6 +51,8 @@ function statusAfter(task: Task, move: TaskMove): Partial<Task> {
       return { status: 'DONE', flag: null };
     case 'todo':
       return { status: 'TODO', flag: null };
+    case 'paused':
+      return { status: 'TODO', flag: 'paused' };
     case 'archived':
       return { status: 'ARCHIVED', flag: null };
     case 'not_done':
@@ -94,11 +99,12 @@ export function useChangeTask() {
   return useMutation<unknown, Error, TaskChangeInput>({
     mutationKey: MUTATIONS.changeTask,
     onMutate: (input) => {
-      const { status, title, forDate } = input;
+      const { status, title, forDate, place } = input;
       patchCachedTask(input.taskId, (t) => ({
         ...(status && statusAfter(t, status)),
         ...(title !== undefined && { title }),
         ...(forDate !== undefined && { forDate }),
+        ...(place && 'projectId' in place && { projectId: place.projectId }),
       }));
     },
   });

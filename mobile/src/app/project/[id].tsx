@@ -21,6 +21,7 @@ import { Spacing } from '@/constants/theme';
 import { api, messageOf } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { goalLine } from '@/lib/goals';
+import { useProjectLabel } from '@/lib/project-name';
 import { statusLabel } from '@/lib/tasks';
 import type { ChatConversation, ProjectDetail, ProjectPage, Task } from '@/lib/types';
 
@@ -29,6 +30,7 @@ type TaskView = 'mine' | 'open' | 'done';
 /** A project: progress, goals, team, pages and tasks. */
 export default function ProjectScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const label = useProjectLabel();
   const { profile } = useAuth();
   const me = profile?.id ?? '';
   const [view, setView] = useState<TaskView>('mine');
@@ -89,7 +91,7 @@ export default function ProjectScreen() {
           }}
         />
       }>
-      <Stack.Screen options={{ title: project?.name ?? 'Project' }} />
+      <Stack.Screen options={{ title: project ? label(project).name : 'Project' }} />
       <QueryState
         loading={query.isPending}
         error={query.data ? null : query.error}
@@ -102,7 +104,7 @@ export default function ProjectScreen() {
             <View style={styles.row}>
               <Dot color={project.color} size={12} />
               <ThemedText type="subtitle" style={styles.flex}>
-                {project.name}
+                {label(project).name}
               </ThemedText>
             </View>
             {project.description ? (
@@ -182,7 +184,7 @@ export default function ProjectScreen() {
             </View>
           ) : null}
 
-          {pages.data?.objective || topPages.length ? (
+          {pages.data ? (
             <View>
               <ThemedText type="label" themeColor="textSecondary">
                 Pages
@@ -215,6 +217,17 @@ export default function ProjectScreen() {
                   }
                 />
               ))}
+              <Row
+                icon="add"
+                title="New page"
+                detail="Write down an idea"
+                onPress={() =>
+                  router.push({
+                    pathname: '/page/[projectId]/[pageId]',
+                    params: { projectId: project.id, pageId: 'new' },
+                  })
+                }
+              />
             </View>
           ) : null}
 

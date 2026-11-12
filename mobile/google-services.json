@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "731981843950",
+    "project_id": "themoondevs",
+    "storage_bucket": "themoondevs.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:731981843950:android:450cdb152de240953c92ff",
+        "android_client_info": {
+          "package_name": "com.themoondevs.portal"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "731981843950-5ng0qmtuhu4hr5shnv9fokuvtnehk721.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB80x1ISD8rqUVx5OZPlh6_nokd2ntzstA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "731981843950-5ng0qmtuhu4hr5shnv9fokuvtnehk721.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "731981843950-9gg7n9848di69shb8vigogse1rhrmcag.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.themoondevs.portal"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
