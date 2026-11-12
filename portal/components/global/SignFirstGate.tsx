@@ -28,6 +28,9 @@ const OPEN_PATHS = [
   '/oauth',
   '/apply',
   '/policies',
+  '/privacy',
+  '/terms',
+  '/delete-account',
   '/~offline',
 ];
 
