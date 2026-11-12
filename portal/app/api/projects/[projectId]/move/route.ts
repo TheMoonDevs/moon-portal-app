@@ -25,7 +25,7 @@ export async function POST(request: Request, { params }: Params) {
   );
   if (response || !project) return response ?? fail(404, 'Project not found.');
   if (project.isCore)
-    return fail(400, "The company's main project stays with its company.");
+    return fail(400, "The company's CORE project stays with its company.");
 
   const body = await request.json().catch(() => ({}));
   const companyId = typeof body.companyId === 'string' ? body.companyId : '';
