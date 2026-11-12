@@ -14,13 +14,21 @@ const EXEMPT_PREFIXES = [
   '/api/hiring/emails/webhook',
   // The service worker confirms chat notifications; it can't send the key.
   '/api/chat/push-ack',
+  // The mobile app signs in with a sign-in code + Google (lib/auth/signIn.ts).
+  '/api/mobile/auth/sign-in',
 ];
+
+// The mobile app sends its own token instead of the shared key; every route
+// still checks the token itself (getSessionUser, lib/mobile/auth.ts).
+const MOBILE_BEARER = /^Bearer\s+pmob_\S+$/i;
 
 export const rejectIfApiKeyMissing = (request: NextRequest) => {
   if (!MUTATING_METHODS.has(request.method.toUpperCase())) return null;
 
   const { pathname } = request.nextUrl;
   if (EXEMPT_PREFIXES.some((prefix) => pathname.startsWith(prefix)))
+    return null;
+  if (MOBILE_BEARER.test(request.headers.get('authorization') ?? ''))
     return null;
 
   const apiKey = request.headers.get('tmd_portal_api_key');

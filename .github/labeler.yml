@@ -26,6 +26,10 @@ payzone:
 portal:
   - portal/**/*
 
+# Add 'mobile' to any changes within 'mobile' folder
+mobile:
+  - mobile/**/*
+
 # --------------- Package.json labels ---------------
 # Add 'dependencies' to any changes within any 'package.json' file in the repository
 dependencies:
