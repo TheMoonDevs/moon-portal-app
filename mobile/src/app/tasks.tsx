@@ -1,38 +1,35 @@
 import { useQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { useState } from 'react';
 import { RefreshControl, StyleSheet, View } from 'react-native';
 
-import { CompanyChip } from '@/components/company-chip';
 import { OfflineBanner } from '@/components/offline-banner';
 import { TaskList } from '@/components/task-list';
 import { ThemedText } from '@/components/themed-text';
-import { Button, Notice, QueryState, Screen, Segmented } from '@/components/ui';
+import { IconButton, Notice, QueryState, Screen, Segmented } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { api } from '@/lib/api';
-import { useCompany } from '@/lib/company';
 import { todayKey } from '@/lib/dates';
 import type { MyTasks, Task } from '@/lib/types';
 
 type View_ = 'open' | 'waiting' | 'archived';
 
-/** Every open task of theirs, by when it is for; and the ones put away. */
+/**
+ * Every open task of theirs in every company, by when it is for; and the
+ * ones put away.
+ */
 export default function TasksScreen() {
-  const { company } = useCompany();
   const [view, setView] = useState<View_>('open');
   const query = useQuery({
     queryKey: ['tasks'],
     queryFn: () => api<MyTasks>('/api/me/tasks'),
   });
   const today = query.data?.today ?? todayKey();
-  const inCompany = (t: Task) =>
-    !company || t.companyId === company.id || (!t.companyId && !!company.isPersonal);
-
-  const open = (query.data?.tasks ?? []).filter(inCompany);
+  const open = query.data?.tasks ?? [];
   const projects = query.data?.projects ?? [];
   const groups: { title: string; tasks: Task[] }[] =
     view === 'archived'
-      ? [{ title: 'Archived in the last 60 days', tasks: (query.data?.archived ?? []).filter(inCompany) }]
+      ? [{ title: 'Archived in the last 60 days', tasks: query.data?.archived ?? [] }]
       : view === 'waiting'
         ? [
             { title: 'Blocked', tasks: open.filter((t) => t.flag === 'blocked') },
@@ -48,17 +45,18 @@ export default function TasksScreen() {
 
   return (
     <Screen
+      edgeTop={false}
       refreshControl={
         <RefreshControl refreshing={query.isRefetching} onRefresh={() => void query.refetch()} />
       }>
-      <View style={styles.top}>
-        <ThemedText type="title" style={styles.flex}>
-          Tasks
-        </ThemedText>
-        <Button title="Add" small onPress={() => router.push('/new-task')} />
-      </View>
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <IconButton name="add" label="Add a task" onPress={() => router.push('/new-task')} />
+          ),
+        }}
+      />
       <OfflineBanner />
-      <CompanyChip />
       <Segmented
         value={view}
         onChange={setView}
@@ -77,7 +75,7 @@ export default function TasksScreen() {
       {query.data && !shown.length ? (
         <Notice
           title={view === 'open' ? 'All clear' : 'Nothing here'}
-          body={view === 'open' ? 'No open tasks in this company.' : undefined}
+          body={view === 'open' ? 'No open tasks anywhere.' : undefined}
         />
       ) : null}
       {shown.map((g) => (
@@ -93,7 +91,5 @@ export default function TasksScreen() {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  top: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   group: { gap: Spacing.two },
 });

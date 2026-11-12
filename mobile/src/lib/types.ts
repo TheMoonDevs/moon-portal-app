@@ -31,7 +31,12 @@ export type Workspace = {
   isSuperAdmin: boolean;
   isAdmin: boolean;
   permissions: string[];
-  companies: { company: Company; permissions: string[] }[];
+  companies: {
+    company: Company;
+    permissions: string[];
+    /** Their membership, with their roles in the company. */
+    member?: { roleKeys?: string[] | null } | null;
+  }[];
 };
 
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'IGNORED' | 'ARCHIVED';

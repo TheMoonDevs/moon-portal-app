@@ -21,6 +21,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { colorFor } from '@/components/company-mark';
 import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { Avatar, Notice, QueryState } from '@/components/ui';
@@ -257,7 +258,7 @@ export default function ChatScreen() {
 
 
   return (
-    <View style={[styles.flex, { backgroundColor: theme.background }]}>
+    <View style={[styles.flex, { backgroundColor: theme.chatBackground }]}>
       <Stack.Screen
         options={{
           headerTitle: () =>
@@ -329,12 +330,16 @@ export default function ChatScreen() {
                 item.kind !== 'system' &&
                 (newDay || older?.senderId !== item.senderId || older?.kind === 'system');
               const lastInRun = !newer || newer.senderId !== item.senderId || newer.kind === 'system';
+              const firstInRun =
+                newDay || !older || older.senderId !== item.senderId || older.kind === 'system';
               return (
                 <View>
                   {newDay ? (
-                    <ThemedText type="small" themeColor="textSecondary" style={styles.day}>
-                      {dayTitle(dayOf(item.createdAt))}
-                    </ThemedText>
+                    <View style={[styles.pill, { backgroundColor: theme.chatPill }]}>
+                      <ThemedText type="small" themeColor="textSecondary">
+                        {dayTitle(dayOf(item.createdAt))}
+                      </ThemedText>
+                    </View>
                   ) : null}
                   <Bubble
                     message={item}
@@ -344,6 +349,7 @@ export default function ChatScreen() {
                     name={showName ? nameOf(item.senderId) : null}
                     replyName={item.replyTo ? (item.replyTo.senderId === me ? 'You' : nameOf(item.replyTo.senderId)) : null}
                     tail={lastInRun}
+                    first={firstInRun}
                     onLongPress={() => {
                       if (item.kind === 'system' || item.deletedAt) return;
                       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -363,6 +369,7 @@ export default function ChatScreen() {
 
         {replyTo || editing ? (
           <View style={[styles.replyBar, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}>
+            <View style={[styles.replyEdge, { backgroundColor: theme.chatGreen }]} />
             <Icon name={editing ? 'pencil' : 'reply'} size={16} color={theme.textSecondary} />
             <View style={styles.flex}>
               <ThemedText type="smallBold">
@@ -387,7 +394,11 @@ export default function ChatScreen() {
         <View
           style={[
             styles.composer,
-            { borderColor: theme.border, paddingBottom: Math.max(insets.bottom, Spacing.two) },
+            {
+              borderColor: theme.border,
+              backgroundColor: theme.backgroundElement,
+              paddingBottom: Math.max(insets.bottom, Spacing.two),
+            },
           ]}>
           <TextInput
             value={text}
@@ -401,7 +412,7 @@ export default function ChatScreen() {
             maxLength={4000}
             style={[
               styles.input,
-              { color: theme.text, backgroundColor: theme.backgroundElement, borderColor: theme.border },
+              { color: theme.text, backgroundColor: theme.background, borderColor: theme.border },
             ]}
           />
           <Pressable
@@ -409,8 +420,11 @@ export default function ChatScreen() {
             accessibilityLabel="Send"
             disabled={!text.trim()}
             onPress={() => void submit()}
-            style={({ pressed }) => ({ opacity: !text.trim() ? 0.35 : pressed ? 0.6 : 1 })}>
-            <Icon name="send" size={32} color={theme.accent} />
+            style={({ pressed }) => [
+              styles.sendButton,
+              { backgroundColor: theme.chatGreen, opacity: !text.trim() ? 0.45 : pressed ? 0.7 : 1 },
+            ]}>
+            <Icon name="paperplane" size={19} color="#fff" />
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -515,7 +529,7 @@ function Ticks({ message, group }: { message: ChatMessage; group: boolean }) {
     : !!message.readAt;
   const delivered = read || !!message.deliveredAt;
   return (
-    <ThemedText style={[styles.ticks, { color: read ? '#3b82f6' : theme.textSecondary }]}>
+    <ThemedText style={[styles.ticks, { color: read ? theme.tickRead : theme.textSecondary }]}>
       {delivered ? '✓✓' : '✓'}
     </ThemedText>
   );
@@ -529,6 +543,7 @@ function Bubble({
   name,
   replyName,
   tail,
+  first,
   onLongPress,
   onRetry,
   onOpen,
@@ -539,7 +554,10 @@ function Bubble({
   group: boolean;
   name: string | null;
   replyName: string | null;
+  /** The last of a run of messages from one person: space after it. */
   tail: boolean;
+  /** The first of a run: the bubble's little tail. */
+  first: boolean;
   onLongPress: () => void;
   onRetry: () => void;
   onOpen: () => void;
@@ -547,13 +565,16 @@ function Bubble({
   const theme = useTheme();
   if (m.kind === 'system')
     return (
-      <ThemedText type="small" themeColor="textSecondary" style={styles.system}>
-        {previewOf(m)}
-      </ThemedText>
+      <View style={[styles.pill, styles.system, { backgroundColor: theme.chatPill }]}>
+        <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
+          {previewOf(m)}
+        </ThemedText>
+      </View>
     );
 
-  const ink = mine ? theme.onAccent : theme.text;
-  const faint = mine ? theme.onAccent : theme.textSecondary;
+  const ink = theme.text;
+  const faint = theme.textSecondary;
+  const fill = mine ? theme.bubbleMine : theme.bubbleTheirs;
   const counts = new Map<string, number>();
   for (const r of m.reactions) counts.set(r.emoji, (counts.get(r.emoji) ?? 0) + 1);
   const expired = !!m.attachment?.expiredAt;
@@ -562,11 +583,6 @@ function Bubble({
 
   return (
     <View style={[styles.bubbleRow, mine ? styles.right : styles.left, !tail && styles.tight]}>
-      {name ? (
-        <ThemedText type="small" themeColor="textSecondary" style={styles.sender}>
-          {name}
-        </ThemedText>
-      ) : null}
       <Pressable
         onLongPress={onLongPress}
         onPress={m.pending === 'failed' ? onRetry : undefined}
@@ -574,18 +590,33 @@ function Bubble({
         style={[
           styles.bubble,
           {
-            backgroundColor: mine ? theme.accent : theme.backgroundElement,
-            borderColor: mine ? theme.accent : theme.border,
+            backgroundColor: fill,
             opacity: m.pending === 'sending' ? 0.7 : 1,
           },
+          first && (mine ? styles.firstMine : styles.firstTheirs),
         ]}>
+        {first ? (
+          <View
+            style={[
+              styles.tail,
+              mine
+                ? { right: -7, borderTopColor: fill, borderRightWidth: 8 }
+                : { left: -7, borderTopColor: fill, borderLeftWidth: 8 },
+            ]}
+          />
+        ) : null}
+        {name ? (
+          <ThemedText type="smallBold" style={{ color: colorFor(m.senderId) }}>
+            {name}
+          </ThemedText>
+        ) : null}
         {m.forwarded ? (
           <ThemedText type="small" style={[styles.italic, { color: faint }]}>
             Forwarded
           </ThemedText>
         ) : null}
         {m.replyTo ? (
-          <View style={[styles.quote, { borderColor: faint }]}>
+          <View style={[styles.quote, { borderColor: theme.chatGreen, backgroundColor: theme.backgroundSelected }]}>
             <ThemedText type="smallBold" style={{ color: ink }}>
               {replyName}
             </ThemedText>
@@ -659,7 +690,7 @@ function Bubble({
                 {
                   backgroundColor: theme.backgroundElement,
                   borderColor: m.reactions.some((r) => r.userId === me && r.emoji === emoji)
-                    ? theme.accent
+                    ? theme.chatGreen
                     : theme.border,
                 },
               ]}>
@@ -679,24 +710,55 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   flexShrink: { flexShrink: 1 },
   headerTitle: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, maxWidth: 260 },
-  list: { padding: Spacing.three, gap: Spacing.one, flexGrow: 1 },
+  list: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, gap: 2, flexGrow: 1 },
   empty: { flex: 1, justifyContent: 'center', transform: [{ scaleY: -1 }] },
-  day: { textAlign: 'center', marginVertical: Spacing.three },
-  system: { textAlign: 'center', marginVertical: Spacing.two, paddingHorizontal: Spacing.four },
-  bubbleRow: { maxWidth: '82%', gap: 2, marginBottom: Spacing.two },
+  pill: {
+    alignSelf: 'center',
+    borderRadius: 8,
+    paddingHorizontal: Spacing.two + Spacing.one,
+    paddingVertical: Spacing.one,
+    marginVertical: Spacing.two + Spacing.one,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 1,
+    shadowOffset: { width: 0, height: 1 },
+  },
+  center: { textAlign: 'center' },
+  system: { maxWidth: '86%', marginVertical: Spacing.two },
+  bubbleRow: { maxWidth: '80%', gap: 2, marginBottom: Spacing.two },
   tight: { marginBottom: 0 },
   left: { alignSelf: 'flex-start', alignItems: 'flex-start' },
   right: { alignSelf: 'flex-end', alignItems: 'flex-end' },
-  sender: { marginLeft: Spacing.two },
   bubble: {
-    borderRadius: Radius.large,
-    borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    gap: Spacing.one,
+    borderRadius: 10,
+    paddingHorizontal: Spacing.two + 2,
+    paddingTop: Spacing.one + 2,
+    paddingBottom: Spacing.one,
+    gap: 2,
+    minWidth: 72,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 1,
+    shadowOffset: { width: 0, height: 1 },
+  },
+  firstMine: { borderTopRightRadius: 0 },
+  firstTheirs: { borderTopLeftRadius: 0 },
+  tail: {
+    position: 'absolute',
+    top: 0,
+    width: 0,
+    height: 0,
+    borderTopWidth: 10,
+    borderColor: 'transparent',
   },
   italic: { fontStyle: 'italic' },
-  quote: { borderLeftWidth: 2, paddingLeft: Spacing.two, opacity: 0.9 },
+  quote: {
+    borderLeftWidth: 3,
+    borderRadius: 6,
+    paddingLeft: Spacing.two,
+    paddingVertical: Spacing.one,
+    paddingRight: Spacing.two,
+  },
   photo: { width: 220, borderRadius: Radius.medium },
   file: {
     flexDirection: 'row',
@@ -716,6 +778,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.two,
     paddingVertical: 1,
   },
+  replyEdge: { width: 3, alignSelf: 'stretch', borderRadius: 2 },
   replyBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -728,7 +791,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: Spacing.two,
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Spacing.two,
     paddingTop: Spacing.two,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
@@ -742,6 +805,13 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 10,
     fontSize: 16,
+  },
+  sendButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.35)' },
   sheet: {

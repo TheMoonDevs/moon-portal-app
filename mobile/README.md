@@ -12,7 +12,7 @@ React 18; two copies of React in one app break at runtime).
 
 | Path | What |
 | --- | --- |
-| `src/app/` | Screens, one file per route (Expo Router). `(tabs)/` is the tab bar: Today, Tasks, Messages, Work, More. Sheets (`log`, `new-task`, `company`, `chat/new`) open over it. |
+| `src/app/` | Screens, one file per route (Expo Router). `(tabs)/` is the tab bar: Home, Work, Shortcuts, Chat, Settings. Sheets (`log`, `new-task`, `company`, `chat/new`) open over it; `person/[id]` is a person's page (`me` for your own). |
 | `src/lib/auth.tsx` | Sign-in (Google or Apple), the saved token, renewal, sign-out. |
 | `src/lib/api.ts` | Calls to the portal API with the token. |
 | `src/lib/query.ts` | TanStack Query: the cache saved on the phone (offline), and work logged offline that is sent when back online. |

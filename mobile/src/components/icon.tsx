@@ -47,6 +47,23 @@ export const ICONS = {
   photo: { ios: 'photo', android: 'image' },
   doc: { ios: 'doc', android: 'draft' },
   reply: { ios: 'arrowshape.turn.up.left', android: 'reply' },
+  checklist: { ios: 'checklist', android: 'checklist' },
+  chat: { ios: 'bubble.left.and.bubble.right.fill', android: 'chat' },
+  chevronDown: { ios: 'chevron.down', android: 'expand_more' },
+  grid: { ios: 'square.grid.2x2', android: 'apps' },
+  pin: { ios: 'pin.fill', android: 'push_pin' },
+  muted: { ios: 'speaker.slash.fill', android: 'volume_off' },
+  quote: { ios: 'quote.opening', android: 'format_quote' },
+  building: { ios: 'building.2', android: 'apartment' },
+  xCircle: { ios: 'xmark.circle.fill', android: 'cancel' },
+  minusCircle: { ios: 'minus.circle.fill', android: 'do_not_disturb_on' },
+  sun: { ios: 'sun.max.fill', android: 'light_mode' },
+  sparkles: { ios: 'sparkles', android: 'auto_awesome' },
+  plusBubble: { ios: 'plus.bubble.fill', android: 'add_comment' },
+  camera2: { ios: 'camera.fill', android: 'photo_camera' },
+  paperclip: { ios: 'paperclip', android: 'attach_file' },
+  ellipsis: { ios: 'ellipsis', android: 'more_horiz' },
+  paperplane: { ios: 'paperplane.fill', android: 'send' },
 } as const satisfies Record<string, { ios: SFSymbol; android: AndroidSymbol }>;
 
 export type IconName = keyof typeof ICONS;

@@ -32,8 +32,9 @@ export default function NewTaskSheet() {
   const [projectId, setProjectId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const projects = (day.data?.projects ?? []).filter(
-    (p) => !company || p.companyId === company.id,
+  // Every company's projects, the one on view first.
+  const projects = [...(day.data?.projects ?? [])].sort(
+    (a, b) => Number(b.companyId === company?.id) - Number(a.companyId === company?.id),
   );
 
   const save = async () => {
