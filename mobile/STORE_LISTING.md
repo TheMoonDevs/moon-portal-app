@@ -106,7 +106,14 @@ Reviewers can't use our Google accounts, so the app has a test sign-in. They typ
 
 Set it up once:
 
-1. In the Portal, create a user for reviewers, such as `review@themoondevs.com` (no real mailbox needed). Add them to a demo company with sample projects, tasks, goals and chats. Don't make them an admin.
+1. Create the reviewer and their demo company with the seed script. From `portal/`, with `DATABASE_URL` in `portal/.env` pointing at the production database:
+
+   ```sh
+   npx -y tsx --tsconfig tsconfig.json scripts/seed-review-account.ts <reviewer email>           # shows what it will do
+   npx -y tsx --tsconfig tsconfig.json scripts/seed-review-account.ts <reviewer email> --apply  # does it
+   ```
+
+   It makes the reviewer, three made-up teammates (`@demo.example.com`, they can't sign in) and the company **Brightside Studio**, with the reviewer as its owner but not a Portal admin. It adds a week of sample work: 3 projects, a target goal and a weekly goal, tasks and worklogs (some waiting on the reviewer), a plan, a page, a group chat and a direct chat. It sends no email and is safe to run again: what's there is left as it is. It never sets a password.
 2. In Vercel, under the portal project's environment variables, add `MOBILE_TEST_EMAIL` (that email) and `MOBILE_TEST_PASSWORD` (a long random password). Remove either one to turn the test sign-in off.
 3. Use a build that has the test sign-in for review. Builds made before it get it after an `eas update` and a restart.
 

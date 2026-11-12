@@ -35,7 +35,8 @@ export const PERIOD_EACH: Record<string, string> = {
 export function goalLine(goal: Pick<ProjectGoal, 'kind' | 'period' | 'target' | 'achievedAt'>, progress?: GoalProgress) {
   const n = (v: number) => v.toLocaleString();
   if (!progress) return goal.kind === 'target' ? `Target ${n(goal.target)}` : `${n(goal.target)} ${PERIOD_EACH[goal.period] ?? ''}`;
-  const done = progress.done + progress.manual;
+  // `done` already counts what was added by hand (`manual`).
+  const done = progress.done;
   if (goal.kind === 'target')
     return `${n(done)} of ${n(progress.target)}${progress.achieved || goal.achievedAt ? ' · reached' : ''}`;
   return `${n(done)} of ${n(progress.target)} ${PERIOD_NOW[goal.period] ?? ''}`.trim();
