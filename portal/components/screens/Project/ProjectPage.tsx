@@ -355,7 +355,7 @@ const Sidebar = ({
             ) : core && core.id !== project.id ? (
               <Link
                 href={`${APP_ROUTES.projects}/${core.id}`}
-                title={`Open ${companyName ?? 'the company'}'s CORE project`}
+                title={`Open ${companyName ?? 'the company'}'s main project`}
                 className="block truncate text-xs text-neutral-500 hover:text-neutral-200"
               >
                 {companyName}
@@ -1160,7 +1160,7 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
             {coreId && coreId !== project.id ? (
               <Link
                 href={`${APP_ROUTES.projects}/${coreId}`}
-                title={`Open ${companyName ?? 'the company'}'s CORE project`}
+                title={`Open ${companyName ?? 'the company'}'s main project`}
                 className="truncate text-neutral-500 transition-colors hover:text-white"
               >
                 {companyName}
