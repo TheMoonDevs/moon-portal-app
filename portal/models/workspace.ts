@@ -309,8 +309,11 @@ export type Task = Loose<
     placedBy?: Nullable<'auto' | 'user' | 'personal'>;
     /** Its place on its owner's day sheet; earlier first. */
     order?: Nullable<number>;
-    /** Blocked or waiting on someone, from its latest work point. */
-    flag?: Nullable<'blocked' | 'waiting'>;
+    /**
+     * Blocked or waiting on someone, or paused (started, then put back to
+     * do), from its latest work point.
+     */
+    flag?: Nullable<'blocked' | 'waiting' | 'paused'>;
     /** Copied from a worklog line by the tasks-first migration. */
     migratedFrom?: Nullable<{ worklogId: string; key: string }>;
     /** Archived as a copy of this task (lib/daywork/duplicates). */
@@ -336,6 +339,7 @@ export type Task = Loose<
 
 export type WorkPointStatus =
   | 'doing'
+  | 'paused'
   | 'done'
   | 'not_done'
   | 'blocked'

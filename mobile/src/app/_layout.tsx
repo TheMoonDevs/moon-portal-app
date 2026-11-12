@@ -105,7 +105,7 @@ function RootStack() {
           />
           <Stack.Screen
             name="new-task"
-            options={{ ...sheet, title: 'New task', sheetAllowedDetents: [0.6, 1] }}
+            options={{ ...sheet, title: 'New task', sheetAllowedDetents: [0.8, 1] }}
           />
           <Stack.Screen name="task/[id]" options={{ title: 'Task' }} />
           <Stack.Screen name="tasks" options={{ title: 'All my tasks' }} />

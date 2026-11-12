@@ -4,7 +4,8 @@ import { useTheme } from '@/hooks/use-theme';
 import { useChatUnread } from '@/lib/chat';
 import { useWorkBadge } from '@/lib/work-badge';
 
-const count = (n: number) => (n > 99 ? '99+' : String(n));
+/** A badge's words: none at zero, so no badge shows (not a 0). */
+const count = (n: number) => (n <= 0 ? undefined : n > 99 ? '99+' : String(n));
 
 /** The tab bar: Home, Work, Shortcuts, Chat, Settings. */
 export default function TabsLayout() {
@@ -20,7 +21,8 @@ export default function TabsLayout() {
         <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'house', selected: 'house.fill' }} md="home" />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="work">
+      {/* The Work tab keeps its own insets: its pager and + end above the tab bar. */}
+      <NativeTabs.Trigger name="work" disableAutomaticContentInsets>
         <NativeTabs.Trigger.Label>Work</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'checklist', selected: 'checklist.checked' }}

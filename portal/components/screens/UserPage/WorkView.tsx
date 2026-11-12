@@ -46,6 +46,7 @@ import {
 const STATUS_STYLE: Record<string, { icon: string; className: string }> = {
   done: { icon: 'check_circle', className: 'text-emerald-400' },
   doing: { icon: 'pending', className: 'text-amber-300' },
+  paused: { icon: 'pause_circle', className: 'text-neutral-400' },
   waiting: { icon: 'help', className: 'text-violet-300' },
   blocked: { icon: 'block', className: 'text-rose-400' },
   not_done: { icon: 'cancel', className: 'text-neutral-500' },

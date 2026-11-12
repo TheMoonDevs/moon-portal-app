@@ -68,7 +68,6 @@ export default function ShortcutsScreen() {
         },
         { title: 'New chat or group', icon: 'plusBubble', color: '#32ade6', open: '/chat/new', words: 'message' },
         { title: 'Leaderboard', icon: 'trophy', color: '#ffcc00', open: '/leaderboard', words: 'points rank' },
-        { title: 'Badges', icon: 'star', color: '#af52de', open: '/badges', words: 'awards' },
       ],
     },
     {

@@ -19,6 +19,7 @@ import { useAuth } from '@/lib/auth';
 import { useCompany } from '@/lib/company';
 import { fromKey, monthOf, todayKey } from '@/lib/dates';
 import { joinMeeting } from '@/lib/meet';
+import { projectName } from '@/lib/project-name';
 import { unreadCount, useNotifications } from '@/lib/notifications';
 import type { Company, Day, LeaderboardRow, Project, Task, Workspace } from '@/lib/types';
 
@@ -320,7 +321,7 @@ function CompanyItem({
               style={({ pressed }) => [styles.project, { opacity: pressed ? 0.6 : 1 }]}>
               <Dot color={p.color} size={10} />
               <ThemedText type="small" numberOfLines={1} style={styles.flex}>
-                {p.name}
+                {projectName(p, company.name)}
               </ThemedText>
               {mine(p) ? (
                 <ThemedText type="small" themeColor="textSecondary">
@@ -403,12 +404,16 @@ function LeaderboardSection() {
           </ThemedText>
         ) : null}
         {[...top, ...(mine && mine.rank > top.length ? [mine] : [])].map((r, i) => (
-          <View
+          <Pressable
             key={r.user.id}
-            style={[
+            accessibilityRole="button"
+            accessibilityHint="Opens their page and work"
+            onPress={() => router.push({ pathname: '/person/[id]', params: { id: r.user.id } })}
+            style={({ pressed }) => [
               styles.board,
               i > 0 && [styles.divider, { borderColor: theme.border }],
               r.user.id === profile?.id && { backgroundColor: theme.backgroundSelected },
+              { opacity: pressed ? 0.6 : 1 },
             ]}>
             <ThemedText type="smallBold" style={styles.rank}>
               {MEDALS[r.rank - 1] ?? r.rank}
@@ -423,7 +428,7 @@ function LeaderboardSection() {
               </ThemedText>
             </View>
             <ThemedText type="smallBold">{r.points.toLocaleString()}</ThemedText>
-          </View>
+          </Pressable>
         ))}
       </Card>
     </View>

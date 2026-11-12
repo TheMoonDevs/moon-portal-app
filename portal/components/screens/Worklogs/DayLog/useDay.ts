@@ -22,7 +22,7 @@ export type DayTask = {
   /** Set on a meeting's task: when it is, who with, how to join. */
   meeting?: DayMeeting | null;
   status: string;
-  flag?: 'blocked' | 'waiting' | null;
+  flag?: 'blocked' | 'waiting' | 'paused' | null;
   projectId?: string | null;
   companyId?: string | null;
   placedBy?: 'auto' | 'user' | 'personal' | null;
@@ -381,7 +381,7 @@ export function useDay(date: string) {
           ? 'DONE'
           : to === 'archived'
             ? 'ARCHIVED'
-            : to === 'todo'
+            : to === 'todo' || to === 'paused'
               ? 'TODO'
               : to === 'not_done'
                 ? (row?.status ?? 'TODO')
@@ -393,7 +393,10 @@ export function useDay(date: string) {
               ? {
                   ...t,
                   status,
-                  flag: to === 'blocked' || to === 'waiting' ? to : null,
+                  flag:
+                    to === 'blocked' || to === 'waiting' || to === 'paused'
+                      ? to
+                      : null,
                 }
               : t,
           )

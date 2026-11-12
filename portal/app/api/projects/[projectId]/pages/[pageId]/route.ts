@@ -1,5 +1,6 @@
 import { db } from '@/lib/mongodb/db-client';
 import { requirePage } from '@/lib/workspace/pageAccess';
+import { docToMarkdown, markdownToDoc } from '@/lib/workspace/pageMarkdown';
 import {
   asEmoji,
   asPageContent,
@@ -13,16 +14,26 @@ export const dynamic = 'force-dynamic';
 
 type Params = { params: { projectId: string; pageId: string } };
 
-export async function GET(_request: Request, { params }: Params) {
+/**
+ * The page. With `?format=markdown` it also carries its body as Markdown
+ * (`markdown`), the way the app edits it.
+ */
+export async function GET(request: Request, { params }: Params) {
   const { response, page } = await requirePage(params, 'projects:read');
   if (response) return response;
-  return ok({ page });
+  const markdown =
+    new URL(request.url).searchParams.get('format') === 'markdown';
+  return ok({
+    page,
+    ...(markdown && { markdown: docToMarkdown(page.content) }),
+  });
 }
 
 /**
- * Saves `{ title?, emoji?, content?, parentId? }`. A new parentId moves the
- * page (and the pages inside it) under another page, or to the top when empty.
- * Sharing is changed with PUT …/sharing.
+ * Saves `{ title?, emoji?, content?, markdown?, parentId? }`: the body as the
+ * editor's document (`content`) or as Markdown (`markdown`, from the app). A
+ * new parentId moves the page (and the pages inside it) under another page,
+ * or to the top when empty. Sharing is changed with PUT …/sharing.
  */
 export async function PATCH(request: Request, { params }: Params) {
   const { response, user, page, viewer } = await requirePage(
@@ -35,8 +46,12 @@ export async function PATCH(request: Request, { params }: Params) {
   const data: Record<string, unknown> = {};
   if ('title' in body) data.title = asPageTitle(body.title);
   if ('emoji' in body) data.emoji = asEmoji(body.emoji);
-  if ('content' in body) {
-    const content = asPageContent(body.content);
+  if ('content' in body || typeof body.markdown === 'string') {
+    const content = asPageContent(
+      typeof body.markdown === 'string'
+        ? markdownToDoc(body.markdown)
+        : body.content,
+    );
     if (content === undefined) return fail(400, 'That page is not valid.');
     data.content = content;
   }

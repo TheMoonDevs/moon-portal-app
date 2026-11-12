@@ -12,6 +12,7 @@ import { useAuth } from '@/lib/auth';
 import { dayTitle } from '@/lib/dates';
 import { openWebsite } from '@/lib/links';
 import { PLAN_STATUS, stepCount, usePlans } from '@/lib/plans';
+import { projectName } from '@/lib/project-name';
 import { STATUS_LABEL } from '@/lib/tasks';
 import type { Plan, PlanStep } from '@/lib/types';
 
@@ -29,6 +30,7 @@ export default function PlanScreen() {
   });
   const plan = fromList ?? single.data?.plan;
   const projectOf = (pid?: string | null) => list.data?.projects.find((p) => p.id === pid);
+  const companyName = (cid: string) => list.data?.companies.find((c) => c.id === cid)?.name;
   const nameOf = (uid: string) =>
     uid === profile?.id ? 'You' : (list.data?.people.find((p) => p.id === uid)?.name ?? null);
   const count = plan ? stepCount(plan) : { done: 0, total: 0 };
@@ -63,7 +65,7 @@ export default function PlanScreen() {
               {project ? <Dot color={project.color} /> : null}
               <ThemedText type="small" themeColor="textSecondary">
                 {[
-                  project?.name ?? 'Company plan',
+                  project ? projectName(project, companyName(project.companyId)) : 'Company plan',
                   PLAN_STATUS[plan.status],
                   plan.startOn ? `from ${dayTitle(plan.startOn)}` : null,
                   plan.endOn ? `by ${dayTitle(plan.endOn)}` : null,
@@ -119,7 +121,7 @@ export default function PlanScreen() {
                     {stepProject || who || step.dueOn || step.task ? (
                       <ThemedText type="small" themeColor="textSecondary">
                         {[
-                          stepProject?.name,
+                          stepProject ? projectName(stepProject, companyName(stepProject.companyId)) : null,
                           who,
                           step.dueOn ? `by ${dayTitle(step.dueOn)}` : null,
                           step.task && !step.done ? STATUS_LABEL[step.task.status] : null,

@@ -27,6 +27,7 @@ const LANE_GAP = 4;
 const MARK_COLOR: Record<string, string> = {
   done: '#34d399',
   doing: '#fbbf24',
+  paused: '#a3a3a3',
   not_done: '#fb7185',
   blocked: '#fb7185',
   waiting: '#a78bfa',

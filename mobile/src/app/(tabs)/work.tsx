@@ -13,32 +13,37 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-screens/experimental';
 
 import { DaySheet, WorkBar } from '@/components/day-sheet';
+import { Fab } from '@/components/fab';
 import { Icon } from '@/components/icon';
 import { MonthGrid } from '@/components/month-grid';
 import { OfflineBanner } from '@/components/offline-banner';
+import { StatusDot } from '@/components/status-dot';
 import { ThemedText } from '@/components/themed-text';
 import { Button, Card, Dot, IconButton, Notice, ProgressBar, QueryState, Segmented } from '@/components/ui';
 import { buffOf, buffProgress } from '@/constants/buff';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { api, portalUrl, withQuery } from '@/lib/api';
-import { type DayMode, DAY_MODES, groupsFor, workTally } from '@/lib/day';
+import { type DayMode, DAY_MODES, groupsFor, placeOf, workTally } from '@/lib/day';
 import { addDays, dayTitle, fromKey, monthOf, monthRange, monthTitle, todayKey } from '@/lib/dates';
 import { openLink } from '@/lib/links';
 import { useMarkNotifications } from '@/lib/notifications';
+import { currentPick } from '@/lib/status';
 import type { Day, Days, MonthScore } from '@/lib/types';
-import { clearWorkReminders, linkOf, useWorkNotifications } from '@/lib/work-badge';
+import { clearWorkReminders, linkOf, useMyTasks, useNeedsYou, useWorkNotifications } from '@/lib/work-badge';
 
 const DAY_KEY = /^\d{4}-\d{2}-\d{2}$/;
 /** Days either side of the anchor the pager holds. */
 const SPAN = 180;
 
 /**
- * The day's worklog, as on the website: by project (the default), as a plan
- * or as work done. Swipe for the day before or after; the date opens a
- * calendar; the month's badge sits top right.
+ * The day's worklog, as on the website: a summary by project (the default),
+ * as work (doing, to do, done) or as a plan. Tasks waiting on the person or
+ * blocked show first. Swipe for the day before or after; the date opens a
+ * calendar; the month's badge sits top right; + adds a task or goal.
  */
 export default function WorkScreen() {
   const theme = useTheme();
@@ -47,7 +52,7 @@ export default function WorkScreen() {
   const params = useLocalSearchParams<{ date?: string }>();
   const today = todayKey();
   const [date, setDate] = useState(today);
-  const [mode, setMode] = useState<DayMode>('projects');
+  const [mode, setMode] = useState<DayMode>('summary');
   const [calendar, setCalendar] = useState(false);
   // The pager holds a year around this day; a day further away moves it.
   const [anchor, setAnchor] = useState(today);
@@ -128,30 +133,32 @@ export default function WorkScreen() {
         <Segmented value={mode} onChange={setMode} options={DAY_MODES} />
       </View>
 
-      <FlatList
-        key={anchor}
-        ref={list}
-        style={styles.flex}
-        data={days}
-        // The pages show the picked view: draw them again when it changes.
-        extraData={mode}
-        keyExtractor={(d) => d}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        initialScrollIndex={Math.max(0, index)}
-        getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
-        initialNumToRender={1}
-        maxToRenderPerBatch={2}
-        windowSize={3}
-        onMomentumScrollEnd={(e) => {
-          const i = Math.round(e.nativeEvent.contentOffset.x / width);
-          if (days[i] && days[i] !== date) setDate(days[i]);
-        }}
-        renderItem={({ item }) => (
-          <DayPage date={item} today={today} mode={mode} width={width} bottom={insets.bottom} />
-        )}
-      />
+      {/* Ends above the tab bar, so the last task and the + clear it. */}
+      <SafeAreaView edges={{ bottom: true }} style={styles.flex}>
+        <FlatList
+          key={anchor}
+          ref={list}
+          style={styles.flex}
+          data={days}
+          // The pages show the picked view: draw them again when it changes.
+          extraData={mode}
+          keyExtractor={(d) => d}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          initialScrollIndex={Math.max(0, index)}
+          getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
+          initialNumToRender={1}
+          maxToRenderPerBatch={2}
+          windowSize={3}
+          onMomentumScrollEnd={(e) => {
+            const i = Math.round(e.nativeEvent.contentOffset.x / width);
+            if (days[i] && days[i] !== date) setDate(days[i]);
+          }}
+          renderItem={({ item }) => <DayPage date={item} today={today} mode={mode} width={width} />}
+        />
+        <Fab label="Add a task, goal or idea" onPress={() => router.push('/new-task')} />
+      </SafeAreaView>
 
       <CalendarSheet
         visible={calendar}
@@ -248,13 +255,11 @@ function DayPage({
   today,
   mode,
   width,
-  bottom,
 }: {
   date: string;
   today: string;
   mode: DayMode;
   width: number;
-  bottom: number;
 }) {
   const day = useQuery({
     queryKey: ['day', date],
@@ -266,28 +271,19 @@ function DayPage({
   return (
     <ScrollView
       style={{ width }}
-      contentContainerStyle={[styles.page, { paddingBottom: bottom + Spacing.six }]}
+      // Room under the last task for the + button.
+      contentContainerStyle={[styles.page, { paddingBottom: Spacing.six * 2 + Spacing.three }]}
       refreshControl={<RefreshControl refreshing={day.isRefetching} onRefresh={() => void day.refetch()} />}>
       {date === today ? <OfflineBanner /> : null}
+      {date === today ? <NeedsYou day={day.data} /> : null}
       {date === today ? <WorkUpdates /> : null}
-      <View style={styles.actions}>
-        <Button
-          title="Log work"
-          small
-          icon={<Icon name="pencil" size={16} />}
-          kind="secondary"
-          onPress={() => router.push('/log')}
-          style={styles.flex}
-        />
-        <Button
-          title="Add a task"
-          small
-          icon={<Icon name="add" size={16} />}
-          kind="secondary"
-          onPress={() => router.push('/new-task')}
-          style={styles.flex}
-        />
-      </View>
+      <Button
+        title="Log work"
+        small
+        icon={<Icon name="pencil" size={16} />}
+        kind="secondary"
+        onPress={() => router.push('/log')}
+      />
       <QueryState
         loading={day.isPending}
         error={day.data ? null : day.error}
@@ -303,6 +299,50 @@ function DayPage({
       ) : null}
       {day.data ? <DaySheet day={day.data} date={date} mode={mode} groups={groups} /> : null}
     </ScrollView>
+  );
+}
+
+/**
+ * Tasks waiting on the person or blocked, wherever they are: the Work tab's
+ * number, shown first on today's page.
+ */
+function NeedsYou({ day }: { day?: Day }) {
+  const theme = useTheme();
+  const tasks = useNeedsYou();
+  const mine = useMyTasks().data;
+  if (!tasks.length) return null;
+  const projects = [...(day?.projects ?? []), ...(mine?.projects ?? [])];
+  return (
+    <Card style={[styles.updates, { borderColor: theme.danger }]}>
+      <ThemedText type="label" themeColor="textSecondary">
+        Needs you · {tasks.length}
+      </ThemedText>
+      {tasks.map((task) => {
+        const status = currentPick(task);
+        const place = placeOf(task, { projects, companies: day?.companies });
+        return (
+          <Pressable
+            key={task.id}
+            onPress={() => router.push({ pathname: '/task/[id]', params: { id: task.id } })}
+            style={({ pressed }) => [styles.update, { borderColor: theme.border, opacity: pressed ? 0.6 : 1 }]}>
+            <View style={styles.needDot}>
+              {status !== 'archived' ? <StatusDot status={status} size={10} /> : null}
+            </View>
+            <View style={styles.flex}>
+              <ThemedText type="smallBold" numberOfLines={2}>
+                {task.title}
+              </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+                {[status === 'blocked' ? 'Blocked' : 'Waiting on you', place.key !== 'none' ? place.name : null]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </ThemedText>
+            </View>
+            <Icon name="forward" size={14} color={theme.textSecondary} />
+          </Pressable>
+        );
+      })}
+    </Card>
   );
 }
 
@@ -467,7 +507,7 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
   },
-  actions: { flexDirection: 'row', gap: Spacing.two },
+  needDot: { paddingTop: 5 },
   updates: { gap: 0 },
   update: {
     flexDirection: 'row',

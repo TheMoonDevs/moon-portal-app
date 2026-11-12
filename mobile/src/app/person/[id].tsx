@@ -12,6 +12,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { api, withQuery } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { dayTitle, fromKey, todayKey } from '@/lib/dates';
+import { projectName } from '@/lib/project-name';
 import {
   type ActivityData,
   activityLevel,
@@ -319,7 +320,7 @@ function WorkView({
                 style={styles.projectHead}>
                 <Dot color={p.project?.color} size={10} />
                 <ThemedText type="label" themeColor="textSecondary" numberOfLines={1} style={styles.flex}>
-                  {p.project?.name ?? 'Other work'}
+                  {p.project ? projectName(p.project, c.company?.name) : 'Other work'}
                 </ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
                   {p.points}
@@ -400,9 +401,12 @@ function AgendaView({
 }) {
   const theme = useTheme();
   const buckets = data ? upNext(data) : [];
-  const projectName = (item: AgendaItem) => {
+  const placeName = (item: AgendaItem) => {
     const id = itemProjectId(item);
-    return id ? data?.projects.find((p) => p.id === id)?.name : null;
+    const project = id ? data?.projects.find((p) => p.id === id) : null;
+    return project
+      ? projectName(project, data?.companies.find((c) => c.id === project.companyId)?.name)
+      : null;
   };
   const open = (item: AgendaItem) => {
     if (item.kind === 'task') router.push({ pathname: '/task/[id]', params: { id: item.task.id } });
@@ -442,7 +446,7 @@ function AgendaView({
                             minute: '2-digit',
                           })
                         : null,
-                      projectName(item),
+                      placeName(item),
                       item.day && b.key !== 'today' && b.key !== 'tomorrow'
                         ? fromKey(item.day).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
                         : null,

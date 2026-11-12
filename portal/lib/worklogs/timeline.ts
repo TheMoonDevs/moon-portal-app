@@ -7,6 +7,7 @@
 
 export const POINT_STATUSES = {
   doing: { emoji: '🟡', label: 'Doing' },
+  paused: { emoji: '⏸️', label: 'Paused' },
   done: { emoji: '✅', label: 'Done' },
   not_done: { emoji: '❌', label: 'Not done' },
   blocked: { emoji: '🔴', label: 'Blocked' },

@@ -9,6 +9,7 @@ import { Card, Dot, ProgressBar } from '@/components/ui';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { type DayGroup, type DayMode, placeOf, pointsOn, type RowStatus, rowStatus } from '@/lib/day';
+import { pickOf } from '@/lib/status';
 import { POINT_LABEL, useChangeTask } from '@/lib/tasks';
 import type { Day, Task } from '@/lib/types';
 
@@ -58,7 +59,7 @@ export function DaySheet({
               day={day}
               date={date}
               quiet={g.quiet}
-              showPlace={mode !== 'projects'}
+              showPlace={mode !== 'summary'}
             />
           ))}
         </Card>
@@ -80,17 +81,16 @@ export function WorkBar({ done, total }: { done: number; total: number }) {
   );
 }
 
-const DOT: Record<string, string> = { doing: '#f59e0b', waiting: '#38bdf8', blocked: '#f43f5e' };
-
-/** A task's mark: an open circle (with a dot while under way), a tick, a cross. */
+/** A task's mark: an open circle (with its status's dot while open), a tick, a cross. */
 function StatusMark({ status }: { status: RowStatus }) {
   const theme = useTheme();
   if (status === 'done') return <Icon name="checkCircle" size={22} color={theme.success} />;
   if (status === 'not_done') return <Icon name="xCircle" size={22} color={theme.danger} />;
   if (status === 'archived') return <Icon name="minusCircle" size={22} color={theme.textSecondary} />;
+  const dot = status ? pickOf(status).color : null;
   return (
     <View style={[styles.ring, { borderColor: theme.textSecondary }]}>
-      {status && DOT[status] ? <View style={[styles.inner, { backgroundColor: DOT[status] }]} /> : null}
+      {dot ? <View style={[styles.inner, { backgroundColor: dot }]} /> : null}
     </View>
   );
 }

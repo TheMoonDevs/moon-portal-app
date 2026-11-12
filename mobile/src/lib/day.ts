@@ -1,28 +1,37 @@
 import { todayKey } from './dates';
+import { isCoreProject } from './project-name';
 import type { Day, Task, WorkPoint } from './types';
 
 /*
  * A day's tasks the way the website's worklog page shows them
- * (portal/components/screens/Worklogs/DayLog): by project, as a plan
- * (the day and what is pending from before) or as work (under way and
- * finished). Pure, so the screens stay about layout.
+ * (portal/components/screens/Worklogs/DayLog): a summary by project, as
+ * work (doing, to do, done) or as a plan (the day and what is pending from
+ * before). Pure, so the screens stay about layout.
  */
 
-export type DayMode = 'projects' | 'plan' | 'work';
+export type DayMode = 'summary' | 'work' | 'plan';
 
 export const DAY_MODES: { value: DayMode; label: string }[] = [
-  { value: 'projects', label: 'Projects' },
-  { value: 'plan', label: 'Plan' },
+  { value: 'summary', label: 'Summary' },
   { value: 'work', label: 'Work' },
+  { value: 'plan', label: 'Plan' },
 ];
 
-export type RowStatus = 'done' | 'archived' | 'blocked' | 'waiting' | 'doing' | 'not_done' | null;
+export type RowStatus =
+  | 'done'
+  | 'archived'
+  | 'blocked'
+  | 'waiting'
+  | 'paused'
+  | 'doing'
+  | 'not_done'
+  | null;
 
 /** How a task stands on a day: its status, else the day's last point. */
 export function rowStatus(task: Task, points: WorkPoint[], date: string): RowStatus {
   if (task.status === 'DONE') return 'done';
   if (task.status === 'ARCHIVED' || task.status === 'IGNORED') return 'archived';
-  if (task.flag === 'blocked' || task.flag === 'waiting') return task.flag;
+  if (task.flag === 'blocked' || task.flag === 'waiting' || task.flag === 'paused') return task.flag;
   if (task.status === 'IN_PROGRESS' || task.status === 'IN_REVIEW') return 'doing';
   const last = points.filter((p) => p.taskId === task.id && p.status && p.date === date).at(-1);
   return last?.status === 'not_done' ? 'not_done' : null;
@@ -57,6 +66,15 @@ export function placeOf(task: Task, day: Pick<Day, 'projects' | 'companies'>): P
     const project = day.projects.find((p) => p.id === task.projectId);
     if (project?.isPersonal)
       return { key: 'personal', name: project.name || 'Personal', color: project.color, personal: true };
+    // A company's general work (its core project) goes by the company's name.
+    if (isCoreProject(project)) {
+      const company = day.companies?.find((c) => c.id === (project?.companyId ?? task.companyId));
+      return {
+        key: `project:${task.projectId}`,
+        name: company?.name ?? project?.companyName ?? 'Company work',
+        color: project?.color,
+      };
+    }
     return {
       key: `project:${task.projectId}`,
       name: project?.name ?? 'Project',
@@ -95,15 +113,16 @@ export function groupsFor(mode: DayMode, day: Day, date: string): DayGroup[] {
     ].filter((g) => g.tasks.length);
 
   if (mode === 'work') {
-    const finished = (t: Task) =>
-      !movedOn(t, date, today) && FINISHED.includes(rowStatus(t, day.points, date));
+    const sections = { doing: [] as Task[], todo: [] as Task[], done: [] as Task[] };
+    for (const t of tasks) sections[workSection(t, day, date, today)].push(t);
     return [
-      { key: 'wip', title: 'WIP', tasks: tasks.filter((t) => !finished(t)) },
-      { key: 'finished', title: 'Finished', tasks: tasks.filter(finished), quiet: true },
+      { key: 'doing', title: 'Doing', tasks: sections.doing },
+      { key: 'todo', title: 'To do', tasks: sections.todo },
+      { key: 'done', title: 'Done', tasks: sections.done, quiet: true },
     ].filter((g) => g.tasks.length);
   }
 
-  // Projects: one group per place, in the order the tasks first show up,
+  // Summary: one group per place, in the order the tasks first show up,
   // Personal and the unplaced last.
   const groups = new Map<string, DayGroup>();
   for (const task of tasks) {
@@ -114,6 +133,22 @@ export function groupsFor(mode: DayMode, day: Day, date: string): DayGroup[] {
   }
   const rank = (g: DayGroup) => (g.key === 'none' ? 2 : g.place?.personal ? 1 : 0);
   return Array.from(groups.values()).sort((a, b) => rank(a) - rank(b));
+}
+
+/**
+ * Where a task goes in the Work view: waiting and blocked are still being
+ * done, paused and not done are back to do. A task that moved on from a past
+ * day shows as it stood then: open, so doing or to do.
+ */
+function workSection(task: Task, day: Day, date: string, today: string): 'doing' | 'todo' | 'done' {
+  const status = rowStatus(task, day.points, date);
+  if (movedOn(task, date, today))
+    return status === 'done' || status === 'doing' || status === 'waiting' || status === 'blocked'
+      ? 'doing'
+      : 'todo';
+  if (FINISHED.includes(status) && status !== 'not_done') return 'done';
+  if (status === 'doing' || status === 'waiting' || status === 'blocked') return 'doing';
+  return 'todo';
 }
 
 /** Finished and total, for the Work view's bar. */
