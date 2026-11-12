@@ -17,6 +17,7 @@ import {
 import { Icon } from '../../Admin/shared/AdminUI';
 import type { PickerOption } from './Picker';
 import { PickerList } from './Picker';
+import { hasDetails, TaskDetails } from './TaskInfo';
 import type { Day, DayGoal, DayProject, DayTask } from './useDay';
 
 /*
@@ -24,7 +25,8 @@ import type { Day, DayGoal, DayProject, DayTask } from './useDay';
  * its notes count: muted while open, gold once done. The star opens what it
  * counts towards, the run day it counts for (a task done early can count for
  * next week), and lets it be linked to another goal or unlinked. A task with
- * no goal can be linked from its menu.
+ * no goal can be linked from its menu. When the task has details (how it is
+ * to be done, or its meeting), the star opens them too, above the goal.
  */
 
 export type GoalOfTask = {
@@ -204,7 +206,13 @@ export const GoalLink = ({
             )
           ) : (
             <div className="p-1">
-              <div className="flex items-start gap-2.5 px-2.5 pb-2 pt-2">
+              {hasDetails(task) && (
+                <TaskDetails
+                  task={task}
+                  className="border-b border-white/[0.07] pb-2.5 auto-light:border-black/10"
+                />
+              )}
+              <div className="flex items-start gap-2.5 px-2.5 py-2">
                 <GoalStarIcon done={done} className="mt-0.5 text-[18px]" />
                 <div className="min-w-0 flex-1">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
@@ -230,7 +238,7 @@ export const GoalLink = ({
                 </div>
               </div>
               {runs && runs.runs.length > 0 && (
-                <div className="border-t border-white/[0.07] px-2.5 pb-2 pt-2 auto-light:border-black/10">
+                <div className="border-t border-white/[0.07] px-2.5 py-2 auto-light:border-black/10">
                   <p className="pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
                     Counts for
                   </p>

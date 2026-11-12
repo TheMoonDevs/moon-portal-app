@@ -153,6 +153,15 @@ export const formatTime = (date: Date | string, tz: string) =>
     })
     .toLowerCase();
 
+/** "14:30": a time on the 24-hour clock, in `tz`. */
+export const formatClock = (date: Date | string, tz: string) =>
+  new Date(date).toLocaleTimeString('en-GB', {
+    timeZone: tz,
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  });
+
 /** "GMT+5:30" style label for `tz` at `date`. */
 export const timezoneLabel = (tz: string, date: Date | string = new Date()) => {
   try {

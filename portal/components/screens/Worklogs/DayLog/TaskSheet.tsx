@@ -35,6 +35,7 @@ import {
   statusForKey,
   StatusIcon,
 } from './sheetParts';
+import { hasDetails, MeetingTime, TaskInfo } from './TaskInfo';
 import type { Day, DayPoint, DayTask, PlaceInput, TaskMove } from './useDay';
 
 /*
@@ -789,6 +790,8 @@ export const TaskSheet = ({
     const count = showPoints ? readablePoints(points).length : 0;
     const linked = !!goalOfTask(task, day.projects);
     const goalOpen = goalUi?.id === task.id;
+    // Details open from the goal's star when it has one, else from an "i".
+    const details = !task.draft && hasDetails(task);
     // In no project (and not kept personal on purpose).
     const unplaced =
       !task.draft && !task.projectId && task.placedBy !== 'personal';
@@ -856,6 +859,7 @@ export const TaskSheet = ({
               linked ||
               unplaced ||
               goalOpen ||
+              details ||
               (!moved && (status === 'doing' || status === 'waiting'))) && (
               // The dot, count and marks sit right after the words: the
               // words are laid out again unseen, so they land where they end.
@@ -864,6 +868,9 @@ export const TaskSheet = ({
                   {task.title}
                 </span>
                 {!moved && <StateDot status={status} />}
+                {task.meeting && (
+                  <MeetingTime meeting={task.meeting} quiet={shut} />
+                )}
                 {count > 0 && (
                   <span
                     className={cn(
@@ -894,6 +901,9 @@ export const TaskSheet = ({
                       }
                     />
                   )
+                )}
+                {details && (task.goalMissed || !(linked || goalOpen)) && (
+                  <TaskInfo task={task} />
                 )}
                 {unplaced && <UnplacedMark />}
                 {task.goalId && task.forDate && task.forDate !== day.date && (

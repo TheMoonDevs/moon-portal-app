@@ -5,8 +5,9 @@ import { MEET_BOOKING_STATUS, type MeetBooking } from '@/models/meet';
 import type { Task } from '@/models/workspace';
 import { OPEN_TASK_STATUSES, TASK_SIZE, TASK_STATUS } from '@/models/workspace';
 
+import { joinLink } from './links';
 import { hostName } from './server';
-import { formatRange } from './time';
+import { formatClock, formatDay } from './time';
 
 /*
  * Meetings on the worklog. A confirmed meeting is a task on the day it
@@ -98,6 +99,89 @@ async function placeFor(booking: MeetBooking) {
   };
 }
 
+/** "14:30–15:00", on the 24-hour clock in `tz`. */
+export const meetingClock = (
+  booking: Pick<MeetBooking, 'start' | 'end'>,
+  tz: string,
+) => `${formatClock(booking.start, tz)}–${formatClock(booking.end, tz)}`;
+
+/** "Tuesday 10 November, 14:30–15:00 (Asia/Kolkata)". */
+const meetingWhen = (booking: MeetBooking, tz: string) =>
+  `${formatDay(booking.start, tz)}, ${meetingClock(booking, tz)} (${tz.replace(/_/g, ' ')})`;
+
+/** What the day sheet shows about a meeting task. */
+export type MeetingFacts = {
+  start: string;
+  end: string;
+  /** "14:30–15:00" in the person's timezone. */
+  time: string;
+  timezone: string;
+  /** Who they meet. */
+  with: string;
+  interview: boolean;
+  /** The portal's join link, relative. */
+  joinUrl: string | null;
+  note: string | null;
+  status: string;
+};
+
+/**
+ * The meetings behind a day's tasks, by task id: when they are (in the
+ * person's timezone, 24-hour clock), who with and how to join.
+ */
+export async function meetingFactsFor(
+  tasks: Pick<Task, 'id' | 'meetBookingId' | 'ownerId'>[],
+  userId: string,
+): Promise<Record<string, MeetingFacts>> {
+  const ids = Array.from(
+    new Set(
+      tasks.map((t) => t.meetBookingId).filter((id): id is string => !!id),
+    ),
+  );
+  if (!ids.length) return {};
+  try {
+    const [bookings, person]: [MeetBooking[], Person | null] =
+      await Promise.all([
+        db.meetBooking.findMany({ where: { id: { in: ids } } }),
+        loadPerson(userId),
+      ]);
+    const tz = person?.timezone || 'UTC';
+    const byId = new Map(bookings.map((b) => [b.id, b]));
+    const hosts = new Map<string, string>();
+    for (const hostId of Array.from(new Set(bookings.map((b) => b.hostId))))
+      if (hostId !== userId) {
+        const host = await loadPerson(hostId);
+        if (host) hosts.set(hostId, hostName(host));
+      }
+    const out: Record<string, MeetingFacts> = {};
+    for (const task of tasks) {
+      const booking = task.meetBookingId ? byId.get(task.meetBookingId) : null;
+      if (!booking) continue;
+      const hosting = booking.hostId === userId;
+      out[task.id] = {
+        start: booking.start,
+        end: booking.end,
+        time: meetingClock(booking, tz),
+        timezone: tz,
+        with: hosting
+          ? booking.guestName
+          : (hosts.get(booking.hostId) ?? 'your host'),
+        interview: isInterview(booking),
+        joinUrl:
+          booking.status === MEET_BOOKING_STATUS.CONFIRMED && booking.meetingUrl
+            ? joinLink('', booking, 'host')
+            : null,
+        note: booking.guestNote?.trim() || null,
+        status: booking.status,
+      };
+    }
+    return out;
+  } catch (err) {
+    console.error('[meet] meeting facts failed', err);
+    return {};
+  }
+}
+
 /** The meeting's task for one person, if it has one. */
 export const findMeetingTask = (
   bookingId: string,
@@ -116,7 +200,7 @@ async function ensureTaskFor(
 ): Promise<Task> {
   const forDate = meetingDay(booking, person.timezone);
   const description = [
-    formatRange(booking.start, booking.end, person.timezone || 'UTC'),
+    meetingWhen(booking, person.timezone || 'UTC'),
     booking.meetingUrl ? `Join: ${booking.meetingUrl}` : null,
     booking.guestNote ? `Note: ${booking.guestNote}` : null,
   ]
@@ -127,7 +211,7 @@ async function ensureTaskFor(
     // Still open and the meeting moved: it follows the meeting.
     if (
       OPEN_TASK_STATUSES.includes(existing.status) &&
-      existing.forDate !== forDate
+      (existing.forDate !== forDate || existing.description !== description)
     )
       return db.task.update({
         where: { id: existing.id },
