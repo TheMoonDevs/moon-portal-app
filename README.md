@@ -24,6 +24,14 @@ Deployed on
 - [portal.themoondevs.com](http://portal.themoondevs.com)
 - Docs at in /portal folder; the services it uses (database, storage, realtime, push, email) are listed in [portal/README.md](portal/README.md#architecture)
 
+## Portal Mobile App - /mobile
+
+The Portal on iPhone and Android, built with Expo (React Native). It signs in
+the same way as the website and talks to the portal API.
+
+- Standalone folder with its own `package.json`; install it on its own
+- Setup, sign-in and release steps in [mobile/README.md](mobile/README.md)
+
 ## Payzone App - /payzone
 
 For all payment and secure features accessible to the team & clients.
