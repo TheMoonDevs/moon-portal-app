@@ -1,6 +1,7 @@
 'use client';
 
 import dayjs from 'dayjs';
+import { useState } from 'react';
 
 import { cn } from '@/lib/utils';
 import { POINT_STATUSES } from '@/lib/worklogs/timeline';
@@ -57,7 +58,18 @@ const PointLine = ({ point }: { point: DayPoint }) => (
   </li>
 );
 
-const TaskBlock = ({ task, day }: { task: DayTask; day: Day }) => {
+const TaskBlock = ({
+  task,
+  day,
+  open,
+  onToggle,
+}: {
+  task: DayTask;
+  day: Day;
+  /** Its points are showing. */
+  open: boolean;
+  onToggle: () => void;
+}) => {
   const status = rowStatus(task, day.points, day.date);
   const moved = movedOn(task, day.date, day.today);
   const points = day.points.filter((p) => p.taskId === task.id);
@@ -103,8 +115,27 @@ const TaskBlock = ({ task, day }: { task: DayTask; day: Day }) => {
           </p>
           <p className="text-[11px] text-neutral-500">{facts.join(' · ')}</p>
         </div>
+        {points.length > 0 && (
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-expanded={open}
+            aria-label={open ? 'Hide points' : 'Show points'}
+            title={open ? 'Hide points' : 'Show points'}
+            className="flex h-6 shrink-0 items-center gap-0.5 rounded-md px-1 text-[11px] tabular-nums text-neutral-500 hover:bg-white/[0.06] hover:text-neutral-200 auto-light:hover:bg-black/[0.06] auto-light:hover:text-neutral-800"
+          >
+            {points.length}
+            <Icon
+              name="expand_more"
+              className={cn(
+                'text-[16px] transition-transform',
+                open && 'rotate-180',
+              )}
+            />
+          </button>
+        )}
       </div>
-      {points.length > 0 && (
+      {open && points.length > 0 && (
         <ul className="ml-[13px] mt-1 border-l border-white/[0.07] pl-3 auto-light:border-black/10">
           {points.map((p) => (
             <PointLine key={p.id} point={p} />
@@ -124,6 +155,8 @@ export const DaySummary = ({
   tasks: DayTask[];
   counts: PlaceCount[];
 }) => {
+  // Tasks whose points are folded away; all show to begin with.
+  const [shut, setShut] = useState<Set<string>>(new Set());
   const real = tasks.filter((t) => !t.draft && t.title.trim());
   if (!real.length)
     return (
@@ -137,12 +170,40 @@ export const DaySummary = ({
   const pointCount = day.points.filter((p) =>
     real.some((t) => t.id === p.taskId),
   ).length;
+  const withPoints = real
+    .filter((t) => day.points.some((p) => p.taskId === t.id))
+    .map((t) => t.id);
+  const allShut =
+    withPoints.length > 0 && withPoints.every((id) => shut.has(id));
+  const toggle = (id: string) =>
+    setShut((s) => {
+      const next = new Set(s);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   return (
     <div className="flex flex-col gap-3">
-      <p className="px-2 pt-1 text-xs text-neutral-500">
-        {done} of {real.length} task{real.length === 1 ? '' : 's'} done ·{' '}
-        {pointCount} point{pointCount === 1 ? '' : 's'} logged
-      </p>
+      <div className="flex items-center gap-2 px-2 pt-1">
+        <p className="flex-1 text-xs text-neutral-500">
+          {done} of {real.length} task{real.length === 1 ? '' : 's'} done ·{' '}
+          {pointCount} point{pointCount === 1 ? '' : 's'} logged
+        </p>
+        {withPoints.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setShut(allShut ? new Set() : new Set(withPoints))}
+            aria-label={allShut ? 'Expand all points' : 'Collapse all points'}
+            title={allShut ? 'Expand all points' : 'Collapse all points'}
+            className="flex size-7 shrink-0 items-center justify-center rounded-md text-neutral-500 hover:bg-white/[0.06] hover:text-neutral-200 auto-light:hover:bg-black/[0.06] auto-light:hover:text-neutral-800"
+          >
+            <Icon
+              name={allShut ? 'unfold_more' : 'unfold_less'}
+              className="text-[18px]"
+            />
+          </button>
+        )}
+      </div>
       {counts.map(({ place, done: placeDone, total }) => {
         const own = real.filter(
           (t) => placeOf(t, day.projects, day.companies).key === place.key,
@@ -162,7 +223,13 @@ export const DaySummary = ({
               </span>
             </div>
             {own.map((t) => (
-              <TaskBlock key={t.id} task={t} day={day} />
+              <TaskBlock
+                key={t.id}
+                task={t}
+                day={day}
+                open={!shut.has(t.id)}
+                onToggle={() => toggle(t.id)}
+              />
             ))}
           </section>
         );

@@ -28,7 +28,9 @@ import { DayList } from './DayList';
 import { DaySummary } from './DaySummary';
 import { Picker } from './Picker';
 import { companyKeyOf, countPlaces, ProjectSummary } from './ProjectSummary';
+import type { TaskRowStatus } from './sheetParts';
 import {
+  movedOn,
   placeInputOf,
   PlaceLogo,
   placeOf,
@@ -37,7 +39,7 @@ import {
   rowStatus,
 } from './sheetParts';
 import type { SheetGroup } from './TaskSheet';
-import { TaskSheet } from './TaskSheet';
+import { madeByClaude, TaskSheet } from './TaskSheet';
 import type { DayTask } from './useDay';
 import { useDay } from './useDay';
 import { WorklogTips } from './WorklogTips';
@@ -57,15 +59,48 @@ const SHOW_POINTS_KEY = 'worklogs.points';
 const VIEW_KEY = 'worklogs.view';
 
 /**
- * How the day's sheet is laid out: the person's own tasks as written (with
- * Claude's apart), by project, or a summary to read.
+ * How the day's sheet is laid out: the plan (the day's tasks and what is
+ * pending from before, Claude's mixed in), the work (under way and finished,
+ * with Claude's in a box of their own), the person's own tasks as written
+ * with Claude's apart (Mixed), by project, or a summary to read.
  */
-type View = 'default' | 'projects' | 'summary';
+type View = 'plan' | 'work' | 'mixed' | 'projects' | 'summary';
 const VIEWS: { value: View; label: string }[] = [
-  { value: 'default', label: 'Default' },
+  { value: 'plan', label: 'Plan' },
+  { value: 'work', label: 'Work' },
+  { value: 'mixed', label: 'Mixed' },
   { value: 'projects', label: 'Projects' },
   { value: 'summary', label: 'Summary' },
 ];
+/** Plan and Work follow the day; the other views stay as picked. */
+const dayView = (date: string): View => (date > fmt(dayjs()) ? 'plan' : 'work');
+const followsDay = (v: View) => v === 'plan' || v === 'work';
+
+/** Closed on this day: finished, let go or archived (not moved on). */
+const FINISHED: TaskRowStatus[] = ['done', 'not_done', 'archived'];
+
+/**
+ * A thin bar along a box's top border: green for what is finished, muted
+ * grey for what is still under way.
+ */
+const WorkBar = ({ done, total }: { done: number; total: number }) =>
+  total ? (
+    <div
+      role="progressbar"
+      aria-label="Finished tasks"
+      aria-valuemin={0}
+      aria-valuemax={total}
+      aria-valuenow={done}
+      title={`${done} of ${total} finished`}
+      className="pointer-events-none absolute inset-x-0 top-0 flex h-[3px] overflow-hidden rounded-t-2xl"
+    >
+      <span
+        className="h-full bg-emerald-500 transition-[width] duration-300"
+        style={{ width: `${(done / total) * 100}%` }}
+      />
+      <span className="h-full flex-1 bg-neutral-600/60 auto-light:bg-neutral-300" />
+    </div>
+  ) : null;
 
 /** Days from a week back to two weeks ahead can be written in. */
 const editableDay = (date: string) => {
@@ -171,15 +206,21 @@ export const DayLogPage = ({
       // Storage can be blocked; the choice then lasts for this visit.
     }
   };
-  const [view, setView] = useState<View>('default');
+  // Plan for a day ahead, Work for today or a day gone; Mixed, Projects and
+  // Summary are kept once picked.
+  const [view, setView] = useState<View>(() => dayView(date));
   useEffect(() => {
     try {
       const saved = localStorage.getItem(VIEW_KEY) as View | null;
-      if (saved && VIEWS.some((v) => v.value === saved)) setView(saved);
+      if (saved && !followsDay(saved) && VIEWS.some((v) => v.value === saved))
+        setView(saved);
     } catch {
       // Storage can be blocked; the choice then lasts for this visit.
     }
   }, []);
+  useEffect(() => {
+    setView((v) => (followsDay(v) ? dayView(date) : v));
+  }, [date]);
   const pickView = (next: View) => {
     setView(next);
     try {
@@ -290,8 +331,7 @@ export const DayLogPage = ({
   const fromBefore = (t: DayTask) =>
     !t.draft && !!t.forDate && t.forDate < date;
   // Meetings (made by Meet) are the person's own to tick, so they stay mine.
-  const byClaude = (t: DayTask) =>
-    !!t.madeBy && t.madeBy !== 'person' && t.madeBy !== 'meet';
+  const byClaude = madeByClaude;
   const dayName = date === today ? 'Today' : heading.name;
   const beforeName = date === today ? 'Pending from before' : 'From before';
   const addHere = { place: null };
@@ -321,6 +361,53 @@ export const DayLogPage = ({
   const claudes = shown.filter(byClaude);
   const defaultGroups = dayGroups(mine, 'mine', addHere);
   const claudeGroups = dayGroups(claudes, 'claude', null, true);
+
+  // Plan: the day's tasks and what is pending from before, Claude's mixed in.
+  const planGroups: SheetGroup[] = [
+    {
+      key: 'plan-day',
+      title: dayName,
+      tasks: shown.filter((t) => !fromBefore(t)),
+      add: addHere,
+      markClaude: true,
+    },
+    {
+      key: 'plan-before',
+      title: date === today ? 'Pending from before' : 'From before',
+      tasks: shown.filter(fromBefore),
+      markClaude: true,
+    },
+  ].filter((g) => g.tasks.length || g.add);
+
+  // Work: under way and finished, the person's and Claude's apart.
+  const finished = (t: DayTask) =>
+    !t.draft &&
+    !movedOn(t, date, day.today) &&
+    FINISHED.includes(rowStatus(t, day.points, date));
+  const workGroups = (
+    tasks: DayTask[],
+    key: string,
+    add: SheetGroup['add'],
+  ): SheetGroup[] =>
+    [
+      {
+        key: `${key}-wip`,
+        title: 'WIP',
+        tasks: tasks.filter((t) => !finished(t)),
+        add,
+      },
+      {
+        key: `${key}-finished`,
+        title: 'Finished',
+        tasks: tasks.filter(finished),
+        quiet: true,
+        strike: true,
+      },
+    ].filter((g) => g.tasks.length || g.add);
+  const workBar = (tasks: DayTask[]) => {
+    const real = tasks.filter((t) => !t.draft && t.title.trim());
+    return { done: real.filter(finished).length, total: real.length };
+  };
 
   const projectGroups = (() => {
     const keys = [
@@ -446,7 +533,8 @@ export const DayLogPage = ({
         />
       )}
 
-      <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-2 auto-light:border-black/10 auto-light:bg-white">
+      <div className="relative rounded-2xl border border-white/[0.07] bg-white/[0.02] p-2 auto-light:border-black/10 auto-light:bg-white">
+        {view === 'work' && <WorkBar {...workBar(mine)} />}
         {day.loading && !day.tasks.length ? (
           <div className="flex flex-col gap-2 p-1">
             {[0, 1, 2].map((i) => (
@@ -465,7 +553,23 @@ export const DayLogPage = ({
                   : 'Nothing on this day yet. Write a task and press Enter for the next one.'}
               </p>
             )}
-            {view === 'default' && (
+            {view === 'plan' && (
+              <TaskSheet
+                day={day}
+                groups={planGroups}
+                editable={editable}
+                showPoints={showPoints}
+              />
+            )}
+            {view === 'work' && (
+              <TaskSheet
+                day={day}
+                groups={workGroups(mine, 'work', addHere)}
+                editable={editable}
+                showPoints={showPoints}
+              />
+            )}
+            {view === 'mixed' && (
               <TaskSheet
                 day={day}
                 groups={defaultGroups}
@@ -516,7 +620,26 @@ export const DayLogPage = ({
         )}
       </div>
 
-      {view === 'default' && claudes.length > 0 && (
+      {view === 'work' && claudes.length > 0 && (
+        <div className="relative mt-4 rounded-2xl border border-dashed border-violet-400/20 bg-violet-500/[0.03] p-2 auto-light:border-violet-500/25 auto-light:bg-violet-500/[0.03]">
+          <WorkBar {...workBar(claudes)} />
+          <p className="flex items-center gap-1.5 px-2 pt-1 text-xs font-semibold text-violet-300 auto-light:text-violet-700">
+            <Icon name="smart_toy" className="text-[15px]" />
+            Claude
+            <span className="font-normal text-neutral-500">
+              {claudes.length}
+            </span>
+          </p>
+          <TaskSheet
+            day={day}
+            groups={workGroups(claudes, 'claude-work', null)}
+            editable={editable}
+            showPoints={showPoints}
+          />
+        </div>
+      )}
+
+      {view === 'mixed' && claudes.length > 0 && (
         <div className="mt-4 rounded-2xl border border-dashed border-violet-400/20 bg-violet-500/[0.03] p-2 auto-light:border-violet-500/25 auto-light:bg-violet-500/[0.03]">
           <p className="flex items-center gap-1.5 px-2 pt-1 text-xs font-semibold text-violet-300 auto-light:text-violet-700">
             <Icon name="auto_awesome" className="text-[15px]" />
