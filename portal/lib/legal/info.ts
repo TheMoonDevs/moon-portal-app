@@ -1,6 +1,6 @@
 /*
- * The details the public Privacy Policy, Terms and account-deletion pages
- * (`/privacy`, `/terms`, `/delete-account`) are built from. The App Store and
+ * The details the public Privacy Policy, Terms, account-deletion and support
+ * pages (`/privacy`, `/terms`, `/delete-account`, `/support`) are built from. The App Store and
  * Play listings link to those pages, so change the details here and every
  * page follows. Bump `updated` whenever the wording of a page changes.
  */
@@ -31,4 +31,5 @@ export const LEGAL_PAGES = [
   { href: '/privacy', label: 'Privacy Policy' },
   { href: '/terms', label: 'Terms & Conditions' },
   { href: '/delete-account', label: 'Delete your account' },
+  { href: '/support', label: 'Support' },
 ] as const;
