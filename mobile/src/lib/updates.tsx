@@ -50,14 +50,16 @@ export function UpdateGate({ children }: { children: ReactNode }) {
     staleTime: 60 * 60 * 1000,
   });
   const { isUpdatePending } = Updates.useUpdates();
-  const { status } = useAuth();
+  const { status, signingIn } = useAuth();
 
   // On the sign-in screen there's nothing to lose, so a downloaded fix starts
   // at once. People signing in for the first time, such as store reviewers,
-  // then get the latest version without restarting the app.
+  // then get the latest version without restarting the app. Not while a
+  // sign-in is under way: coming back from the Google sheet looks for an
+  // update, and starting it then would drop the sign-in.
   useEffect(() => {
-    if (isUpdatePending && status === 'signedOut') void Updates.reloadAsync().catch(() => null);
-  }, [isUpdatePending, status]);
+    if (isUpdatePending && status === 'signedOut' && !signingIn) void Updates.reloadAsync().catch(() => null);
+  }, [isUpdatePending, status, signingIn]);
 
   // Look for a fix each time the app comes back to the front.
   useEffect(() => {

@@ -21,6 +21,8 @@ type Status = 'loading' | 'signedOut' | 'signedIn';
 
 type AuthValue = {
   status: Status;
+  /** True while a sign-in is under way (the Google or Apple sheet is open). */
+  signingIn: boolean;
   profile: Profile | null;
   /** Sign-in code + Google. Resolves false when the person closed Google. */
   signIn: (code: string) => Promise<boolean>;
@@ -63,6 +65,7 @@ const device = () => ({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<Status>('loading');
   const [profile, setProfileState] = useState<Profile | null>(null);
+  const [signingIn, setSigningIn] = useState(false);
 
   const forget = useCallback(async () => {
     setApiToken(null);
@@ -130,47 +133,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus('signedIn');
   }, []);
 
+  /** Marks a sign-in as under way, so a downloaded update waits for it. */
+  const whileSigningIn = useCallback(async (run: () => Promise<boolean>) => {
+    setSigningIn(true);
+    try {
+      return await run();
+    } finally {
+      setSigningIn(false);
+    }
+  }, []);
+
   const signIn = useCallback(
-    async (code: string) => {
-      const idToken = await googleFirebaseIdToken();
-      if (!idToken) return false;
-      const session = await api<SignedIn>('/api/mobile/auth/sign-in', {
-        method: 'POST',
-        anonymous: true,
-        body: { code: code.trim(), idToken, device: device() },
-      });
-      await start(session);
-      return true;
-    },
-    [start],
+    (code: string) =>
+      whileSigningIn(async () => {
+        const idToken = await googleFirebaseIdToken();
+        if (!idToken) return false;
+        const session = await api<SignedIn>('/api/mobile/auth/sign-in', {
+          method: 'POST',
+          anonymous: true,
+          body: { code: code.trim(), idToken, device: device() },
+        });
+        await start(session);
+        return true;
+      }),
+    [start, whileSigningIn],
   );
 
   const signInWithApple = useCallback(
-    async (code: string) => {
-      const identityToken = await appleIdentityToken();
-      if (!identityToken) return false;
-      const session = await api<SignedIn>('/api/mobile/auth/sign-in/apple', {
-        method: 'POST',
-        anonymous: true,
-        body: { code: code.trim(), identityToken, device: device() },
-      });
-      await start(session);
-      return true;
-    },
-    [start],
+    (code: string) =>
+      whileSigningIn(async () => {
+        const identityToken = await appleIdentityToken();
+        if (!identityToken) return false;
+        const session = await api<SignedIn>('/api/mobile/auth/sign-in/apple', {
+          method: 'POST',
+          anonymous: true,
+          body: { code: code.trim(), identityToken, device: device() },
+        });
+        await start(session);
+        return true;
+      }),
+    [start, whileSigningIn],
   );
 
   const signInWithPassword = useCallback(
-    async (code: string, email: string, password: string) => {
-      const session = await api<SignedIn>('/api/mobile/auth/sign-in/password', {
-        method: 'POST',
-        anonymous: true,
-        body: { code: code.trim(), email: email.trim(), password, device: device() },
-      });
-      await start(session);
-      return true;
-    },
-    [start],
+    (code: string, email: string, password: string) =>
+      whileSigningIn(async () => {
+        const session = await api<SignedIn>('/api/mobile/auth/sign-in/password', {
+          method: 'POST',
+          anonymous: true,
+          body: { code: code.trim(), email: email.trim(), password, device: device() },
+        });
+        await start(session);
+        return true;
+      }),
+    [start, whileSigningIn],
   );
 
   const signOut = useCallback(async () => {
@@ -182,6 +198,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       status,
+      signingIn,
       profile,
       signIn,
       signInWithApple,
@@ -193,6 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }),
     [
       status,
+      signingIn,
       profile,
       signIn,
       signInWithApple,
