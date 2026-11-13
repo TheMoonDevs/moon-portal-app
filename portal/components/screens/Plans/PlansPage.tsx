@@ -16,13 +16,13 @@ import { useWorkspace } from '@/utils/hooks/useWorkspace';
 
 import {
   AdminButton,
-  ConfirmDialog,
   EmptyState,
   Icon,
   NativeSelect,
   SearchInput,
   Spin,
 } from '../Admin/shared/AdminUI';
+import { DeletePlanDialog } from './DeletePlanDialog';
 import { PlanEditor, StepPanel } from './PlanEditor';
 import type { PlansData, PlanView, StepView } from './types';
 import { isPast, shortDay, stepCount } from './types';
@@ -307,7 +307,7 @@ export const PlansPage = () => {
   const [planId, setPlanId] = useState<string | null>(null);
   const [stepId, setStepId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [deleting, setDeleting] = useState<'plan' | 'all' | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [freshId, setFreshId] = useState<string | null>(null);
   // On a phone one panel shows at a time.
@@ -382,11 +382,11 @@ export const PlansPage = () => {
     setFreshId(created.id);
   };
 
-  const deletePlan = async () => {
+  const deletePlan = async (withTasks: boolean) => {
     if (!plan) return;
-    setDeleting(true);
-    const gone = await plans.remove(plan.id);
-    setDeleting(false);
+    setDeleting(withTasks ? 'all' : 'plan');
+    const gone = await plans.remove(plan.id, withTasks);
+    setDeleting(null);
     if (!gone) return;
     selectPlan(null);
     setConfirmDelete(false);
@@ -640,14 +640,12 @@ export const PlansPage = () => {
         )}
       </div>
 
-      <ConfirmDialog
+      <DeletePlanDialog
+        plan={plan}
         open={confirmDelete}
         onOpenChange={setConfirmDelete}
-        title={`Delete ${plan?.title || 'this plan'}?`}
-        message="The plan and its steps go away. Tasks made from its steps stay in their projects."
-        confirmLabel="Delete plan"
-        loading={deleting}
-        onConfirm={deletePlan}
+        deleting={deleting}
+        onDelete={deletePlan}
       />
       <Toaster theme="dark" position="bottom-right" richColors />
     </div>
