@@ -8,8 +8,8 @@ export type WhatsNew = { id: string; title: string; items: string[] };
 
 export const WHATS_NEW: WhatsNew[] = [
   {
-    id: '1.0.0',
-    title: 'New in Portal 1.0',
+    id: '1.1.0',
+    title: 'New in Portal 1.1',
     items: [
       'Portal links in mail or WhatsApp open right here in the app.',
       'Share text, a link or a photo from any app into a new task, a worklog or a chat.',
