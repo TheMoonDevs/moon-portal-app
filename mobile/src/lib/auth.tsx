@@ -14,6 +14,8 @@ import { api, setApiToken, setOnSignedOut } from './api';
 import { appleIdentityToken } from './apple';
 import { googleFirebaseIdToken, googleSignOut } from './google';
 import { clearCache } from './query';
+import { clearReminders } from './reminders';
+import { closeWhatsNew } from './whats-new';
 import { KEYS, read, write } from './secure';
 import type { Profile } from './types';
 
@@ -72,6 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await remember(null);
     await write(KEYS.companyId, null);
     await clearCache().catch(() => null);
+    await clearReminders();
     setProfileState(null);
     setStatus('signedOut');
   }, []);
@@ -129,6 +132,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const start = useCallback(async (session: SignedIn) => {
     setApiToken(session.token);
     await remember(session);
+    // Someone who has just signed in sees the app as it is: no "What's new".
+    closeWhatsNew();
     setProfileState(session.user);
     setStatus('signedIn');
   }, []);

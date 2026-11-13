@@ -27,7 +27,7 @@ The screenshots come from the app itself, filled with sample data and made-up pe
 
 - **iPhone screenshots:** `ios/iphone-6.3/` goes in the "iPhone with Dynamic Island (medium display)" tab, the only iPhone slot App Store Connect now has; it takes 6.1"/6.3" sizes (1206 × 2622) and uses them for every iPhone. They are PNG, have no transparency, and there are 8 of them (Apple allows 1 to 10). Uploaded on 13 Nov 2026, in order.
 - **App icon:** comes from the build (`mobile/assets/images/icon.png`, 1024 × 1024, no transparency), so there's nothing to upload. `ios/app-icon-1024.png` is a copy in case you need it.
-- **iPad:** not needed, because the app doesn't run on iPad.
+- **iPad screenshots:** needed from version 1.0.0, which runs on iPad. `ios/ipad-13/` goes in the "iPad 13-inch" tab (2064 × 2752, PNG, no transparency); App Store Connect uses them for every iPad.
 - **App preview video:** `ios/app-preview.mp4` (886 × 1920, 26 s, 30 fps, H.264 with a silent stereo AAC track; Apple wants an audio track, and previews play muted). It goes in the same iPhone slot, before the screenshots. Uploaded on 13 Nov 2026 as a 6 MB copy of the same video (the browser tool uploads up to 10 MB). After it processes, set the poster frame (the still people see before it plays) to the home screen with its headline, around 0:02.
 
 ### Text (limits are Apple's)

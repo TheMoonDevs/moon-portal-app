@@ -32,6 +32,7 @@ export async function POST(request: Request, { params }: Params) {
       attachment: body.attachment ?? null,
       replyToId: body.replyToId ?? null,
       forwardOfId: body.forwardOfId ?? null,
+      mentions: body.mentions ?? null,
     }),
   }));
 }

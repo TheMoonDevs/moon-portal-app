@@ -33,19 +33,19 @@ import {
   type MessagePage,
   type MessagePages,
   messagesKey,
+  newClientId,
   previewOf,
   upsertMessage,
   useChat,
 } from '@/lib/chat';
 import { clock, dayTitle, timeAgo, todayKey } from '@/lib/dates';
+import { mentionMatches, mentionQuery, mentionsIn, nameOf as personName, splitMentions } from '@/lib/mentions';
 import { queryClient } from '@/lib/query';
-import type { ChatConversation, ChatMessage } from '@/lib/types';
+import type { ChatConversation, ChatMessage, ChatPerson } from '@/lib/types';
 
 const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 const EDIT_WINDOW = 15 * 60 * 1000;
 
-const newClientId = () =>
-  `m${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
 const dayOf = (iso: string) => todayKey(new Date(iso));
 /** Their own text message, sent in the last 15 minutes. */
 const canEdit = (m: ChatMessage, me: string) =>
@@ -59,7 +59,8 @@ const mediaUrl = (id: string, thumb = false) =>
 
 /** One chat: messages newest at the bottom, live ticks and typing. */
 export default function ChatScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // `draft`: words shared from another app, ready to send.
+  const { id, draft } = useLocalSearchParams<{ id: string; draft?: string }>();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
@@ -70,7 +71,7 @@ export default function ChatScreen() {
   const me = profile?.id ?? '';
   const { live, setOpenChat, typingUserId, partnerOnline, notifyTyping } = useChat();
 
-  const [text, setText] = useState('');
+  const [text, setText] = useState(draft ?? '');
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [editing, setEditing] = useState<ChatMessage | null>(null);
   const [acting, setActing] = useState<ChatMessage | null>(null);
@@ -90,6 +91,16 @@ export default function ChatScreen() {
     initialDataUpdatedAt: 0,
   });
   const chat = conversation.data?.conversation;
+  // In a group, "@" offers its members to name (lib/mentions.ts).
+  const members = useMemo(() => chat?.group?.members ?? [], [chat?.group?.members]);
+  const others = useMemo(() => members.filter((p) => p.id !== me), [members, me]);
+  const memberNames = useMemo(() => members.map(personName).filter(Boolean), [members]);
+  const typingMention = chat && chat.kind !== 'direct' && !editing ? mentionQuery(text) : null;
+  const mentionChoices = typingMention ? mentionMatches(others, typingMention.query) : [];
+  const pickMention = (p: ChatPerson) => {
+    if (!typingMention) return;
+    setText(`${text.slice(0, typingMention.start)}@${personName(p)} `);
+  };
 
   const messages = useInfiniteQuery({
     queryKey: messagesKey(id),
@@ -135,7 +146,12 @@ export default function ChatScreen() {
     try {
       const res = await api<{ message: ChatMessage }>(`/api/chat/conversations/${id}/messages`, {
         method: 'POST',
-        body: { clientId: message.clientId, text: message.text, replyToId: message.replyTo?.id ?? null },
+        body: {
+          clientId: message.clientId,
+          text: message.text,
+          replyToId: message.replyTo?.id ?? null,
+          mentions: message.mentions ?? [],
+        },
       });
       upsertMessage(id, res.message);
       void queryClient.invalidateQueries({ queryKey: ['conversations'] });
@@ -170,6 +186,7 @@ export default function ChatScreen() {
       clientId,
       kind: 'text',
       text: body,
+      mentions: mentionsIn(body, others),
       replyTo: replyTo
         ? { id: replyTo.id, senderId: replyTo.senderId, kind: replyTo.kind, text: previewOf(replyTo) }
         : null,
@@ -357,6 +374,7 @@ export default function ChatScreen() {
                     mine={item.senderId === me}
                     me={me}
                     group={chat?.kind !== 'direct'}
+                    names={memberNames}
                     name={showName ? nameOf(item.senderId) : null}
                     replyName={item.replyTo ? (item.replyTo.senderId === me ? 'You' : nameOf(item.replyTo.senderId)) : null}
                     tail={lastInRun}
@@ -399,6 +417,23 @@ export default function ChatScreen() {
               }}>
               <Icon name="close" size={16} color={theme.textSecondary} />
             </Pressable>
+          </View>
+        ) : null}
+
+        {mentionChoices.length ? (
+          <View style={[styles.mentions, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}>
+            {mentionChoices.map((p) => (
+              <Pressable
+                key={p.id}
+                accessibilityRole="button"
+                onPress={() => pickMention(p)}
+                style={({ pressed }) => [styles.mention, { opacity: pressed ? 0.6 : 1 }]}>
+                <Avatar uri={p.avatar} name={personName(p)} size={28} />
+                <ThemedText numberOfLines={1} style={styles.flex}>
+                  {personName(p)}
+                </ThemedText>
+              </Pressable>
+            ))}
           </View>
         ) : null}
 
@@ -552,6 +587,7 @@ function Bubble({
   mine,
   me,
   group,
+  names,
   name,
   replyName,
   tail,
@@ -564,6 +600,8 @@ function Bubble({
   mine: boolean;
   me: string;
   group: boolean;
+  /** The group's members' names, shown bold where they are @mentioned. */
+  names: string[];
   name: string | null;
   replyName: string | null;
   /** The last of a run of messages from one person: space after it. */
@@ -675,7 +713,21 @@ function Bubble({
                 </View>
               </Pressable>
             ) : null}
-            {m.text ? <ThemedText style={{ color: ink }}>{m.text}</ThemedText> : null}
+            {m.text ? (
+              <ThemedText style={{ color: ink }}>
+                {group
+                  ? splitMentions(m.text, names).map((part, i) =>
+                      part.mention ? (
+                        <ThemedText key={i} style={[styles.mentionText, { color: theme.accent }]}>
+                          {part.text}
+                        </ThemedText>
+                      ) : (
+                        part.text
+                      ),
+                    )
+                  : m.text}
+              </ThemedText>
+            ) : null}
           </>
         )}
 
@@ -791,6 +843,18 @@ const styles = StyleSheet.create({
     paddingVertical: 1,
   },
   replyEdge: { width: 3, alignSelf: 'stretch', borderRadius: 2 },
+  mentions: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingVertical: Spacing.one,
+  },
+  mention: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+  },
+  mentionText: { fontWeight: '600' },
   replyBar: {
     flexDirection: 'row',
     alignItems: 'center',

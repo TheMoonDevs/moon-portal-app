@@ -9,7 +9,8 @@ import { Icon } from '@/components/icon';
 import { OfflineBanner } from '@/components/offline-banner';
 import { PortalMark } from '@/components/portal-mark';
 import { ThemedText } from '@/components/themed-text';
-import { Avatar, Card, Chip, IconButton, QueryState, Screen } from '@/components/ui';
+import { WhatsNewCard } from '@/components/whats-new-card';
+import { Avatar, Card, Chip, Columns, IconButton, QueryState, Screen } from '@/components/ui';
 import { QUOTES } from '@/constants/quotes';
 import { Spacing } from '@/constants/theme';
 import { useNow } from '@/hooks/use-now';
@@ -49,12 +50,13 @@ export default function HomeScreen() {
   };
 
   return (
-    <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} />}>
+    <Screen wide refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} />}>
       <View style={styles.top}>
         <PortalMark size={26} />
         <ThemedText type="label" style={styles.brand}>
           Portal
         </ThemedText>
+        <IconButton name="search" label="Search" onPress={() => router.push('/search')} />
         <IconButton
           name="bell"
           label="Notifications"
@@ -63,15 +65,26 @@ export default function HomeScreen() {
         />
       </View>
       <OfflineBanner />
-      <HelloCard day={day.data} date={date} />
-      <QuoteCard date={date} />
-      <CompaniesSection
-        workspace={workspace.data}
-        error={workspace.error}
-        loading={workspace.isPending}
-        onRetry={() => void workspace.refetch()}
+      <Columns
+        left={
+          <>
+            <WhatsNewCard />
+            <HelloCard day={day.data} date={date} />
+            <QuoteCard date={date} />
+          </>
+        }
+        right={
+          <>
+            <CompaniesSection
+              workspace={workspace.data}
+              error={workspace.error}
+              loading={workspace.isPending}
+              onRetry={() => void workspace.refetch()}
+            />
+            <LeaderboardSection />
+          </>
+        }
       />
-      <LeaderboardSection />
     </Screen>
   );
 }

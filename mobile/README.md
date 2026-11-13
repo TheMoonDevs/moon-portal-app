@@ -17,8 +17,14 @@ React 18; two copies of React in one app break at runtime).
 | `src/lib/api.ts` | Calls to the portal API with the token. |
 | `src/lib/query.ts` | TanStack Query: the cache saved on the phone (offline), and work logged offline that is sent when back online. |
 | `src/lib/chat.tsx` | Messages over Ably, as on the website: live chats, ticks, typing, online. Polls when Ably is off. |
-| `src/lib/push.ts`, `src/components/push-bridge.tsx` | Push notifications: the token, Android channels, the badge, opening the right screen on tap. |
+| `src/lib/push.ts`, `src/components/push-bridge.tsx` | Push notifications: the token, Android channels, the badge, opening the right screen on tap, and the Reply, Mark as read and Done buttons. |
+| `src/lib/reminders.ts` | Task reminders made on the phone: 9 am on the day a task is due (with Done), 10 minutes before meetings. |
 | `src/lib/links.ts` | Website links (from notifications) to app screens. |
+| `src/app/+native-intent.tsx`, `src/lib/incoming.ts`, `src/components/entry-bridge.tsx` | Ways in from outside: portal links tapped in other apps (universal / app links), text, links and photos shared from other apps (`share.tsx`, expo-share-intent), and the quick actions on the app icon. |
+| `src/app/search.tsx` | One search for tasks, projects, people, chats and messages. |
+| `src/lib/mentions.ts` | @mentions in group chats. |
+| `src/constants/whats-new.ts` | "What's new" on Home after an update. Add an entry with each build or update worth telling about. |
+| `src/lib/sentry.ts` | Crash reports (Sentry), on only when the build has `EXPO_PUBLIC_SENTRY_DSN`. |
 | `src/lib/lock.tsx` | Face ID / fingerprint lock (Settings). |
 | `src/lib/updates.tsx` | Over-the-air updates, and the "please update" screen below the portal's minimum version. |
 | `src/lib/types.ts` | API shapes, copied from `portal/models`. |
@@ -100,6 +106,24 @@ These need the Expo, Apple and Google accounts, so they are done by hand.
    Service Account Key for Push Notifications (FCM V1)" → upload that JSON.
 7. **Android Google sign-in.** After the first Android build, add an Android
    OAuth client with the build's SHA-1 (step 2).
+
+8. **Portal links open in the app.** In Vercel, set `APPLE_TEAM_ID` (your
+   Apple team id) and `ANDROID_CERT_SHA256` (Play Console → App integrity →
+   App signing: the SHA-256 of the app signing key and of the upload key,
+   comma separated) on the portal, and redeploy. Check
+   `https://portal.themoondevs.com/.well-known/apple-app-site-association`
+   and `/.well-known/assetlinks.json` show JSON. Phones pick this up when the
+   app is installed or updated.
+9. **Share extension (iPhone).** "Share to Portal" is a second iOS target
+   (`com.themoondevs.portal.share-extension`, app group
+   `group.com.themoondevs.portal`). On the first iOS build after it was added,
+   EAS asks to set up its credentials: say yes.
+10. **Crash reports (optional).** Make a free project at sentry.io (platform
+    React Native). Add its DSN as `EXPO_PUBLIC_SENTRY_DSN` on expo.dev
+    (Project → Environment variables, production and preview). For readable
+    stack traces, also add `SENTRY_AUTH_TOKEN` (secret), `SENTRY_ORG` and
+    `SENTRY_PROJECT` there; builds then upload source maps. After an
+    `eas update`, upload its maps with `npx sentry-expo-upload-sourcemaps dist`.
 
 ## Run it on your phone
 

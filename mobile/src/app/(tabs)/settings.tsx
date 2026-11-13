@@ -167,6 +167,7 @@ export default function SettingsScreen() {
           onPress={() => router.push('/notifications')}
         />
         <Row icon="video" title="Meetings" detail="Upcoming, and your booking link" chevron onPress={() => router.push('/meetings')} />
+        <Row icon="sparkles" title="What’s new" detail="What changed in the app" chevron onPress={() => router.push('/whats-new')} />
       </Card>
 
       <Section title="Appearance">
@@ -196,6 +197,18 @@ export default function SettingsScreen() {
             title="Notifications"
             detail="Messages, meetings, reminders and approvals"
             right={<Switch value={prefs.push} onValueChange={(v) => void togglePush(v)} trackColor={switchColors} />}
+          />
+          <Row
+            icon="clock"
+            title="Task reminders"
+            detail="9 am on the day a task is due, and 10 minutes before meetings"
+            right={
+              <Switch
+                value={prefs.reminders}
+                onValueChange={(v) => void setPreference('reminders', v)}
+                trackColor={switchColors}
+              />
+            }
           />
         </Card>
       </Section>

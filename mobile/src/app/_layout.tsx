@@ -1,11 +1,13 @@
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { ShareIntentProvider } from 'expo-share-intent';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { EntryBridge } from '@/components/entry-bridge';
 import { PushBridge } from '@/components/push-bridge';
 import { Colors } from '@/constants/theme';
 import { AuthProvider, useAuth } from '@/lib/auth';
@@ -14,11 +16,14 @@ import { CompanyProvider } from '@/lib/company';
 import { LockGate } from '@/lib/lock';
 import { loadPreferences } from '@/lib/preferences';
 import { persistOptions, queryClient } from '@/lib/query';
+import { setCrashUser, withCrashReports } from '@/lib/sentry';
 import { UpdateGate } from '@/lib/updates';
 
 void SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+export default withCrashReports(RootLayout);
+
+function RootLayout() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const [ready, setReady] = useState(false);
 
@@ -42,28 +47,31 @@ export default function RootLayout() {
 
   if (!ready) return null;
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <PersistQueryClientProvider
-        client={queryClient}
-        persistOptions={persistOptions}
-        // Work logged offline in an earlier session goes out now.
-        onSuccess={() => void queryClient.resumePausedMutations()}>
-        <AuthProvider>
-          <ChatProvider>
-            <CompanyProvider>
-              <ThemeProvider value={theme}>
-                <StatusBar style="auto" />
-                <UpdateGate>
-                  <LockGate>
-                    <RootStack />
-                  </LockGate>
-                </UpdateGate>
-              </ThemeProvider>
-            </CompanyProvider>
-          </ChatProvider>
-        </AuthProvider>
-      </PersistQueryClientProvider>
-    </GestureHandlerRootView>
+    // First, so a share that opened the app is caught (components/entry-bridge.tsx).
+    <ShareIntentProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <PersistQueryClientProvider
+          client={queryClient}
+          persistOptions={persistOptions}
+          // Work logged offline in an earlier session goes out now.
+          onSuccess={() => void queryClient.resumePausedMutations()}>
+          <AuthProvider>
+            <ChatProvider>
+              <CompanyProvider>
+                <ThemeProvider value={theme}>
+                  <StatusBar style="auto" />
+                  <UpdateGate>
+                    <LockGate>
+                      <RootStack />
+                    </LockGate>
+                  </UpdateGate>
+                </ThemeProvider>
+              </CompanyProvider>
+            </ChatProvider>
+          </AuthProvider>
+        </PersistQueryClientProvider>
+      </GestureHandlerRootView>
+    </ShareIntentProvider>
   );
 }
 
@@ -75,18 +83,27 @@ const sheet = {
 
 /** Signed-in screens and the sign-in screen; only one set is reachable. */
 function RootStack() {
-  const { status } = useAuth();
+  const { status, profile } = useAuth();
 
   useEffect(() => {
     if (status !== 'loading') void SplashScreen.hideAsync();
   }, [status]);
+
+  useEffect(() => {
+    setCrashUser(status === 'signedIn' ? (profile?.id ?? null) : null);
+  }, [status, profile?.id]);
 
   if (status === 'loading') return null;
   const signedIn = status === 'signedIn';
 
   return (
     <>
-      {signedIn ? <PushBridge /> : null}
+      {signedIn ? (
+        <>
+          <PushBridge />
+          <EntryBridge />
+        </>
+      ) : null}
       <Stack
         screenOptions={{
           headerShown: true,
@@ -128,6 +145,12 @@ function RootStack() {
           <Stack.Screen name="meetings" options={{ title: 'Meetings' }} />
           <Stack.Screen name="profile" options={{ title: 'Edit profile' }} />
           <Stack.Screen name="person/[id]" options={{ title: '' }} />
+          <Stack.Screen
+            name="share"
+            options={{ ...sheet, title: 'Share to Portal', sheetAllowedDetents: [0.75, 1] }}
+          />
+          <Stack.Screen name="search" options={{ title: 'Search' }} />
+          <Stack.Screen name="whats-new" options={{ title: 'What’s new' }} />
           <Stack.Screen name="delete-account" options={{ title: 'Delete account' }} />
         </Stack.Protected>
         <Stack.Protected guard={!signedIn}>

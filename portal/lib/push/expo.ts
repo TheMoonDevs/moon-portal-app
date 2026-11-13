@@ -40,6 +40,26 @@ async function expoTokensFor(userIds: string[]) {
   );
 }
 
+/** Everyone with a signed-in phone that takes notifications. */
+export async function usersWithPhones(): Promise<string[]> {
+  const tokens: ApiToken[] = await db.apiToken.findMany({
+    where: { clientId: MOBILE_CLIENT_ID, revokedAt: null },
+  });
+  const now = new Date();
+  return Array.from(
+    new Set(
+      tokens
+        .filter(
+          (t) =>
+            (!t.expiresAt || new Date(t.expiresAt) > now) &&
+            typeof t.expoPushToken === 'string' &&
+            t.expoPushToken !== '',
+        )
+        .map((t) => t.userId),
+    ),
+  );
+}
+
 /** Phones that were uninstalled or turned notifications off. */
 async function forgetExpoTokens(pushTokens: string[]) {
   if (!pushTokens.length) return;

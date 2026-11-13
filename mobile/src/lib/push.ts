@@ -33,8 +33,12 @@ Notifications.setNotificationHandler({
 
 let prepared = false;
 
-/** Android channels and the "Mark as read" button; once per launch. */
-async function prepare() {
+/**
+ * Android channels and the buttons under notifications, once per launch:
+ * Reply and Mark as read on chat messages, Done on task reminders
+ * (components/push-bridge.tsx acts on them).
+ */
+export async function preparePush() {
   if (prepared) return;
   prepared = true;
   if (Platform.OS === 'android') {
@@ -53,8 +57,21 @@ async function prepare() {
   }
   await Notifications.setNotificationCategoryAsync('chat', [
     {
+      identifier: 'chat-reply',
+      buttonTitle: 'Reply',
+      textInput: { submitButtonTitle: 'Send', placeholder: 'Message' },
+      options: { opensAppToForeground: false },
+    },
+    {
       identifier: 'chat-read',
       buttonTitle: 'Mark as read',
+      options: { opensAppToForeground: false },
+    },
+  ]).catch(() => null);
+  await Notifications.setNotificationCategoryAsync('task', [
+    {
+      identifier: 'task-done',
+      buttonTitle: 'Done',
       options: { opensAppToForeground: false },
     },
   ]).catch(() => null);
@@ -72,7 +89,7 @@ export type PushResult = 'on' | 'denied' | 'unavailable';
  */
 export async function registerForPush(ask = true): Promise<PushResult> {
   if (!Device.isDevice) return 'unavailable';
-  await prepare();
+  await preparePush();
   let { status } = await Notifications.getPermissionsAsync();
   if (status !== 'granted' && ask) ({ status } = await Notifications.requestPermissionsAsync());
   if (status !== 'granted') return 'denied';
@@ -99,4 +116,6 @@ export function setBadge(count: number) {
 export type PushData = {
   url?: string | null;
   chat?: { conversationId?: string; messageId?: string } | null;
+  /** A task reminder made on the phone (lib/reminders.ts). */
+  taskId?: string | null;
 };

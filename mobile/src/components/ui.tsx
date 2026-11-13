@@ -10,6 +10,7 @@ import {
   StyleSheet,
   TextInput,
   type TextInputProps,
+  useWindowDimensions,
   View,
   type ViewProps,
 } from 'react-native';
@@ -17,20 +18,47 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon, type IconName } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
-import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Radius, Spacing, WideContentWidth } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { portalUrl } from '@/lib/api';
 
+/** Room for two columns side by side (an iPad). */
+export function useWide() {
+  return useWindowDimensions().width >= 760;
+}
+
+/**
+ * Two columns on a wide screen (an iPad), one after the other on a phone.
+ * Used with `<Screen wide>`, which lets the content be wide enough for them.
+ */
+export function Columns({ left, right }: { left: ReactNode; right: ReactNode }) {
+  if (!useWide())
+    return (
+      <>
+        {left}
+        {right}
+      </>
+    );
+  return (
+    <View style={styles.columns}>
+      <View style={styles.column}>{left}</View>
+      <View style={styles.column}>{right}</View>
+    </View>
+  );
+}
+
 /**
  * A scrolling screen body with the app's padding and width. Screens without
- * a header (the tabs) keep clear of the status bar with `edgeTop`.
+ * a header (the tabs) keep clear of the status bar with `edgeTop`; `wide`
+ * screens use the room of an iPad for `Columns`.
  */
 export function Screen({
   children,
   contentContainerStyle,
   edgeTop = true,
+  wide = false,
   ...rest
-}: ScrollViewProps & { edgeTop?: boolean }) {
+}: ScrollViewProps & { edgeTop?: boolean; wide?: boolean }) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   // iOS insets the scroll view for the status bar, header and tab bar itself
@@ -49,6 +77,7 @@ export function Screen({
           paddingTop: (edgeTop && !ios ? insets.top : 0) + Spacing.three,
           paddingBottom: (ios ? 0 : insets.bottom) + Spacing.five,
         },
+        wide && styles.wide,
         contentContainerStyle,
       ]}
       {...rest}>
@@ -427,6 +456,9 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
   },
+  wide: { maxWidth: WideContentWidth },
+  columns: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.three },
+  column: { flex: 1, minWidth: 0, gap: Spacing.three },
   card: {
     borderRadius: Radius.large,
     borderWidth: StyleSheet.hairlineWidth,

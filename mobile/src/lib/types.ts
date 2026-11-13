@@ -240,6 +240,8 @@ export type ChatMessage = {
     targetNames?: string[];
     name?: string | null;
   } | null;
+  /** Group members named with @ (lib/mentions.ts). */
+  mentions?: string[] | null;
   reactions: { userId: string; emoji: string }[];
   createdAt: string;
   editedAt?: string | null;

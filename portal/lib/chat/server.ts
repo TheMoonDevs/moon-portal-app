@@ -67,6 +67,8 @@ type MessageDoc = {
   replyTo?: ChatReplyPreview | null;
   forwarded?: boolean;
   system?: ChatSystemNote | null;
+  /** Recipients named with @ (groups only). */
+  mentions?: string[];
   reactions: { userId: string; emoji: string }[];
   createdAt: Date;
   editedAt?: Date | null;
@@ -362,6 +364,7 @@ function toMessage(doc: MessageDoc): ChatMessage {
     replyTo: deleted ? null : (doc.replyTo ?? null),
     forwarded: !!doc.forwarded,
     system: doc.system ?? null,
+    ...(!deleted && doc.mentions?.length && { mentions: doc.mentions }),
     reactions: deleted ? [] : (doc.reactions ?? []),
     createdAt: doc.createdAt.toISOString(),
     editedAt: iso(doc.editedAt),
@@ -1176,6 +1179,8 @@ export interface SendInput {
   replyToId?: string | null;
   /** Forward this message (its text and file) instead. */
   forwardOfId?: string | null;
+  /** Group members named with @; others are ignored. */
+  mentions?: unknown;
 }
 
 const num = (value: unknown) =>
@@ -1271,6 +1276,19 @@ export async function sendMessage(
       };
   }
 
+  // Only people in this group, and only for words the sender wrote.
+  const mentions =
+    isGroup(room) && !forwarded && Array.isArray(input.mentions)
+      ? Array.from(
+          new Set(
+            input.mentions.filter(
+              (id): id is string =>
+                typeof id === 'string' && recipientIds.includes(id),
+            ),
+          ),
+        ).slice(0, 50)
+      : [];
+
   const doc: MessageDoc = {
     _id: new ObjectId(),
     conversationId,
@@ -1282,6 +1300,7 @@ export async function sendMessage(
     attachment,
     replyTo,
     forwarded,
+    ...(mentions.length && { mentions }),
     reactions: [],
     createdAt: new Date(),
     editedAt: null,
@@ -1339,8 +1358,14 @@ async function notifyNewMessage(
 ) {
   try {
     const conversationId = room._id.toHexString();
-    const listening = recipientIds.filter((id) => !stateOf(room, id).muted);
-    if (!listening.length) return;
+    // Someone named with @ hears about it even in a muted chat.
+    const mentioned = (doc.mentions ?? []).filter((id) =>
+      recipientIds.includes(id),
+    );
+    const listening = recipientIds.filter(
+      (id) => !stateOf(room, id).muted && !mentioned.includes(id),
+    );
+    if (!listening.length && !mentioned.length) return;
     const people = await peopleById([senderId]);
     const sender = people.get(senderId)?.name || 'New message';
     let groupName: string | null = null;
@@ -1364,8 +1389,9 @@ async function notifyNewMessage(
       const unread = stateOf(room, id).unread ?? 1;
       byCount.set(unread, [...(byCount.get(unread) ?? []), id]);
     }
-    await Promise.all(
-      Array.from(byCount.entries()).map(([unread, ids]) => {
+    const chat = { conversationId, messageId: doc._id.toHexString() };
+    await Promise.all([
+      ...Array.from(byCount.entries()).map(([unread, ids]) => {
         const name = groupName ?? sender;
         return sendPushToUsers(ids, {
           title: unread > 1 ? `${name} (${unread} messages)` : name,
@@ -1373,10 +1399,22 @@ async function notifyNewMessage(
           url: `/messages/${conversationId}`,
           tag: `chat-${conversationId}`,
           actions: [{ action: 'chat-read', title: 'Mark as read' }],
-          chat: { conversationId, messageId: doc._id.toHexString() },
+          chat,
         });
       }),
-    );
+      ...(mentioned.length
+        ? [
+            sendPushToUsers(mentioned, {
+              title: `${sender} mentioned you`,
+              body: groupName ? `${groupName}: ${body}` : body,
+              url: `/messages/${conversationId}`,
+              tag: `chat-${conversationId}`,
+              actions: [{ action: 'chat-read', title: 'Mark as read' }],
+              chat,
+            }),
+          ]
+        : []),
+    ]);
   } catch (error) {
     console.error('[chat] push failed:', error);
   }

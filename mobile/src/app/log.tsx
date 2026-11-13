@@ -23,7 +23,7 @@ import type { Day, MyTasks, PointStatus, ProjectRef, Task } from '@/lib/types';
  */
 export default function LogWorkSheet() {
   const theme = useTheme();
-  const params = useLocalSearchParams<{ taskId?: string }>();
+  const params = useLocalSearchParams<{ taskId?: string; text?: string }>();
   const online = useOnline();
   const date = todayKey();
   const day = useQuery({
@@ -38,7 +38,7 @@ export default function LogWorkSheet() {
 
   const [taskId, setTaskId] = useState<string | null>(params.taskId ?? null);
   const [search, setSearch] = useState('');
-  const [text, setText] = useState('');
+  const [text, setText] = useState(params.text ?? '');
   const [status, setStatus] = useState<PointStatus | null>(null);
   const [creating, setCreating] = useState(false);
 

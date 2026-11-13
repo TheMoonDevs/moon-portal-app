@@ -3,8 +3,8 @@ import { useSyncExternalStore } from 'react';
 import { Appearance } from 'react-native';
 
 /*
- * Settings the person picks on this phone: the theme, the Face ID lock and
- * whether to get push notifications. Kept in AsyncStorage (they are not
+ * Settings the person picks on this phone: the theme, the Face ID lock,
+ * whether to get push notifications and task reminders. Kept in AsyncStorage (they are not
  * secrets) and read once at launch.
  */
 
@@ -16,10 +16,12 @@ export type Preferences = {
   lock: boolean;
   /** Push notifications on this phone. */
   push: boolean;
+  /** Reminders before a task is due and before meetings (lib/reminders.ts). */
+  reminders: boolean;
 };
 
 const KEY = 'portal.preferences';
-const DEFAULTS: Preferences = { theme: 'system', lock: false, push: true };
+const DEFAULTS: Preferences = { theme: 'system', lock: false, push: true, reminders: true };
 
 let current: Preferences = DEFAULTS;
 let loaded = false;
