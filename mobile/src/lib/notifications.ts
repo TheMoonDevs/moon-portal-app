@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { api } from './api';
+import { useAppUpdateNotices } from './app-updates';
 import { useAuth } from './auth';
 import { queryClient } from './query';
 import type { PortalNotification } from './types';
@@ -20,6 +21,12 @@ export function useNotifications() {
 
 export const unreadCount = (data?: List) =>
   (data?.notifications ?? []).filter((n) => !n.isRead).length;
+
+/** Unread notifications for the bell: the portal's, plus app update notices. */
+export function useUnreadCount() {
+  const portal = unreadCount(useNotifications().data);
+  return portal + useAppUpdateNotices().filter((n) => !n.isRead).length;
+}
 
 /** Marks some notifications (or all) read or unread. */
 export function useMarkNotifications() {

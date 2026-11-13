@@ -73,3 +73,5 @@ export const Spacing = {
 export const Radius = { small: 8, medium: 12, large: 16 } as const;
 
 export const MaxContentWidth = 640;
+/** Two columns on an iPad (components/ui.tsx `Columns`). */
+export const WideContentWidth = 1100;

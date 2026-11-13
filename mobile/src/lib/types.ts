@@ -240,6 +240,8 @@ export type ChatMessage = {
     targetNames?: string[];
     name?: string | null;
   } | null;
+  /** Group members named with @ (lib/mentions.ts). */
+  mentions?: string[] | null;
   reactions: { userId: string; emoji: string }[];
   createdAt: string;
   editedAt?: string | null;
@@ -351,6 +353,8 @@ export type Project = {
   goalProgress?: GoalProgress[];
   slug?: string;
   brandKit?: BrandKit | null;
+  /** The image atop its page, picked by a lead from the brand kit. */
+  headerImage?: string | null;
 };
 
 /** A project on the projects page, with what is going on in it. */

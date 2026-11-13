@@ -87,6 +87,9 @@ export interface ChatMessage {
   forwarded?: boolean;
   /** For `system` messages in groups. */
   system?: ChatSystemNote | null;
+  /** Group members named with @ in the text (the mobile app); they hear
+   * about it even when the chat is muted. */
+  mentions?: string[];
   reactions: ChatReaction[];
   createdAt: string;
   editedAt?: string | null;

@@ -1,5 +1,3 @@
-import { useQuery } from '@tanstack/react-query';
-import * as Application from 'expo-application';
 import * as Updates from 'expo-updates';
 import { type ReactNode, useEffect } from 'react';
 import { AppState, Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
@@ -11,53 +9,33 @@ import { Button } from '@/components/ui';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-import { api } from './api';
+import { compareVersions, nativeVersion, storeUrlOf, useMobileConfig } from './app-updates';
 import { useAuth } from './auth';
-import { APP_VERSION } from './config';
 
 /*
  * Keeping the app current. Small fixes arrive through EAS Update: they
  * download in the background and a "Restart to update" pill offers them
  * (signed out, they start at once). A
  * store build older than the portal's `minVersion` (/api/mobile/config) is
- * asked to update from the store instead.
+ * asked to update from the store instead. Both kinds of update also show in
+ * Notifications (lib/app-updates.ts).
  */
-
-type MobileConfig = {
-  minVersion: string;
-  storeUrls: { ios: string | null; android: string | null };
-};
-
-/** -1, 0 or 1, comparing "1.2.3" style versions. */
-export function compareVersions(a: string, b: string) {
-  const pa = a.split('.').map((n) => parseInt(n, 10) || 0);
-  const pb = b.split('.').map((n) => parseInt(n, 10) || 0);
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    const d = (pa[i] ?? 0) - (pb[i] ?? 0);
-    if (d) return d < 0 ? -1 : 1;
-  }
-  return 0;
-}
-
-export const nativeVersion = () => Application.nativeApplicationVersion ?? APP_VERSION;
 
 export function UpdateGate({ children }: { children: ReactNode }) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const config = useQuery({
-    queryKey: ['mobileConfig'],
-    queryFn: () => api<MobileConfig>('/api/mobile/config', { anonymous: true }),
-    staleTime: 60 * 60 * 1000,
-  });
+  const config = useMobileConfig();
   const { isUpdatePending } = Updates.useUpdates();
-  const { status } = useAuth();
+  const { status, signingIn } = useAuth();
 
   // On the sign-in screen there's nothing to lose, so a downloaded fix starts
   // at once. People signing in for the first time, such as store reviewers,
-  // then get the latest version without restarting the app.
+  // then get the latest version without restarting the app. Not while a
+  // sign-in is under way: coming back from the Google sheet looks for an
+  // update, and starting it then would drop the sign-in.
   useEffect(() => {
-    if (isUpdatePending && status === 'signedOut') void Updates.reloadAsync().catch(() => null);
-  }, [isUpdatePending, status]);
+    if (isUpdatePending && status === 'signedOut' && !signingIn) void Updates.reloadAsync().catch(() => null);
+  }, [isUpdatePending, status, signingIn]);
 
   // Look for a fix each time the app comes back to the front.
   useEffect(() => {
@@ -73,7 +51,7 @@ export function UpdateGate({ children }: { children: ReactNode }) {
 
   const tooOld = !!config.data && compareVersions(nativeVersion(), config.data.minVersion) < 0;
   if (tooOld) {
-    const store = Platform.OS === 'ios' ? config.data?.storeUrls.ios : config.data?.storeUrls.android;
+    const store = storeUrlOf(config.data);
     return (
       <View style={[styles.blocked, { backgroundColor: theme.background }]}>
         <PortalMark size={72} />

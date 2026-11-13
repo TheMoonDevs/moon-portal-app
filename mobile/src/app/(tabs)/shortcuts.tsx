@@ -9,7 +9,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useChatUnread } from '@/lib/chat';
 import { openWebsite } from '@/lib/links';
-import { unreadCount, useNotifications } from '@/lib/notifications';
+import { useUnreadCount } from '@/lib/notifications';
 import { countShortcut, useTopShortcuts } from '@/lib/shortcut-usage';
 
 type Item = {
@@ -41,7 +41,7 @@ const openItem = (item: Item) => {
 export default function ShortcutsScreen() {
   const theme = useTheme();
   const [search, setSearch] = useState('');
-  const unread = unreadCount(useNotifications().data);
+  const unread = useUnreadCount();
   const chats = useChatUnread().data?.unread ?? 0;
 
   const groups: { title: string; items: Item[] }[] = [

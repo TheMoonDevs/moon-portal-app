@@ -314,6 +314,10 @@ export function useChatUnread() {
   });
 }
 
+/** A message's own id, so a send that is tried twice is saved once. */
+export const newClientId = () =>
+  `m${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
+
 /** A chat's name and photo, from the viewer's side. */
 export const chatTitle = (c: Pick<ChatConversation, 'kind' | 'partner' | 'group'>) =>
   c.group?.name || c.partner?.name || c.partner?.username || 'Chat';

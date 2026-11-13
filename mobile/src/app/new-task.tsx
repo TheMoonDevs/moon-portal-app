@@ -1,4 +1,4 @@
-import { router, Stack } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
@@ -29,6 +29,8 @@ type Period = 'day' | 'week' | 'month';
  */
 export default function NewTaskSheet() {
   const theme = useTheme();
+  // Words shared from another app (the Share screen).
+  const params = useLocalSearchParams<{ title?: string }>();
   const online = useOnline();
   const { profile } = useAuth();
   const today = todayKey();
@@ -36,7 +38,7 @@ export default function NewTaskSheet() {
   const [place, setPlace] = useState<PlaceInput | 'auto' | null>(null);
   const [project, setProject] = useState<ProjectRef | null>(null);
   const [kind, setKind] = useState<Kind>('task');
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState(params.title ?? '');
   const [when, setWhen] = useState<When>('today');
   const [goalKind, setGoalKind] = useState<GoalKind>('scheduled');
   const [count, setCount] = useState('1');

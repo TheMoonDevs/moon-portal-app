@@ -193,6 +193,8 @@ export type Project = Loose<
     /** Short names it goes by, e.g. AMZ (see lib/worklogs/aliases). */
     aliases?: string[];
     brandKit?: Nullable<BrandKit>;
+    /** The image atop its page in the mobile app, from the brand kit. */
+    headerImage?: Nullable<string>;
     goals?: ProjectGoal[];
     effort?: Nullable<PROJECT_EFFORT>;
     /** The project this one belongs under, in the same company. */

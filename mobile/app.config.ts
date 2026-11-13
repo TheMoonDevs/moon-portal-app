@@ -49,12 +49,40 @@ const PROJECT_ID = EAS_PROJECT_ID || "d32170fe-08dc-48ed-8b16-fe310cec6c6a";
 
 const DARK = "#0a0a0b";
 
+/**
+ * Links to these website pages open in the app (universal links on iPhone,
+ * app links on Android). The portal serves the matching
+ * /.well-known/apple-app-site-association and assetlinks.json.
+ */
+const LINK_HOST = "portal.themoondevs.com";
+const LINK_PREFIXES = [
+  "/messages",
+  "/projects",
+  "/goals",
+  "/plans",
+  "/user",
+  "/notifications",
+  "/rest-day",
+];
+/** Only these exact pages: booking links under /meet/ stay on the web. */
+const LINK_EXACT = ["/meet"];
+
+/**
+ * Crash reports (Sentry). The app sends them when EXPO_PUBLIC_SENTRY_DSN is
+ * set; source maps upload during the build only with SENTRY_AUTH_TOKEN,
+ * SENTRY_ORG and SENTRY_PROJECT, so a build without them still works.
+ */
+const SENTRY_UPLOAD =
+  env.SENTRY_AUTH_TOKEN && env.SENTRY_ORG && env.SENTRY_PROJECT
+    ? { organization: env.SENTRY_ORG, project: env.SENTRY_PROJECT }
+    : null;
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: "Portal",
   slug: "portal",
   owner: env.EAS_OWNER || "themoondevs" || undefined,
-  version: "0.1.0",
+  version: "1.1.0",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: "portal",
@@ -62,8 +90,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   backgroundColor: DARK,
   ios: {
     bundleIdentifier: "com.themoondevs.portal",
-    supportsTablet: false,
+    // iPad: portrait, with two columns where there is room (components/ui.tsx).
+    supportsTablet: true,
+    requireFullScreen: true,
     usesAppleSignIn: true,
+    associatedDomains: [`applinks:${LINK_HOST}`],
     infoPlist: {
       // The app uses only standard HTTPS, so no export compliance forms.
       ITSAppUsesNonExemptEncryption: false,
@@ -77,6 +108,21 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       monochromeImage: "./assets/images/android-icon-monochrome.png",
     },
     predictiveBackGestureEnabled: false,
+    intentFilters: [
+      {
+        action: "VIEW",
+        autoVerify: true,
+        data: [
+          // The page itself and the pages under it, not "/users".
+          ...LINK_PREFIXES.flatMap((path) => [
+            { scheme: "https", host: LINK_HOST, path },
+            { scheme: "https", host: LINK_HOST, pathPrefix: `${path}/` },
+          ]),
+          ...LINK_EXACT.map((path) => ({ scheme: "https", host: LINK_HOST, path })),
+        ],
+        category: ["BROWSABLE", "DEFAULT"],
+      },
+    ],
     ...(GOOGLE_SERVICES_JSON && { googleServicesFile: GOOGLE_SERVICES_JSON }),
   },
   // Small fixes reach phones without a store update (EAS Update). A new
@@ -138,6 +184,24 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     "expo-sharing",
     "expo-video",
     "expo-updates",
+    [
+      // Share text, a link or a photo from other apps into a task, a
+      // worklog or a chat.
+      "expo-share-intent",
+      {
+        iosActivationRules: {
+          NSExtensionActivationSupportsText: true,
+          NSExtensionActivationSupportsWebURLWithMaxCount: 1,
+          NSExtensionActivationSupportsWebPageWithMaxCount: 1,
+          NSExtensionActivationSupportsImageWithMaxCount: 1,
+        },
+        androidIntentFilters: ["text/*", "image/*"],
+        iosShareExtensionName: "Portal Share",
+      },
+    ],
+    ...(SENTRY_UPLOAD
+      ? [["@sentry/react-native/expo", SENTRY_UPLOAD] as [string, Record<string, string>]]
+      : []),
     ...(GOOGLE_IOS_URL_SCHEME
       ? [
           [

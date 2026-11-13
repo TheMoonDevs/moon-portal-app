@@ -35,7 +35,13 @@ export async function googleFirebaseIdToken(): Promise<string | null> {
     if (!isSuccessResponse(response)) return null;
     googleIdToken = response.data.idToken;
   } catch (error) {
-    if (isErrorWithCode(error) && error.code === statusCodes.IN_PROGRESS) return null;
+    if (isErrorWithCode(error)) {
+      if (error.code === statusCodes.IN_PROGRESS || error.code === statusCodes.SIGN_IN_CANCELLED) return null;
+      // Android's DEVELOPER_ERROR: Google doesn't know the key this copy of
+      // the app is signed with (its SHA-1 isn't on the Firebase Android app).
+      if (error.code === '10') throw new Error('Google sign-in isn’t set up for this version of the app yet (code 10).');
+      throw new Error(`Google sign-in didn’t go through (${error.code}). Please try again.`);
+    }
     throw new Error('Google sign-in didn’t go through. Please try again.');
   }
   if (!googleIdToken) throw new Error('Google didn’t return a sign-in token.');
@@ -58,8 +64,11 @@ async function firebaseIdTokenFor(googleIdToken: string) {
     },
   );
   const json = await res.json().catch(() => null);
-  if (!res.ok || typeof json?.idToken !== 'string')
-    throw new Error('Google sign-in didn’t go through. Please try again.');
+  if (!res.ok || typeof json?.idToken !== 'string') {
+    // Firebase answers like "INVALID_IDP_RESPONSE : …"; its first word is enough.
+    const reason = typeof json?.error?.message === 'string' ? json.error.message.split(/[\s:]/)[0] : res.status;
+    throw new Error(`Google sign-in didn’t go through (${reason}). Please try again.`);
+  }
   return json.idToken as string;
 }
 

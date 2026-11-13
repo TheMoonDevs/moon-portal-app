@@ -12,7 +12,7 @@ import { ProjectPicker } from '@/components/project-picker';
 import { StatusDot } from '@/components/status-dot';
 import { ThemedText } from '@/components/themed-text';
 import { Button, Card, Chip, Field, IconButton, QueryState, Screen } from '@/components/ui';
-import { Radius, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -324,12 +324,15 @@ export default function TaskScreen() {
             styles.bar,
             { backgroundColor: theme.background, borderColor: theme.border, paddingBottom: insets.bottom + Spacing.two },
           ]}>
-          <StatusPicker value={current} onPick={setStatus} />
-          <Button
-            title="Log work"
-            icon={<Icon name="pencil" size={16} color={theme.onAccent} />}
-            onPress={() => router.push({ pathname: '/log', params: { taskId: task.id } })}
-          />
+          {/* As wide as the page above it (an iPad). */}
+          <View style={styles.barInner}>
+            <StatusPicker value={current} onPick={setStatus} />
+            <Button
+              title="Log work"
+              icon={<Icon name="pencil" size={16} color={theme.onAccent} />}
+              onPress={() => router.push({ pathname: '/log', params: { taskId: task.id } })}
+            />
+          </View>
         </View>
       ) : null}
 
@@ -447,6 +450,7 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.two,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
+  barInner: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', gap: Spacing.two },
   picker: { flexDirection: 'row', gap: Spacing.one },
   pickerWide: {
     padding: Spacing.one,

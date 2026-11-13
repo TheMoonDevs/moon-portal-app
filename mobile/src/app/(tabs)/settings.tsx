@@ -10,18 +10,18 @@ import { Avatar, Card, PressableCard, Row, Screen, Segmented } from '@/component
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { api, messageOf } from '@/lib/api';
+import { nativeVersion } from '@/lib/app-updates';
 import { appleAvailable, appleIdentityToken } from '@/lib/apple';
 import { useAuth } from '@/lib/auth';
 import { APP_VERSION, PORTAL_URL } from '@/lib/config';
 import { timeAgo } from '@/lib/dates';
 import { openWebsite } from '@/lib/links';
 import { biometricsAvailable, confirmWithBiometrics } from '@/lib/lock';
-import { unreadCount, useNotifications } from '@/lib/notifications';
+import { useUnreadCount } from '@/lib/notifications';
 import { setPreference, type ThemeChoice, usePreferences } from '@/lib/preferences';
 import { registerForPush, unregisterPush } from '@/lib/push';
 import { queryClient } from '@/lib/query';
 import type { Connection } from '@/lib/types';
-import { nativeVersion } from '@/lib/updates';
 
 /**
  * The person: their page, then the app's settings (theme, Face ID,
@@ -30,7 +30,7 @@ import { nativeVersion } from '@/lib/updates';
  */
 export default function SettingsScreen() {
   const theme = useTheme();
-  const unread = unreadCount(useNotifications().data);
+  const unread = useUnreadCount();
   const prefs = usePreferences();
   const { profile, refreshProfile, signOut } = useAuth();
   const [canLock, setCanLock] = useState(false);
@@ -167,6 +167,7 @@ export default function SettingsScreen() {
           onPress={() => router.push('/notifications')}
         />
         <Row icon="video" title="Meetings" detail="Upcoming, and your booking link" chevron onPress={() => router.push('/meetings')} />
+        <Row icon="sparkles" title="What’s new" detail="What changed in the app" chevron onPress={() => router.push('/whats-new')} />
       </Card>
 
       <Section title="Appearance">
@@ -196,6 +197,18 @@ export default function SettingsScreen() {
             title="Notifications"
             detail="Messages, meetings, reminders and approvals"
             right={<Switch value={prefs.push} onValueChange={(v) => void togglePush(v)} trackColor={switchColors} />}
+          />
+          <Row
+            icon="clock"
+            title="Task reminders"
+            detail="9 am on the day a task is due, and 10 minutes before meetings"
+            right={
+              <Switch
+                value={prefs.reminders}
+                onValueChange={(v) => void setPreference('reminders', v)}
+                trackColor={switchColors}
+              />
+            }
           />
         </Card>
       </Section>

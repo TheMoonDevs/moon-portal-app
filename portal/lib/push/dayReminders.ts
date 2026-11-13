@@ -4,6 +4,7 @@ import { USERSTATUS } from '@/models/shared/enums';
 import type { Task } from '@/models/workspace';
 import { TASK_STATUS } from '@/models/workspace';
 
+import { usersWithPhones } from './expo';
 import { sendPushToUsers } from './server';
 
 /*
@@ -13,10 +14,12 @@ import { sendPushToUsers } from './server';
  *
  * - Evening (from 22:00): nothing logged today → "mark as rest day or log";
  *   logged, but nothing on tomorrow yet → "plan tomorrow".
- * - Morning (from 08:00): a summary of what they have planned today.
+ * - Morning (from 08:00): a summary of what they have planned today and
+ *   how many of their tasks need them (waiting on them, or blocked).
  *
- * Each is sent at most once per person per day; the day it was last sent is
- * kept on their Subscription document.
+ * They go to everyone with push in a browser or the mobile app. Each is sent
+ * at most once per person per day; the day it was last sent is kept on their
+ * Subscription document (made for people who only have the app).
  */
 
 const EVENING_FROM = 22 * 60;
@@ -167,20 +170,36 @@ async function eveningReminder(userId: string, date: string) {
   return true;
 }
 
+/** Open tasks of theirs waiting on them or blocked ("Needs you" in the app). */
+const needingThem = (userId: string) =>
+  db.task.count({
+    where: {
+      assigneeIds: userId,
+      status: { in: OPEN_STATUSES },
+      flag: { in: ['waiting', 'blocked'] },
+    },
+  }) as Promise<number>;
+
 async function morningSummary(userId: string, date: string) {
-  const [tasks, todos] = await Promise.all([
+  const [tasks, todos, needs] = await Promise.all([
     plannedTasks(userId, date),
     openTodos(userId),
+    needingThem(userId),
   ]);
   const planned = [...tasks, ...todos];
+  const needLine = needs
+    ? `${needs} task${needs === 1 ? ' needs' : 's need'} you. `
+    : '';
 
   await sendPushToUsers([userId], {
     title: planned.length
       ? `Good morning! ${planned.length} planned for today`
       : 'Good morning! Plan your day',
-    body: planned.length
-      ? listPreview(planned)
-      : 'Nothing planned yet. Open your worklog and write down your plan.',
+    body:
+      needLine +
+      (planned.length
+        ? listPreview(planned)
+        : 'Nothing planned yet. Open your worklog and write down your plan.'),
     url: worklogUrl(date),
     tag: `morning-${date}`,
   });
@@ -189,28 +208,44 @@ async function morningSummary(userId: string, date: string) {
 
 /** Sends whichever reminders are due right now. */
 export async function runDayReminders(now = new Date()) {
-  const subscriptions = (await db.subscription.findMany({})) as {
-    id: string;
-    userId: string;
-    subscriptions?: unknown[];
-    reminders?: Reminders;
-  }[];
-  const withDevices = subscriptions.filter((s) => s.subscriptions?.length);
-  if (!withDevices.length) return { evening: 0, morning: 0 };
+  const [subscriptions, phones] = await Promise.all([
+    db.subscription.findMany({}) as Promise<
+      {
+        id: string;
+        userId: string;
+        subscriptions?: unknown[];
+        reminders?: Reminders;
+      }[]
+    >,
+    usersWithPhones(),
+  ]);
+  const remindersOf = new Map(
+    subscriptions.map((s) => [s.userId, s.reminders ?? {}]),
+  );
+  // Browsers with push, and phones with the app.
+  const userIds = Array.from(
+    new Set([
+      ...subscriptions
+        .filter((s) => s.subscriptions?.length)
+        .map((s) => s.userId),
+      ...phones,
+    ]),
+  );
+  if (!userIds.length) return { evening: 0, morning: 0 };
 
   const users = (await db.user.findMany({
-    where: { id: { in: withDevices.map((s) => s.userId) } },
+    where: { id: { in: userIds } },
     select: { id: true, timezone: true, status: true },
   })) as { id: string; timezone?: string | null; status?: string }[];
   const byId = new Map(users.map((u) => [u.id, u]));
 
   let evening = 0;
   let morning = 0;
-  for (const sub of withDevices) {
-    const user = byId.get(sub.userId);
+  for (const userId of userIds) {
+    const user = byId.get(userId);
     if (!user || user.status !== USERSTATUS.ACTIVE) continue;
     const { date, minutes } = localClock(user.timezone, now);
-    const reminders = sub.reminders ?? {};
+    const reminders = remindersOf.get(userId) ?? {};
 
     const dueEvening = minutes >= EVENING_FROM && reminders.eveningFor !== date;
     const dueMorning =
@@ -225,9 +260,10 @@ export async function runDayReminders(now = new Date()) {
       ...(dueEvening && { eveningFor: date }),
       ...(dueMorning && { morningFor: date }),
     };
-    await db.subscription.update({
-      where: { userId: sub.userId },
-      data: { reminders: next },
+    await db.subscription.upsert({
+      where: { userId },
+      update: { reminders: next },
+      create: { userId, subscriptions: [], reminders: next },
     });
 
     try {

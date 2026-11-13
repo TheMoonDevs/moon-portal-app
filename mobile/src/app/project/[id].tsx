@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
-import { BrandKitSection, ProjectHeader } from '@/components/project-header';
+import { ProjectHeader } from '@/components/project-header';
 import { ProjectWorklogs } from '@/components/project-worklogs';
 import { TaskRow } from '@/components/task-list';
 import { ThemedText } from '@/components/themed-text';
@@ -29,14 +29,14 @@ import { openWebsite } from '@/lib/links';
 import { isCoreProject, useCompanyLookup, useProjectLabel } from '@/lib/project-name';
 import { queryClient } from '@/lib/query';
 import { statusLabel } from '@/lib/tasks';
-import type { ChatConversation, ProjectDetail, ProjectPage, Task } from '@/lib/types';
+import type { ChatConversation, ProjectDetail, ProjectGoal, ProjectPage, Task } from '@/lib/types';
 
 type TaskView = 'mine' | 'open' | 'done';
 
 /**
  * A project, like a channel page: its brand at the top (banner, logo,
- * colours), then progress, goals, team, pages, tasks, the team's worklogs
- * and the whole brand kit.
+ * colours; its leads pick the banner), then progress, team, pages, tasks,
+ * goals and the team's worklogs.
  */
 export default function ProjectScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -46,6 +46,7 @@ export default function ProjectScreen() {
   const { profile } = useAuth();
   const me = profile?.id ?? '';
   const [view, setView] = useState<TaskView>('mine');
+  const [goalView, setGoalView] = useState<TaskView>('mine');
   const [opening, setOpening] = useState(false);
   const query = useQuery({
     queryKey: ['project', id],
@@ -59,6 +60,7 @@ export default function ProjectScreen() {
   const project = query.data?.project;
   const people = query.data?.people ?? [];
   const onTeam = !!project && (project.leadIds.includes(me) || project.memberIds.includes(me));
+  const isLead = !!project && project.leadIds.includes(me);
 
   const isMine = (t: Task) => t.ownerId === me || (t.assigneeIds ?? []).includes(me);
   const live = (query.data?.tasks ?? []).filter((t) => t.status !== 'ARCHIVED' && t.status !== 'IGNORED');
@@ -69,6 +71,20 @@ export default function ProjectScreen() {
       .filter((t) => t.status === 'DONE')
       .sort((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? ''))
       .slice(0, 30),
+  };
+  // Goals the same way: yours (naming you, or the whole team's), open, met.
+  const progressOf = (goalId: string) => project?.goalProgress?.find((p) => p.goalId === goalId);
+  const goalMet = (g: ProjectGoal) => {
+    const progress = progressOf(g.id);
+    if (g.kind === 'target') return !!g.achievedAt || !!progress?.achieved;
+    return !!progress && progress.done >= progress.target;
+  };
+  const goals = project?.goals ?? [];
+  const forMe = (g: ProjectGoal) => (g.assigneeIds?.length ? g.assigneeIds.includes(me) : onTeam);
+  const goalLists: Record<TaskView, ProjectGoal[]> = {
+    mine: goals.filter((g) => forMe(g) && !goalMet(g)),
+    open: goals.filter((g) => !goalMet(g)),
+    done: goals.filter(goalMet),
   };
   const nameOf = (userId?: string | null) =>
     userId === me ? 'You' : (people.find((p) => p.id === userId)?.name ?? null);
@@ -137,6 +153,12 @@ export default function ProjectScreen() {
               .join(' · ')}
             description={project.description ?? (core ? company?.description : null)}
             kit={kit}
+            banner={project.headerImage}
+            onEditBanner={
+              isLead
+                ? () => router.push({ pathname: '/header-image', params: { id: project.id } })
+                : undefined
+            }
             logo={core ? (company?.logo ?? null) : (project.logo ?? null)}
             color={project.color ?? company?.color}
             actions={
@@ -178,33 +200,6 @@ export default function ProjectScreen() {
                 {project.progress.major ? ` · ${project.progress.majorDone} of ${project.progress.major} major` : ''}
               </ThemedText>
             </Card>
-          ) : null}
-
-          {project.goals?.length ? (
-            <View style={styles.group}>
-              <ThemedText type="label" themeColor="textSecondary">
-                Goals
-              </ThemedText>
-              {project.goals.map((g) => {
-                const progress = project.goalProgress?.find((p) => p.goalId === g.id);
-                return (
-                  <PressableCard
-                    key={g.id}
-                    onPress={() =>
-                      router.push({
-                        pathname: '/goal/[projectId]/[goalId]',
-                        params: { projectId: project.id, goalId: g.id },
-                      })
-                    }>
-                    <ThemedText type="smallBold">{g.title}</ThemedText>
-                    {progress ? <ProgressBar percent={progress.percent} color={accent} /> : null}
-                    <ThemedText type="small" themeColor="textSecondary">
-                      {goalLine(g, progress)}
-                    </ThemedText>
-                  </PressableCard>
-                );
-              })}
-            </View>
           ) : null}
 
           {people.length ? (
@@ -314,9 +309,54 @@ export default function ProjectScreen() {
             )}
           </View>
 
+          {project.goals?.length ? (
+            <View style={styles.group}>
+              <ThemedText type="label" themeColor="textSecondary">
+                Goals
+              </ThemedText>
+              <Segmented
+                value={goalView}
+                onChange={setGoalView}
+                options={[
+                  { value: 'mine', label: `Yours ${goalLists.mine.length}` },
+                  { value: 'open', label: `Open ${goalLists.open.length}` },
+                  { value: 'done', label: `Done ${goalLists.done.length}` },
+                ]}
+              />
+              {goalLists[goalView].length ? (
+                goalLists[goalView].map((g) => {
+                  const progress = progressOf(g.id);
+                  return (
+                    <PressableCard
+                      key={g.id}
+                      onPress={() =>
+                        router.push({
+                          pathname: '/goal/[projectId]/[goalId]',
+                          params: { projectId: project.id, goalId: g.id },
+                        })
+                      }>
+                      <ThemedText type="smallBold">{g.title}</ThemedText>
+                      {progress ? <ProgressBar percent={progress.percent} color={accent} /> : null}
+                      <ThemedText type="small" themeColor="textSecondary">
+                        {goalLine(g, progress)}
+                      </ThemedText>
+                    </PressableCard>
+                  );
+                })
+              ) : (
+                <ThemedText themeColor="textSecondary">
+                  {goalView === 'mine'
+                    ? 'No open goals for you here.'
+                    : goalView === 'open'
+                      ? 'Every goal is met.'
+                      : 'No goal met yet.'}
+                </ThemedText>
+              )}
+            </View>
+          ) : null}
+
           <ProjectWorklogs projectId={project.id} me={me} color={accent} />
 
-          {kit ? <BrandKitSection kit={kit} title={core ? `${company?.name ?? 'Company'} brand kit` : 'Brand kit'} /> : null}
         </>
       ) : null}
     </Screen>

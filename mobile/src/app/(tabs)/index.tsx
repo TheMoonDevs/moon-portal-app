@@ -9,7 +9,8 @@ import { Icon } from '@/components/icon';
 import { OfflineBanner } from '@/components/offline-banner';
 import { PortalMark } from '@/components/portal-mark';
 import { ThemedText } from '@/components/themed-text';
-import { Avatar, Card, Chip, Dot, IconButton, QueryState, Screen } from '@/components/ui';
+import { WhatsNewCard } from '@/components/whats-new-card';
+import { Avatar, Card, Chip, Columns, IconButton, QueryState, Screen } from '@/components/ui';
 import { QUOTES } from '@/constants/quotes';
 import { Spacing } from '@/constants/theme';
 import { useNow } from '@/hooks/use-now';
@@ -20,7 +21,7 @@ import { useCompany } from '@/lib/company';
 import { fromKey, monthOf, todayKey } from '@/lib/dates';
 import { joinMeeting } from '@/lib/meet';
 import { projectNameInCompany } from '@/lib/project-name';
-import { unreadCount, useNotifications } from '@/lib/notifications';
+import { useNotifications, useUnreadCount } from '@/lib/notifications';
 import type { Company, Day, LeaderboardRow, Project, Task, Workspace } from '@/lib/types';
 
 /*
@@ -31,6 +32,7 @@ import type { Company, Day, LeaderboardRow, Project, Task, Workspace } from '@/l
 export default function HomeScreen() {
   const date = todayKey();
   const notifications = useNotifications();
+  const unread = useUnreadCount();
   const day = useQuery({
     queryKey: ['day', date],
     queryFn: () => api<Day>(withQuery('/api/me/day', { date })),
@@ -48,29 +50,41 @@ export default function HomeScreen() {
   };
 
   return (
-    <Screen refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} />}>
+    <Screen wide refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} />}>
       <View style={styles.top}>
         <PortalMark size={26} />
         <ThemedText type="label" style={styles.brand}>
           Portal
         </ThemedText>
+        <IconButton name="search" label="Search" onPress={() => router.push('/search')} />
         <IconButton
           name="bell"
           label="Notifications"
-          count={unreadCount(notifications.data)}
+          count={unread}
           onPress={() => router.push('/notifications')}
         />
       </View>
       <OfflineBanner />
-      <HelloCard day={day.data} date={date} />
-      <QuoteCard date={date} />
-      <CompaniesSection
-        workspace={workspace.data}
-        error={workspace.error}
-        loading={workspace.isPending}
-        onRetry={() => void workspace.refetch()}
+      <Columns
+        left={
+          <>
+            <WhatsNewCard />
+            <HelloCard day={day.data} date={date} />
+            <QuoteCard date={date} />
+          </>
+        }
+        right={
+          <>
+            <CompaniesSection
+              workspace={workspace.data}
+              error={workspace.error}
+              loading={workspace.isPending}
+              onRetry={() => void workspace.refetch()}
+            />
+            <LeaderboardSection />
+          </>
+        }
       />
-      <LeaderboardSection />
     </Screen>
   );
 }
@@ -314,28 +328,40 @@ function CompanyItem({
               No projects yet.
             </ThemedText>
           ) : null}
-          {list.map((p) => (
-            <Pressable
-              key={p.id}
-              onPress={() => router.push({ pathname: '/project/[id]', params: { id: p.id } })}
-              style={({ pressed }) => [styles.project, { opacity: pressed ? 0.6 : 1 }]}>
-              <Dot color={p.color} size={10} />
-              <ThemedText type="small" numberOfLines={1} style={styles.flex}>
-                {projectNameInCompany(p, company.name)}
-              </ThemedText>
-              {mine(p) ? (
-                <ThemedText type="small" themeColor="textSecondary">
-                  {p.leadIds.includes(profile?.id ?? '') ? 'Lead' : 'Team'}
-                </ThemedText>
-              ) : null}
-              {p.progress?.total ? (
-                <ThemedText type="small" themeColor="textSecondary" style={styles.percent}>
-                  {Math.round(p.progress.percent)}%
-                </ThemedText>
-              ) : null}
-              <Icon name="chevron" size={12} color={theme.textSecondary} />
-            </Pressable>
-          ))}
+          {list.map((p) => {
+            const name = projectNameInCompany(p, company.name);
+            const role = mine(p) ? (p.leadIds.includes(profile?.id ?? '') ? 'Lead' : 'Team') : null;
+            const left = p.progress ? p.progress.total - p.progress.done : 0;
+            const tasks = left ? `${left} ${left === 1 ? 'task' : 'tasks'} open` : 'No open tasks';
+            return (
+              <Pressable
+                key={p.id}
+                onPress={() => router.push({ pathname: '/project/[id]', params: { id: p.id } })}
+                style={({ pressed }) => [styles.project, { opacity: pressed ? 0.6 : 1 }]}>
+                <CompanyMark
+                  id={p.id}
+                  name={name}
+                  color={p.isCore ? (company.color ?? p.color) : p.color}
+                  logo={p.isCore ? company.logo : p.logo}
+                  size={32}
+                />
+                <View style={styles.flex}>
+                  <ThemedText type="small" numberOfLines={1}>
+                    {name}
+                  </ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
+                    {role ? `${role} · ${tasks}` : tasks}
+                  </ThemedText>
+                </View>
+                {p.progress?.total ? (
+                  <ThemedText type="smallBold" style={styles.percent}>
+                    {Math.round(p.progress.percent)}%
+                  </ThemedText>
+                ) : null}
+                <Icon name="chevron" size={12} color={theme.textSecondary} />
+              </Pressable>
+            );
+          })}
         </Animated.View>
       ) : null}
     </View>
@@ -466,8 +492,8 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     padding: Spacing.three,
   },
-  projects: { paddingLeft: 56 + Spacing.three, paddingRight: Spacing.three, paddingBottom: Spacing.two },
-  project: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 40 },
+  projects: { paddingHorizontal: Spacing.three, paddingBottom: Spacing.two },
+  project: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, minHeight: 52 },
   percent: { minWidth: 36, textAlign: 'right' },
   chips: { gap: Spacing.two },
   board: {
