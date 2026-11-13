@@ -20,7 +20,7 @@ import { useCompany } from '@/lib/company';
 import { fromKey, monthOf, todayKey } from '@/lib/dates';
 import { joinMeeting } from '@/lib/meet';
 import { projectNameInCompany } from '@/lib/project-name';
-import { unreadCount, useNotifications } from '@/lib/notifications';
+import { useNotifications, useUnreadCount } from '@/lib/notifications';
 import type { Company, Day, LeaderboardRow, Project, Task, Workspace } from '@/lib/types';
 
 /*
@@ -31,6 +31,7 @@ import type { Company, Day, LeaderboardRow, Project, Task, Workspace } from '@/l
 export default function HomeScreen() {
   const date = todayKey();
   const notifications = useNotifications();
+  const unread = useUnreadCount();
   const day = useQuery({
     queryKey: ['day', date],
     queryFn: () => api<Day>(withQuery('/api/me/day', { date })),
@@ -57,7 +58,7 @@ export default function HomeScreen() {
         <IconButton
           name="bell"
           label="Notifications"
-          count={unreadCount(notifications.data)}
+          count={unread}
           onPress={() => router.push('/notifications')}
         />
       </View>

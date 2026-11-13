@@ -131,6 +131,10 @@ need a new build. Everything else ships as an update:
 - To stop old builds that can't take an update: set `MOBILE_MIN_VERSION` on
   the portal (with `MOBILE_APP_STORE_URL` / `MOBILE_PLAY_STORE_URL`). Older
   versions show a screen asking to update.
+- To tell older builds a new store version is out: set `MOBILE_LATEST_VERSION`
+  (or `MOBILE_LATEST_VERSION_IOS` / `_ANDROID` when one store approves first)
+  once it is released. They show "Portal x.y is out" in Notifications, next to
+  any "App update ready" notice for a downloaded fix.
 
 ## Release
 
