@@ -114,6 +114,10 @@ function RootStack() {
           <Stack.Screen name="chat/new" options={{ ...sheet, title: 'New chat', sheetAllowedDetents: [1] }} />
           <Stack.Screen name="projects" options={{ title: 'Projects' }} />
           <Stack.Screen name="project/[id]" options={{ title: 'Project' }} />
+          <Stack.Screen
+            name="header-image"
+            options={{ ...sheet, title: 'Header image', sheetAllowedDetents: [0.75, 1] }}
+          />
           <Stack.Screen name="page/[projectId]/[pageId]" options={{ title: '' }} />
           <Stack.Screen name="goals" options={{ title: 'Goals' }} />
           <Stack.Screen name="goal/[projectId]/[goalId]" options={{ title: 'Goal' }} />

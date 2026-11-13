@@ -1,14 +1,12 @@
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import * as WebBrowser from 'expo-web-browser';
 import { type ReactNode, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
-import { Icon, type IconName } from '@/components/icon';
+import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
-import { Card } from '@/components/ui';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { portalUrl } from '@/lib/api';
@@ -24,6 +22,7 @@ const copy = (hex: string) => {
  * The top of a project page, like a channel page: the brand's banner (or a
  * band in its colours), the logo over its edge, the name, a line about the
  * team and work, the description, the main actions and the brand colours.
+ * Its leads can pick the top image from the brand kit's images.
  */
 export function ProjectHeader({
   name,
@@ -31,6 +30,8 @@ export function ProjectHeader({
   stats,
   description,
   kit,
+  banner: chosen,
+  onEditBanner,
   logo,
   color,
   actions,
@@ -42,6 +43,10 @@ export function ProjectHeader({
   stats?: string | null;
   description?: string | null;
   kit: BrandKit | null;
+  /** The image picked for the top (the project's headerImage), else the kit's banner. */
+  banner?: string | null;
+  /** Shown to the project's leads: pick the image at the top. */
+  onEditBanner?: () => void;
   logo?: string | null;
   /** The project's own colour, when the kit has none. */
   color?: string | null;
@@ -52,7 +57,7 @@ export function ProjectHeader({
   const colors = colorsOf(kit);
   const main = colors[0]?.hex ?? color ?? '#6366f1';
   const second = accentOf(kit) ?? colors[1]?.hex ?? main;
-  const banner = bannerOf(kit);
+  const banner = chosen ?? bannerOf(kit);
   const mark = logo ?? logoOf(kit);
   const fonts = Array.from(new Set((kit?.fonts ?? []).map((f) => f.family))).slice(0, 3);
 
@@ -75,6 +80,16 @@ export function ProjectHeader({
             <Circle cx="40" cy="104" r="44" fill="#000" opacity={0.06} />
           </Svg>
         )}
+        {onEditBanner ? (
+          <Pressable
+            onPress={onEditBanner}
+            accessibilityRole="button"
+            accessibilityLabel="Change the header image"
+            hitSlop={8}
+            style={({ pressed }) => [styles.bannerEdit, { opacity: pressed ? 0.7 : 1 }]}>
+            <Icon name="photo" size={17} color="#fff" />
+          </Pressable>
+        ) : null}
       </View>
 
       <View style={styles.idRow}>
@@ -148,140 +163,6 @@ export function ProjectHeader({
   );
 }
 
-const KIND_ICON: Record<string, IconName> = {
-  image: 'photo',
-  video: 'video',
-  audio: 'muted',
-  font: 'doc',
-  document: 'doc',
-  other: 'paperclip',
-};
-
-/** The whole brand kit: logos, colours (tap to copy), fonts, the guide and files. */
-export function BrandKitSection({ kit, title = 'Brand kit' }: { kit: BrandKit; title?: string }) {
-  const theme = useTheme();
-  const [guideOpen, setGuideOpen] = useState(false);
-  const colors = colorsOf(kit);
-  const logos = kit.logos ?? [];
-  const fonts = kit.fonts ?? [];
-  const files = kit.assets ?? [];
-  const open = (url: string) => void WebBrowser.openBrowserAsync(portalUrl(url)).catch(() => null);
-
-  return (
-    <View style={styles.section}>
-      <ThemedText type="label" themeColor="textSecondary">
-        {title}
-      </ThemedText>
-      {logos.length ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.logos}>
-          {logos.map((l) => (
-            <Pressable key={l.url} onPress={() => open(l.url)} style={styles.logoTile}>
-              <View
-                style={[
-                  styles.logoBox,
-                  {
-                    borderColor: theme.border,
-                    backgroundColor: /dark|black/i.test(l.background ?? '')
-                      ? '#111'
-                      : /light|white/i.test(l.background ?? '')
-                        ? '#f5f5f5'
-                        : theme.backgroundElement,
-                  },
-                ]}>
-                <Image source={{ uri: portalUrl(l.url) }} style={styles.logoImage} contentFit="contain" />
-              </View>
-              <ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.logoLabel}>
-                {l.label}
-              </ThemedText>
-            </Pressable>
-          ))}
-        </ScrollView>
-      ) : null}
-
-      {colors.length ? (
-        <View style={styles.colorGrid}>
-          {colors.map((c) => (
-            <Pressable
-              key={`${c.name}${c.hex}`}
-              onPress={() => copy(c.hex)}
-              style={({ pressed }) => [
-                styles.colorChip,
-                { backgroundColor: theme.backgroundElement, borderColor: theme.border, opacity: pressed ? 0.6 : 1 },
-              ]}>
-              <View style={[styles.colorDot, { backgroundColor: c.hex, borderColor: theme.border }]} />
-              <View style={styles.flexShrink}>
-                <ThemedText type="smallBold" numberOfLines={1}>
-                  {c.name}
-                </ThemedText>
-                <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
-                  {c.hex}
-                  {c.role ? ` · ${c.role}` : ''}
-                </ThemedText>
-              </View>
-            </Pressable>
-          ))}
-        </View>
-      ) : null}
-
-      {fonts.length ? (
-        <Card style={styles.list}>
-          {fonts.map((f, i) => (
-            <View key={`${f.family}${f.weight ?? ''}${i}`} style={[styles.fontRow, i > 0 && { borderTopColor: theme.border, borderTopWidth: StyleSheet.hairlineWidth }]}>
-              <ThemedText type="smallBold" style={styles.flexShrink}>
-                Aa {f.family}
-                {f.weight ? ` ${f.weight}` : ''}
-              </ThemedText>
-              {f.role ? (
-                <ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.flexShrink}>
-                  {f.role}
-                </ThemedText>
-              ) : null}
-            </View>
-          ))}
-        </Card>
-      ) : null}
-
-      {kit.guide ? (
-        <Card>
-          <ThemedText type="smallBold">Brand guide</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary" numberOfLines={guideOpen ? undefined : 5}>
-            {kit.guide}
-          </ThemedText>
-          <Pressable onPress={() => setGuideOpen((v) => !v)} hitSlop={8}>
-            <ThemedText type="smallBold">{guideOpen ? 'Less' : 'Read all'}</ThemedText>
-          </Pressable>
-        </Card>
-      ) : null}
-
-      {files.length ? (
-        <Card style={styles.list}>
-          {files.slice(0, 30).map((f, i) => (
-            <Pressable
-              key={`${f.url}${i}`}
-              onPress={() => open(f.url)}
-              style={({ pressed }) => [
-                styles.fileRow,
-                i > 0 && { borderTopColor: theme.border, borderTopWidth: StyleSheet.hairlineWidth },
-                { opacity: pressed ? 0.6 : 1 },
-              ]}>
-              <Icon name={KIND_ICON[f.kind] ?? 'paperclip'} size={18} color={theme.textSecondary} />
-              <View style={styles.flex}>
-                <ThemedText numberOfLines={1}>{f.label}</ThemedText>
-                {f.group ? (
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {f.group.charAt(0).toUpperCase() + f.group.slice(1)}
-                  </ThemedText>
-                ) : null}
-              </View>
-              <Icon name="share" size={15} color={theme.textSecondary} />
-            </Pressable>
-          ))}
-        </Card>
-      ) : null}
-    </View>
-  );
-}
-
 const LOGO = 84;
 
 const styles = StyleSheet.create({
@@ -304,34 +185,15 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     maxWidth: 220,
   },
-  section: { gap: Spacing.two },
-  logos: { gap: Spacing.three },
-  logoTile: { width: 92, gap: 4 },
-  logoBox: {
-    width: 92,
-    height: 92,
-    borderRadius: Radius.medium,
-    borderWidth: StyleSheet.hairlineWidth,
+  bannerEdit: {
+    position: 'absolute',
+    top: Spacing.two,
+    right: Spacing.two,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: Spacing.two,
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
-  logoImage: { width: '100%', height: '100%' },
-  logoLabel: { textAlign: 'center' },
-  colorGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  colorChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-    width: '48.5%',
-    padding: Spacing.two,
-    borderRadius: Radius.medium,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  colorDot: { width: 28, height: 28, borderRadius: 8, borderWidth: StyleSheet.hairlineWidth },
-  flex: { flex: 1 },
-  flexShrink: { flexShrink: 1 },
-  list: { gap: 0, paddingVertical: Spacing.one },
-  fontRow: { paddingVertical: Spacing.two + 2, gap: 2 },
-  fileRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, paddingVertical: Spacing.two + 2 },
 });
