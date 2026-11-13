@@ -1,8 +1,8 @@
 # Store listing: what to upload to Apple and Google
 
-Every image is in [`portal/public/store-listing/`](../portal/public/store-listing/). After a deploy, the same files are also at `https://portal.themoondevs.com/store-listing/...`.
+Every image and video is in [`portal/public/store-listing/`](../portal/public/store-listing/). After a deploy, the same files are also at `https://portal.themoondevs.com/store-listing/...`.
 
-The screenshots come from the app itself, filled with sample data and made-up people. Upload them in their number order (1 to 8). The first three matter most, because they also show up in search results.
+The screenshots come from the app itself, filled with sample data and made-up people. Upload them in their number order (1 to 8). The first three matter most, because they also show up in search results. The two videos are recorded from the app the same way: real taps, scrolls and typing with the same sample company (see [The videos](#the-videos)).
 
 ## At a glance
 
@@ -13,12 +13,12 @@ The screenshots come from the app itself, filled with sample data and made-up pe
 | Apple | iPhone 6.3" screenshots | 1206 × 2622 | `ios/iphone-6.3/1-8` | Only if App Store Connect asks for this size |
 | Apple | iPad screenshots | n/a | none | No. The app is iPhone only (`supportsTablet: false`) |
 | Apple | App icon | 1024 × 1024 | taken from the build (copy in `ios/app-icon-1024.png`) | Nothing to upload |
-| Apple | App preview video | 886 × 1920, 15 to 30 s | none | Optional |
+| Apple | App preview video | 886 × 1920, 26 s | `ios/app-preview.mp4` | Optional, but it plays first on the listing |
 | Google | App icon | 512 × 512 | `android/play-icon-512.png` | **Yes** |
 | Google | Feature graphic | 1024 × 500 | `android/feature-graphic.png` | **Yes** |
 | Google | Phone screenshots | 1080 × 1920 | `android/phone/1-8` | **Yes**, at least 2 (4 or more to be featured) |
 | Google | 7" and 10" tablet screenshots | n/a | none | Optional. Skip them unless you want to be featured on tablets |
-| Google | Promo video | YouTube link | none | Optional |
+| Google | Promo video | YouTube link (1920 × 1080, 30 s) | `android/promo-video.mp4`, uploaded to YouTube | Optional. It plays over the feature graphic |
 
 ## Apple App Store (App Store Connect)
 
@@ -27,7 +27,7 @@ The screenshots come from the app itself, filled with sample data and made-up pe
 - **iPhone screenshots:** upload `ios/iphone-6.9/` under the 6.9" iPhone display. They are PNG, have no transparency, and there are 8 of them (Apple allows 1 to 10 per size). Apple uses this set for every smaller iPhone too. If App Store Connect still asks for the 6.5" or 6.3" size, upload the matching folder.
 - **App icon:** comes from the build (`mobile/assets/images/icon.png`, 1024 × 1024, no transparency), so there's nothing to upload. `ios/app-icon-1024.png` is a copy in case you need it.
 - **iPad:** not needed, because the app doesn't run on iPad.
-- **App preview video (optional):** 15 to 30 seconds, 886 × 1920 portrait, H.264 or ProRes 422 HQ. I didn't make one.
+- **App preview video:** `ios/app-preview.mp4` (886 × 1920, 26 s, 30 fps, H.264 with a silent stereo AAC track; Apple wants an audio track, and previews play muted). Upload it under the 6.9" iPhone display, in App Previews, before the screenshots. Apple uses it for smaller iPhones too. After it processes, set the poster frame (the still people see before it plays) to the home screen with its headline, around 0:02.
 
 ### Text (limits are Apple's)
 
@@ -47,7 +47,7 @@ The screenshots come from the app itself, filled with sample data and made-up pe
 | Field | Needed? | Value |
 | --- | --- | --- |
 | Privacy Policy URL | **Yes** | `https://portal.themoondevs.com/privacy` |
-| Support URL | **Yes** | A page where people can reach you, such as the company website's contact page |
+| Support URL | **Yes** | `https://portal.themoondevs.com/support` |
 | Marketing URL | Optional | The company website |
 | License agreement | Optional | Apple's standard EULA, or `https://portal.themoondevs.com/terms` |
 
@@ -76,7 +76,7 @@ The screenshots come from the app itself, filled with sample data and made-up pe
 | Feature graphic | 1024 × 500, JPEG or 24-bit PNG, no transparency | `android/feature-graphic.png` |
 | Phone screenshots | 2 to 8, JPEG or 24-bit PNG, no transparency, each side 320 to 3840 px, long side at most 2× the short side. To be featured: at least 4, portrait 9:16, 1080 × 1920 or larger | `android/phone/1-8` (1080 × 1920) |
 | Tablet screenshots (7", 10") | Optional, 1080 to 7680 px, 9:16 or 16:9 | none |
-| Video | Optional: a public or unlisted YouTube link, ads off, embeddable | none |
+| Video | Optional: a public or unlisted YouTube link, ads off, embeddable | `android/promo-video.mp4` (1920 × 1080, 30 s). Upload it to YouTube as Unlisted with ads off, then paste the link |
 
 ### Text (limits are Google's)
 
@@ -86,7 +86,7 @@ The screenshots come from the app itself, filled with sample data and made-up pe
 | Short description | 80 characters | `Your team's tasks, worklogs, projects, goals and chat, in one app.` (66) |
 | Full description | 4000 characters | See [Description](#description) below |
 | Category | | Business (or Productivity) |
-| Contact email, website | | Your support email and website |
+| Contact email, website | | `support@themoondevs.com`, `https://portal.themoondevs.com/support` |
 | Privacy policy | Required | `https://portal.themoondevs.com/privacy` |
 
 ### Other Play Console forms (under "App content")
@@ -181,3 +181,22 @@ You need a Portal account from your company to sign in.
 | 8 | Climb the leaderboard | Leaderboard |
 
 When the app's screens change, ask in this thread and I'll make them again.
+
+## The videos
+
+Both videos use the same cut of four takes recorded from the app's web build on an iPhone-sized screen, signed in to the sample company, with nothing sent to the real portal. The status bar, home indicator and the iOS push and sheet animations are drawn in the edit. The headlines match the screenshots.
+
+| Time | Headline | Shows |
+| --- | --- | --- |
+| 0:00 | Your whole workday, in one app | Home: scroll down the day and back |
+| 0:03 | See what needs you first | The Work tab: Needs you, today's tasks |
+| 0:05 | Update a task in one tap | A task set to Done, then Log work with a typed note, and its history |
+| 0:11 | Every project at a glance | The projects list |
+| 0:14 | Each project, like a channel | A project page: banner, brand colours, goals, team |
+| 0:17 | Chat with your team | A reaction, a message sent, a teammate's reply |
+| 0:23 | Portal: Your team's work, in your pocket. | The end card |
+
+- **App Store preview** (`ios/app-preview.mp4`): the screenshots' cream look, 26 s.
+- **Play promo** (`android/promo-video.mp4`): the feature graphic's dark look, played closer to real time, 30 s. It ends with "Now on Google Play".
+- Both have a silent track. To add music, put it under the video in any editor, or ask for it to be added to the MediaMake projects.
+- They are the MediaMake projects `portal-store-preview` and `portal-store-promo` (the cut is in `portal-store-preview/lib/plan.ts`), made with the `pack-store-listing` skill (MediaMake). After the app changes, that skill records new takes and renders both again.

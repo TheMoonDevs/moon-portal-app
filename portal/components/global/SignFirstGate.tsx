@@ -31,6 +31,7 @@ const OPEN_PATHS = [
   '/privacy',
   '/terms',
   '/delete-account',
+  '/support',
   '/~offline',
 ];
 

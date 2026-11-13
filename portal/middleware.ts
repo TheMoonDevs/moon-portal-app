@@ -9,8 +9,8 @@ import { applyCorsHeaders } from '@/middlewares/cors';
 // `/task/<token>` their take-home task, and `/join/<token>` a new hire's
 // onboarding (details form, agreements), `/sign/<token>` anyone's link to
 // sign an agreement, `/verify` anyone's check of a signed PDF. `/policies`
-// is the codes we work by. `/privacy`, `/terms` and `/delete-account` are
-// the legal pages the App Store and Play listings link to.
+// is the codes we work by. `/privacy`, `/terms`, `/delete-account` and
+// `/support` are the pages the App Store and Play listings link to.
 // `/~offline` is cached by the service worker for when there's no network.
 const PUBLIC_PAGES = [
   '/login',
@@ -24,6 +24,7 @@ const PUBLIC_PAGES = [
   '/privacy',
   '/terms',
   '/delete-account',
+  '/support',
   '/~offline',
 ];
 // Booking links (`/meet/<code>`) and guests' manage links are open to anyone;
