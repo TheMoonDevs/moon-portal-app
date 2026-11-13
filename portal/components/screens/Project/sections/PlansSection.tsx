@@ -8,12 +8,8 @@ import { markdownToDoc } from '@/lib/workspace/pageMarkdown';
 import { PLAN_STATUS_META } from '@/lib/workspace/plans';
 import { PLAN_STATUS } from '@/models/workspace';
 
-import {
-  AdminButton,
-  ConfirmDialog,
-  Icon,
-  Spin,
-} from '../../Admin/shared/AdminUI';
+import { AdminButton, Icon, Spin } from '../../Admin/shared/AdminUI';
+import { DeletePlanDialog } from '../../Plans/DeletePlanDialog';
 import { PlanEditor, StepPanel } from '../../Plans/PlanEditor';
 import type { PlanView, StepView } from '../../Plans/types';
 import { isPast, shortDay, stepCount } from '../../Plans/types';
@@ -133,7 +129,7 @@ export const PlansSection = ({
   const [stepId, setStepId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [deleting, setDeleting] = useState<'plan' | 'all' | null>(null);
   const [freshId, setFreshId] = useState<string | null>(null);
 
   const plan = linked.find((p) => p.id === planId) ?? null;
@@ -228,10 +224,10 @@ export const PlansSection = ({
     return done;
   };
 
-  const deletePlan = async () => {
-    setDeleting(true);
-    const gone = await plans.remove(plan.id);
-    setDeleting(false);
+  const deletePlan = async (withTasks: boolean) => {
+    setDeleting(withTasks ? 'all' : 'plan');
+    const gone = await plans.remove(plan.id, withTasks);
+    setDeleting(null);
     if (!gone) return;
     setConfirmDelete(false);
     setStepId(null);
@@ -303,14 +299,12 @@ export const PlansSection = ({
           {details}
         </div>
       )}
-      <ConfirmDialog
+      <DeletePlanDialog
+        plan={plan}
         open={confirmDelete}
         onOpenChange={setConfirmDelete}
-        title={`Delete ${plan.title || 'this plan'}?`}
-        message="The plan and its steps go away. Tasks made from its steps stay in their projects."
-        confirmLabel="Delete plan"
-        loading={deleting}
-        onConfirm={deletePlan}
+        deleting={deleting}
+        onDelete={deletePlan}
       />
     </div>
   );

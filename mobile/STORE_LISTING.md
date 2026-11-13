@@ -14,6 +14,8 @@ The screenshots come from the app itself, filled with sample data and made-up pe
 | Apple | iPhone 6.9" and 6.5" screenshots | 1320 × 2868, 1284 × 2778 | `ios/iphone-6.9/1-8`, `ios/iphone-6.5/1-8` | No. Only to give big iPhones their own set (Media Manager) |
 | Apple | iPad screenshots | n/a | none | No. The app is iPhone only (`supportsTablet: false`) |
 | Apple | App icon | 1024 × 1024 | taken from the build (copy in `ios/app-icon-1024.png`) | Nothing to upload |
+| Apple | Product page header | 5244 × 2950 | `ios/creative/header-5244x2950.png` | Optional (uploaded). The top of the product page in iOS 27 |
+| Apple | Search results asset | 3840 × 2560 | `ios/creative/search-3840x2560.png` | Optional (uploaded). Shown in search instead of the first screenshots |
 | Apple | App preview video | 886 × 1920, 26 s | `ios/app-preview.mp4` | Optional, but it plays first on the listing |
 | Google | App icon | 512 × 512 | `android/play-icon-512.png` | **Yes** |
 | Google | Feature graphic | 1024 × 500 | `android/feature-graphic.png` | **Yes** |
@@ -28,7 +30,12 @@ The screenshots come from the app itself, filled with sample data and made-up pe
 - **iPhone screenshots:** `ios/iphone-6.3/` goes in the "iPhone with Dynamic Island (medium display)" tab, the only iPhone slot App Store Connect now has; it takes 6.1"/6.3" sizes (1206 × 2622) and uses them for every iPhone. They are PNG, have no transparency, and there are 8 of them (Apple allows 1 to 10). Uploaded on 13 Nov 2026, in order.
 - **App icon:** comes from the build (`mobile/assets/images/icon.png`, 1024 × 1024, no transparency), so there's nothing to upload. `ios/app-icon-1024.png` is a copy in case you need it.
 - **iPad screenshots:** needed from version 1.0.0, which runs on iPad. `ios/ipad-13/` goes in the "iPad 13-inch" tab (2064 × 2752, PNG, no transparency); App Store Connect uses them for every iPad.
-- **App preview video:** `ios/app-preview.mp4` (886 × 1920, 26 s, 30 fps, H.264 with a silent stereo AAC track; Apple wants an audio track, and previews play muted). It goes in the same iPhone slot, before the screenshots. Uploaded on 13 Nov 2026 as a 6 MB copy of the same video (the browser tool uploads up to 10 MB). After it processes, set the poster frame (the still people see before it plays) to the home screen with its headline, around 0:02.
+- **Header and search results** (version page → Header and Search Results; iOS 27 creative assets, uploaded on 13 Nov 2026):
+  - **Header:** `ios/creative/header-5244x2950.png`. The top of the product page, behind the back and share buttons, above the app's icon, name and Get button. Apple takes 5244 × 2950 or 3840 × 1646, PNG or video, and crops it per device. So it has no text: the focal point (three phones with the home, Work and project screens) is in the middle and the lower part fades to dark.
+  - **Search results:** `ios/creative/search-3840x2560.png`. Shown under the app's name in search, in place of the first screenshots. Apple takes 5244 × 2950, 3840 × 2560 or 1920 × 1280. It has the headline "Your team's work, in your pocket." over the same three phones.
+  - Both were checked in App Store Connect's Device Preview (iPhone product page and search results). The iPad preview stayed grey while the app was iPhone only; check it again once 1.0.0 is uploaded.
+  - They're drawn from real app screens by `creative/render.mjs` in the MediaMake project `portal-store-preview`. Rerun it after the screens change.
+- **App preview video:** `ios/app-preview.mp4` (886 × 1920, 26 s, 30 fps, H.264 with a silent stereo AAC track; Apple wants an audio track, and previews play muted). It goes in the same iPhone slot, before the screenshots. Uploaded on 13 Nov 2026 as a 6 MB copy of the same video (the browser tool uploads up to 10 MB). After it processes, set the poster frame (the still people see before it plays) to the home screen with its headline, around 0:02. Until then Apple shows the "See what needs you first" frame.
 
 ### Text (limits are Apple's)
 
@@ -106,7 +113,7 @@ Filled and saved on 13 Nov 2026 (with Claude in Chrome, from this guide):
 
 - **Play:** the default store listing: name, short and full description, icon, feature graphic, 8 phone screenshots in order, and the promo video link. App content (privacy policy, app access, ads, content rating, target audience, data safety and the rest) was already done.
 - **App Store:**
-  - version 1.0: promotional text, description, keywords, Support URL, copyright, 8 screenshots, the preview and the review notes
+  - version 1.0: promotional text, description, keywords, Support URL, copyright, the header and search results assets, 8 screenshots, the preview and the review notes
   - App Information: name, subtitle, Business / Productivity, the age rating with the 18+ override
   - App Privacy: the privacy URL and all six data types
 

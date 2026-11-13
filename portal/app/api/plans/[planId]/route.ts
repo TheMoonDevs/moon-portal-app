@@ -1,9 +1,12 @@
 import { db } from '@/lib/mongodb/db-client';
+import { isAllowedInCompany } from '@/lib/permissions/company';
 import {
   deletePlan,
   planChoices,
   readPlanBody,
   requirePlan,
+  stepTasksOf,
+  teamProjectIds,
   withTasks,
 } from '@/lib/workspace/planServer';
 import { fail, nowIso, ok } from '@/lib/workspace/server';
@@ -39,10 +42,28 @@ export async function PATCH(request: Request, { params }: Params) {
   return ok({ plan: view });
 }
 
-/** Deletes the plan; tasks made from its steps stay. */
-export async function DELETE(_request: Request, { params }: Params) {
-  const { response, plan } = await requirePlan(params.planId, 'delete');
+/**
+ * Deletes the plan. Tasks made from its steps stay, unless `?withTasks=1`:
+ * then the tasks its steps link to go too (the ones the person may delete).
+ */
+export async function DELETE(request: Request, { params }: Params) {
+  const { response, plan, user, access } = await requirePlan(
+    params.planId,
+    'delete',
+  );
   if (response || !plan) return response ?? fail(404, 'Plan not found.');
-  await deletePlan(plan);
-  return ok({ deleted: plan.id });
+  const alsoTasks = ['1', 'true'].includes(
+    new URL(request.url).searchParams.get('withTasks') ?? '',
+  );
+  const { tasks, kept } =
+    alsoTasks && user
+      ? await stepTasksOf(
+          plan,
+          user.id,
+          isAllowedInCompany(user, access, 'tasks:delete'),
+          await teamProjectIds(plan.companyId, user.id),
+        )
+      : { tasks: [], kept: 0 };
+  await deletePlan(plan, tasks);
+  return ok({ deleted: plan.id, deletedTasks: tasks.length, keptTasks: kept });
 }
