@@ -1,5 +1,7 @@
 # Store listing: what to upload to Apple and Google
 
+**Where the stores stand (13 Nov 2026):** both listings are filled from this guide and saved, as **Portal (TMD)**. See [What's left](#whats-left) for the steps that are yours.
+
 Every image and video is in [`portal/public/store-listing/`](../portal/public/store-listing/). After a deploy, the same files are also at `https://portal.themoondevs.com/store-listing/...`.
 
 The screenshots come from the app itself, filled with sample data and made-up people. Upload them in their number order (1 to 8). The first three matter most, because they also show up in search results. The two videos are recorded from the app the same way: real taps, scrolls and typing with the same sample company (see [The videos](#the-videos)).
@@ -8,9 +10,8 @@ The screenshots come from the app itself, filled with sample data and made-up pe
 
 | Store | Asset | Size (px) | File(s) | Needed? |
 | --- | --- | --- | --- | --- |
-| Apple | iPhone 6.9" screenshots | 1320 × 2868 | `ios/iphone-6.9/1-8` | **Yes**. Apple scales these down for smaller iPhones |
-| Apple | iPhone 6.5" screenshots | 1284 × 2778 | `ios/iphone-6.5/1-8` | Only if App Store Connect asks for this size |
-| Apple | iPhone 6.3" screenshots | 1206 × 2622 | `ios/iphone-6.3/1-8` | Only if App Store Connect asks for this size |
+| Apple | iPhone 6.3" screenshots | 1206 × 2622 | `ios/iphone-6.3/1-8` | **Yes** (uploaded). App Store Connect's iPhone slot takes only 6.1"/6.3" sizes and uses them for every iPhone |
+| Apple | iPhone 6.9" and 6.5" screenshots | 1320 × 2868, 1284 × 2778 | `ios/iphone-6.9/1-8`, `ios/iphone-6.5/1-8` | No. Only to give big iPhones their own set (Media Manager) |
 | Apple | iPad screenshots | n/a | none | No. The app is iPhone only (`supportsTablet: false`) |
 | Apple | App icon | 1024 × 1024 | taken from the build (copy in `ios/app-icon-1024.png`) | Nothing to upload |
 | Apple | App preview video | 886 × 1920, 26 s | `ios/app-preview.mp4` | Optional, but it plays first on the listing |
@@ -24,23 +25,23 @@ The screenshots come from the app itself, filled with sample data and made-up pe
 
 ### Images
 
-- **iPhone screenshots:** upload `ios/iphone-6.9/` under the 6.9" iPhone display. They are PNG, have no transparency, and there are 8 of them (Apple allows 1 to 10 per size). Apple uses this set for every smaller iPhone too. If App Store Connect still asks for the 6.5" or 6.3" size, upload the matching folder.
+- **iPhone screenshots:** `ios/iphone-6.3/` goes in the "iPhone with Dynamic Island (medium display)" tab, the only iPhone slot App Store Connect now has; it takes 6.1"/6.3" sizes (1206 × 2622) and uses them for every iPhone. They are PNG, have no transparency, and there are 8 of them (Apple allows 1 to 10). Uploaded on 13 Nov 2026, in order.
 - **App icon:** comes from the build (`mobile/assets/images/icon.png`, 1024 × 1024, no transparency), so there's nothing to upload. `ios/app-icon-1024.png` is a copy in case you need it.
 - **iPad:** not needed, because the app doesn't run on iPad.
-- **App preview video:** `ios/app-preview.mp4` (886 × 1920, 26 s, 30 fps, H.264 with a silent stereo AAC track; Apple wants an audio track, and previews play muted). Upload it under the 6.9" iPhone display, in App Previews, before the screenshots. Apple uses it for smaller iPhones too. After it processes, set the poster frame (the still people see before it plays) to the home screen with its headline, around 0:02.
+- **App preview video:** `ios/app-preview.mp4` (886 × 1920, 26 s, 30 fps, H.264 with a silent stereo AAC track; Apple wants an audio track, and previews play muted). It goes in the same iPhone slot, before the screenshots. Uploaded on 13 Nov 2026 as a 6 MB copy of the same video (the browser tool uploads up to 10 MB). After it processes, set the poster frame (the still people see before it plays) to the home screen with its headline, around 0:02.
 
 ### Text (limits are Apple's)
 
 | Field | Limit | Suggested |
 | --- | --- | --- |
-| Name | 30 characters | `Portal by TheMoonDevs` (21). Use the plain name `Portal` if it's free |
+| Name | 30 characters | `Portal (TMD)` (12). The plain name `Portal` is taken; `Portal TMD` is the fallback |
 | Subtitle | 30 characters | `Tasks, worklogs and team chat` (29) |
 | Promotional text | 170 characters, can change without a new version | `Log your work in seconds, see what needs you first, and keep every project, goal and team chat in your pocket.` |
 | Description | 4000 characters | See [Description](#description) below |
 | Keywords | 100 bytes, comma separated, no spaces after commas | `timesheet,todo,projects,goals,standup,planner,productivity,okr,workspace,daily log,office,hr` (92). Words already in the name or subtitle are left out, since Apple searches those anyway |
 | What's New | 4000 characters | `First release.` |
 | Primary / secondary category | | Business / Productivity |
-| Copyright | | `2026 TheMoonDevs` (use the legal name on your account) |
+| Copyright | | `2026 The Moon Devs` |
 
 ### URLs
 
@@ -53,14 +54,13 @@ The screenshots come from the app itself, filled with sample data and made-up pe
 
 ### Other forms in App Store Connect
 
-- **App Privacy:** the app has no tracking, no ads and no analytics. The data it handles, all linked to the person and used only for app functionality, is:
-  - name, email address and photo
-  - user ID
-  - messages, and the tasks and worklogs people write
-  - files they choose to send
-  
-  This should match the privacy page at `https://portal.themoondevs.com/privacy`.
-- **Age rating:** answer the questionnaire. The app has chat between people, so say yes to messaging and user-generated content.
+- **App Privacy:** the app has no tracking, no ads and no analytics. Privacy Policy URL `https://portal.themoondevs.com/privacy`. "Yes, we collect data", with six data types, each **used for App Functionality only, linked to the user's identity, not used for tracking**:
+  - Contact Info: Name, Email Address
+  - User Content: Emails or Text Messages (chat), Photos or Videos (profile photo, photos sent in chat), Other User Content (tasks, worklogs, files)
+  - Identifiers: User ID
+
+  This matches the privacy page. All set on 13 Nov 2026; **Publish** is yours.
+- **Age rating** (set on 13 Nov 2026): Features: no parental controls, no age assurance, no unrestricted web access, **yes user-generated content**, no social media, **yes messaging and chat**, no advertising. Every content question (mature themes, medical, sexuality, violence, chance-based) is None or No. Apple calculates 4+; it's **overridden to 18+**, to match Play's 18+ target audience.
 - **Export compliance:** already answered in the build (`ITSAppUsesNonExemptEncryption: false`).
 - **Sign in with Apple:** already in the app, which Apple requires because Google sign-in is offered.
 - **Account deletion:** already in the app (Settings → Delete my account), which Apple requires.
@@ -76,13 +76,13 @@ The screenshots come from the app itself, filled with sample data and made-up pe
 | Feature graphic | 1024 × 500, JPEG or 24-bit PNG, no transparency | `android/feature-graphic.png` |
 | Phone screenshots | 2 to 8, JPEG or 24-bit PNG, no transparency, each side 320 to 3840 px, long side at most 2× the short side. To be featured: at least 4, portrait 9:16, 1080 × 1920 or larger | `android/phone/1-8` (1080 × 1920) |
 | Tablet screenshots (7", 10") | Optional, 1080 to 7680 px, 9:16 or 16:9 | none |
-| Video | Optional: a public or unlisted YouTube link, ads off, embeddable | `android/promo-video.mp4` (1920 × 1080, 30 s). Upload it to YouTube as Unlisted with ads off, then paste the link |
+| Video | Optional: a public or unlisted YouTube link, ads off, embeddable | `https://www.youtube.com/watch?v=YupCJ_Jqbew`: `android/promo-video.mp4`, Unlisted on the TheMoonDevs channel ("Portal (TMD): your team's work, in your pocket"; the channel isn't monetised, so no ads) |
 
 ### Text (limits are Google's)
 
 | Field | Limit | Suggested |
 | --- | --- | --- |
-| App name | 30 characters | `Portal by TheMoonDevs` |
+| App name | 30 characters | `Portal (TMD)`, the same as on the App Store |
 | Short description | 80 characters | `Your team's tasks, worklogs, projects, goals and chat, in one app.` (66) |
 | Full description | 4000 characters | See [Description](#description) below |
 | Category | | Business (or Productivity) |
@@ -99,6 +99,28 @@ The screenshots come from the app itself, filled with sample data and made-up pe
   - Data collected: name, email, user ID, messages and other content people write, and files they choose to send. It's used for app functionality, not shared, and encrypted in transit.
   - People can ask for their data to be deleted. The account deletion URL is `https://portal.themoondevs.com/delete-account`.
 - **Testing before production:** a personal developer account made after Nov 2023 needs a closed test with 12 testers for 14 days before it can go to production. An organization account doesn't.
+
+## What's left
+
+Filled and saved on 13 Nov 2026 (with Claude in Chrome, from this guide):
+
+- **Play:** the default store listing: name, short and full description, icon, feature graphic, 8 phone screenshots in order, and the promo video link. App content (privacy policy, app access, ads, content rating, target audience, data safety and the rest) was already done.
+- **App Store:**
+  - version 1.0: promotional text, description, keywords, Support URL, copyright, 8 screenshots, the preview and the review notes
+  - App Information: name, subtitle, Business / Productivity, the age rating with the 18+ override
+  - App Privacy: the privacy URL and all six data types
+
+Yours:
+
+- **App Store Connect:**
+  - Publish App Privacy.
+  - Set Content Rights (App Information).
+  - Enter the reviewer email and password, and your review contact (name, phone, email).
+  - Add a build from TestFlight (`eas submit`).
+  - Choose manual or automatic release (it's on automatic after approval).
+  - Set the preview's poster frame.
+  - Add for Review.
+- **Play:** if not done yet, the listing's AI asset declaration, then Send for review in Publishing overview, then the release.
 
 ## Reviewer sign-in
 
