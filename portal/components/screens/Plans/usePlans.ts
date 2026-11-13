@@ -192,13 +192,31 @@ export const usePlans = (companyId: string | null | undefined) => {
     [companyId],
   );
 
-  const remove = useCallback(async (id: string) => {
+  /** Deletes a plan; with `withTasks`, the tasks its steps link to too. */
+  const remove = useCallback(async (id: string, withTasks = false) => {
     try {
       clearTimeout(timers.current.get(id));
       pending.current.delete(id);
-      await PortalSdk.deleteData(`/api/plans/${id}`, {});
+      const res = await PortalSdk.deleteData(
+        `/api/plans/${id}${withTasks ? '?withTasks=1' : ''}`,
+        {},
+      );
       setData((d) => d && { ...d, plans: d.plans.filter((p) => p.id !== id) });
-      toast.success('Plan deleted');
+      const gone: number = res?.data?.deletedTasks ?? 0;
+      const kept: number = res?.data?.keptTasks ?? 0;
+      if (!withTasks) toast.success('Plan deleted');
+      else if (kept)
+        toast.success(
+          `Plan and ${gone} ${gone === 1 ? 'task' : 'tasks'} deleted. ${kept} ${
+            kept === 1 ? 'task was' : 'tasks were'
+          } kept: you can’t delete ${kept === 1 ? 'it' : 'them'}.`,
+        );
+      else
+        toast.success(
+          gone
+            ? `Plan and ${gone} ${gone === 1 ? 'task' : 'tasks'} deleted`
+            : 'Plan deleted',
+        );
       return true;
     } catch (err) {
       toast.error(errorText(err));

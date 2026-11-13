@@ -1,3 +1,4 @@
+import { deleteTask, isMine } from '@/lib/daywork/server';
 import { db } from '@/lib/mongodb/db-client';
 import { isAllowedInCompany, isOnProjectTeam } from '@/lib/permissions/company';
 import { syncTaskPoints } from '@/lib/progress/server';
@@ -486,8 +487,41 @@ export async function createPlan(
   return plan;
 }
 
-/** Deletes a plan. Tasks made from it stay, no longer linked to it. */
-export async function deletePlan(plan: Plan) {
+/**
+ * The tasks a plan's steps link to, split into the ones this person may
+ * delete (their own, ones in projects they are on, or any when the company
+ * lets them delete tasks) and how many they may not.
+ */
+export async function stepTasksOf(
+  plan: Plan,
+  userId: string,
+  companyAllows: boolean,
+  teamIds: string[],
+) {
+  const ids = Array.from(
+    new Set(
+      (plan.steps ?? [])
+        .map((s) => s.taskId)
+        .filter((id): id is string => !!id),
+    ),
+  );
+  if (!ids.length) return { tasks: [] as Task[], kept: 0 };
+  const found: Task[] = await db.task.findMany({ where: { id: { in: ids } } });
+  const tasks = found.filter(
+    (t) =>
+      companyAllows ||
+      isMine(t, userId) ||
+      (!!t.projectId && teamIds.includes(t.projectId)),
+  );
+  return { tasks, kept: found.length - tasks.length };
+}
+
+/**
+ * Deletes a plan. Tasks made from it stay, no longer linked to it, except
+ * `tasks` (see stepTasksOf), which are deleted for good with their points.
+ */
+export async function deletePlan(plan: Plan, tasks: Task[] = []) {
+  for (const task of tasks) await deleteTask(task);
   await db.task.updateMany({
     where: { planId: plan.id },
     data: { planId: null, updatedAt: nowIso() },

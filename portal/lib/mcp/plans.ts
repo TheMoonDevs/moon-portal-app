@@ -8,6 +8,7 @@ import {
   mayChangePlan,
   planChoices,
   readPlanBody,
+  stepTasksOf,
   stepToTask,
   teamProjectIds,
   withTasks,
@@ -678,11 +679,16 @@ export const PLAN_TOOLS: Tool[] = [
     name: 'delete_plan',
     title: 'Delete a plan',
     description:
-      'Deletes a plan and its steps. Tasks made from its steps stay. Confirm with the person first.',
+      'Deletes a plan and its steps. Before deleting, ask the person whether the tasks its steps link to should be deleted too: withTasks true deletes them with their work points, otherwise they stay in their projects.',
     inputSchema: {
       type: 'object',
       properties: {
         plan: { type: 'string', description: 'Plan id or exact title.' },
+        withTasks: {
+          type: 'boolean',
+          description:
+            'Also delete the tasks its steps link to. Only when the person said so.',
+        },
       },
       required: ['plan'],
     },
@@ -690,8 +696,23 @@ export const PLAN_TOOLS: Tool[] = [
     run: async (user, args) => {
       const plan = await findPlan(user, args?.plan);
       await mustChangePlan(user, plan, 'tasks:delete');
-      await deletePlan(plan);
-      return { deleted: plan.title };
+      const { tasks, kept } =
+        args?.withTasks === true
+          ? await stepTasksOf(
+              plan,
+              user.id,
+              (await companiesWith(user, 'tasks:delete')).has(plan.companyId),
+              await teamProjectIds(plan.companyId, user.id),
+            )
+          : { tasks: [], kept: 0 };
+      await deletePlan(plan, tasks);
+      return {
+        deleted: plan.title,
+        ...(args?.withTasks === true && {
+          deletedTasks: tasks.map((t) => t.title),
+          ...(kept && { keptTasks: kept }),
+        }),
+      };
     },
   },
 ];
