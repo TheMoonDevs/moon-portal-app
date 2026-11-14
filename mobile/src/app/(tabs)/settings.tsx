@@ -210,6 +210,13 @@ export default function SettingsScreen() {
               />
             }
           />
+          <Row
+            icon="block"
+            title="Blocked people"
+            detail="People whose messages you don’t see"
+            chevron
+            onPress={() => router.push('/blocked')}
+          />
         </Card>
       </Section>
 

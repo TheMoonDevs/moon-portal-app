@@ -20,6 +20,7 @@ import {
   AdminSigningRules,
 } from './Agreements/AdminAgreements';
 import { AdminBadges } from './Badges/AdminBadges';
+import { AdminChatReports } from './ChatReports/AdminChatReports';
 import { AdminOverview } from './Overview/AdminOverview';
 import SendNotifications from './SendNotifications';
 import { AdminCommandPalette } from './shared/AdminCommandPalette';
@@ -250,6 +251,8 @@ export const AdminPage = () => {
         return <SendNotifications users={activeUsers} loading={loading} />;
       case 'badges':
         return <AdminBadges />;
+      case 'chat-reports':
+        return <AdminChatReports />;
       case 'companies':
         return (
           <AdminCompanies

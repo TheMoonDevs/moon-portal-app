@@ -152,6 +152,7 @@ function RootStack() {
           <Stack.Screen name="search" options={{ title: 'Search' }} />
           <Stack.Screen name="whats-new" options={{ title: 'What’s new' }} />
           <Stack.Screen name="delete-account" options={{ title: 'Delete account' }} />
+          <Stack.Screen name="blocked" options={{ title: 'Blocked people' }} />
         </Stack.Protected>
         <Stack.Protected guard={!signedIn}>
           <Stack.Screen name="sign-in" options={{ headerShown: false }} />

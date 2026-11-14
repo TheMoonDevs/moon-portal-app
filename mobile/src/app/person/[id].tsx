@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 
 import { CompanyMark } from '@/components/company-mark';
 import { Icon } from '@/components/icon';
@@ -11,6 +11,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { api, withQuery } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { confirmBlock, confirmUnblock, useBlockedIds } from '@/lib/blocks';
 import { dayTitle, fromKey, todayKey } from '@/lib/dates';
 import { projectName } from '@/lib/project-name';
 import {
@@ -76,6 +77,18 @@ export default function PersonScreen() {
 
   const person = work.data?.person ?? (isSelf ? profile : null);
   const companies = (work.data?.companies ?? []).filter((c) => !c.isPersonal);
+  const blocked = useBlockedIds().has(personId);
+
+  // Someone else's page: block or unblock them in chat.
+  const more = () => {
+    const who = { id: personId, name: person?.name };
+    Alert.alert(person?.name ?? 'This person', undefined, [
+      blocked
+        ? { text: 'Unblock', onPress: () => confirmUnblock(who) }
+        : { text: 'Block', style: 'destructive', onPress: () => confirmBlock(who) },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
 
   return (
     <Screen
@@ -95,7 +108,9 @@ export default function PersonScreen() {
           title: isSelf ? 'Your page' : (person?.name ?? ''),
           headerRight: isSelf
             ? () => <IconButton name="pencil" label="Edit profile" onPress={() => router.push('/profile')} />
-            : undefined,
+            : personId
+              ? () => <IconButton name="ellipsis" label="More" onPress={more} />
+              : undefined,
         }}
       />
 

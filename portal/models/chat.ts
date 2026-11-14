@@ -166,6 +166,33 @@ export interface ChatConversation {
   archived: boolean;
   /** The partner's last time in the portal, for "last seen". */
   partnerLastSeenAt: string | null;
+  /** Direct chats: the viewer has blocked the other person. */
+  blocked?: boolean;
+}
+
+/** `open` until an admin removes the message or leaves it (`dismissed`). */
+export type ChatReportStatus = 'open' | 'removed' | 'dismissed';
+
+/** A reported message, as the admins' list shows it. */
+export interface ChatReport {
+  id: string;
+  messageId: string;
+  conversationId: string;
+  chatKind: ChatConversationKind;
+  chatName: string;
+  reporter: ChatPerson;
+  sender: ChatPerson;
+  reason: string;
+  /** What the message said when it was reported. */
+  text: string;
+  kind: ChatKind;
+  /** It has been deleted for everyone since (by its sender or an admin). */
+  messageRemoved: boolean;
+  status: ChatReportStatus;
+  createdAt: string;
+  resolvedAt: string | null;
+  /** The admin who answered it, by name. */
+  resolvedBy: string | null;
 }
 
 /** Events sent to each person's inbox channel (lib/chat/realtime.ts). */

@@ -284,6 +284,8 @@ export type ChatConversation = {
   pinned: boolean;
   archived: boolean;
   partnerLastSeenAt: string | null;
+  /** Direct chats: the user blocked the other person. */
+  blocked?: boolean;
 };
 
 export type ChatEvent =
