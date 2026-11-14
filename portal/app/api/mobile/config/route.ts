@@ -1,3 +1,4 @@
+import { getStoreUrls } from '@/lib/mobile/storeLinks';
 import { ok } from '@/lib/workspace/server';
 
 export const dynamic = 'force-dynamic';
@@ -19,11 +20,6 @@ export async function GET() {
       ios: process.env.MOBILE_LATEST_VERSION_IOS || latest,
       android: process.env.MOBILE_LATEST_VERSION_ANDROID || latest,
     },
-    storeUrls: {
-      ios: process.env.MOBILE_APP_STORE_URL || null,
-      android:
-        process.env.MOBILE_PLAY_STORE_URL ||
-        'https://play.google.com/store/apps/details?id=com.themoondevs.portal',
-    },
+    storeUrls: getStoreUrls(),
   });
 }
