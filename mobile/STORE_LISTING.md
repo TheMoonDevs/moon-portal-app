@@ -75,7 +75,8 @@ Version 1.0 is out; the next release is version 1.1 (App Store Connect → the a
 - **Export compliance:** already answered in the build (`ITSAppUsesNonExemptEncryption: false`).
 - **Sign in with Apple:** already in the app, which Apple requires because Google sign-in is offered.
 - **Account deletion:** already in the app (Settings → Delete my account), which Apple requires.
-- **App Review information:** sign-in is required, so use the test sign-in (see [Reviewer sign-in](#reviewer-sign-in)). Put the reviewer email and password in the sign-in fields, and the steps in the notes.
+- **App Review information:** sign-in is required, so use the test sign-in (see [Reviewer sign-in](#reviewer-sign-in)). Put the reviewer email and password in the sign-in fields, and the notes from [App Store review notes](#app-store-review-notes).
+- **Chat safety (guideline 1.2):** chat is user-generated content, so the app has what Apple asks for. Long-press someone's message for **Report** (pick a reason; it's hidden for you at once, and you can block the sender too) and **Block**. A direct chat's ⋯ menu and a person's page also block, and Settings → Privacy and alerts → **Blocked people** unblocks. Reports reach Portal's admins as a notification and a push, and wait in the website's Admin → **Chat reports**, where each is removed for everyone or left up. Answer them within a day.
 
 ## Google Play (Play Console)
 
@@ -127,7 +128,7 @@ Yours:
   - Publish App Privacy.
   - Set Content Rights (App Information).
   - Enter the reviewer email and password, and your review contact (name, phone, email).
-  - Add a build from TestFlight (`eas submit`).
+  - Add a build from TestFlight (`eas submit`). Version 1.0 was rejected under 2.1 (Information Needed, 14 Nov 2026): it needs a build with report and block (1.1.0 build 7 or later), a screen recording from a real iPhone, and the [App Store review notes](#app-store-review-notes).
   - Choose manual or automatic release (it's on automatic after approval).
   - Set the preview's poster frame.
   - Add for Review.
@@ -169,6 +170,39 @@ The account belongs to a demo company with sample projects, tasks, goals and cha
 ```
 
 The portal allows 5 wrong passwords per address (30 in all) every 15 minutes, then asks to wait.
+
+### App Store review notes
+
+After the 2.1 rejection, Apple asks for all of this in the review notes (up to 4000 characters):
+
+1. **A screen recording from a physical iPhone** on the latest iOS, with the build under review from TestFlight. Start recording on the home screen (Control Center → Screen Recording) so the launch is in it, then show:
+   - signing in with `TEST12`, then the reviewer email and password;
+   - Today → open a task → change its status → log work → Projects → a project → a chat, sending a message;
+   - long-press a teammate's message → **Report** → a reason → Report; then **Block** someone and unblock them in Settings → Blocked people;
+   - Settings → **Delete my account** up to its confirmation, then Cancel (so the reviewer's account isn't queued for deletion).
+
+   Upload it to TheMoonDevs' YouTube as Unlisted and put the link first in the notes (or attach the file under Attachment).
+2. Then this text, below the link:
+
+```
+Video of the app on an iPhone: <link>
+
+Purpose and audience: Portal is a work app for companies and their teams. Members see what needs them first, update tasks, log the work they did each day, follow projects and goals, and chat with their team, instead of spreading this across chat apps, sheets and email. It's for adults (18+) who work for a company set up in Portal. It isn't one company's internal tool: several companies use it; a company is set up once our team approves it, and its admins invite their people.
+
+Signing in: there is no public sign-up; a company's admins add its members. Open the app, type the code TEST12, then the email and password in Sign-In Information, and tap Sign in. The account belongs to a sample company with projects, tasks, goals and chats.
+
+Main features: Today (what needs you, meetings), Work (tasks: tap one to change its status or log work), Projects (each project's team, goals and work logs), Chats (project chats, groups and direct messages), Settings.
+
+Chat safety: long-press someone's message to Report it (with a reason; it's hidden for you at once) or Block its sender. A direct chat's ⋯ menu and a person's page also block; Settings → Blocked people unblocks. Blocked people's messages are hidden in every chat and they can't message you. Reports go to our admins, who remove the message or leave it within 24 hours, and can deactivate anyone who posts abuse.
+
+Account deletion: Settings → Delete my account. The company's admins delete the account and its sign-in; work done for a company stays with that company.
+
+External services: Portal's own server (on Vercel), MongoDB (database), Amazon S3 (files and photos), Ably (live chat), Google Sign-In and Sign in with Apple, Apple Push Notification service through Expo (notifications), Sentry (crash reports). No in-app purchases and no ads.
+
+Regions: the app works the same in every region, in English.
+
+Regulated industries: Portal isn't in a regulated industry and has no protected third-party material.
+```
 
 ## Description
 

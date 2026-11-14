@@ -26,6 +26,7 @@ export const ICONS = {
   person: { ios: 'person.crop.circle', android: 'account_circle' },
   people: { ios: 'person.2', android: 'group' },
   flag: { ios: 'flag', android: 'flag' },
+  block: { ios: 'hand.raised', android: 'block' },
   trophy: { ios: 'trophy', android: 'emoji_events' },
   page: { ios: 'doc.text', android: 'description' },
   target: { ios: 'scope', android: 'target' },

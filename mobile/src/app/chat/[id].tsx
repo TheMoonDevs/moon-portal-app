@@ -3,7 +3,7 @@ import * as Clipboard from 'expo-clipboard';
 import { File, Paths } from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useHeaderHeight } from 'expo-router/react-navigation';
 import * as Sharing from 'expo-sharing';
 import { type ComponentRef, useEffect, useMemo, useRef, useState } from 'react';
@@ -22,12 +22,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colorFor } from '@/components/company-mark';
 import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
-import { Avatar, Notice, QueryState } from '@/components/ui';
+import { Avatar, IconButton, Notice, QueryState } from '@/components/ui';
 import { Radius, Spacing } from '@/constants/theme';
 import { useKeyboardRoom } from '@/hooks/use-keyboard-room';
 import { useTheme } from '@/hooks/use-theme';
 import { api, authHeaders, messageOf, portalUrl, withQuery } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { confirmBlock, confirmUnblock, REPORT_REASONS, sendReport, useBlockedIds } from '@/lib/blocks';
 import {
   chatTitle,
   type MessagePage,
@@ -78,6 +79,9 @@ export default function ChatScreen() {
   /** The long-pressed message can still be edited (15 minutes). */
   const [actingEditable, setActingEditable] = useState(false);
   const [viewing, setViewing] = useState<ChatMessage | null>(null);
+  /** The message being reported: picking a reason. */
+  const [reporting, setReporting] = useState<ChatMessage | null>(null);
+  const blocked = useBlockedIds();
 
   const conversation = useQuery({
     queryKey: ['conversation', id],
@@ -113,9 +117,13 @@ export default function ChatScreen() {
       last.hasMore ? (last.messages[last.messages.length - 1]?.createdAt ?? undefined) : undefined,
     refetchInterval: live ? false : 5_000,
   });
+  // People the user blocked drop out at once (the server leaves them out too).
   const list = useMemo(
-    () => (messages.data as MessagePages | undefined)?.pages.flatMap((p) => p.messages) ?? [],
-    [messages.data],
+    () =>
+      ((messages.data as MessagePages | undefined)?.pages.flatMap((p) => p.messages) ?? []).filter(
+        (m) => m.kind === 'system' || m.senderId === me || !blocked.has(m.senderId),
+      ),
+    [messages.data, blocked, me],
   );
 
   // This chat is open: its pushes stay quiet and typing is live.
@@ -221,6 +229,17 @@ export default function ChatScreen() {
     }
   };
 
+  /** Take a message out of this chat on this phone. */
+  const dropFromCache = (m: ChatMessage) =>
+    queryClient.setQueryData<MessagePages>(messagesKey(id), (data) =>
+      data
+        ? {
+            ...data,
+            pages: data.pages.map((p) => ({ ...p, messages: p.messages.filter((x) => x.id !== m.id) })),
+          }
+        : data,
+    );
+
   const remove = async (m: ChatMessage, scope: 'me' | 'everyone') => {
     setActing(null);
     try {
@@ -229,18 +248,33 @@ export default function ChatScreen() {
         { method: 'DELETE' },
       );
       if (scope === 'everyone') upsertMessage(id, res.message);
-      else
-        queryClient.setQueryData<MessagePages>(messagesKey(id), (data) =>
-          data
-            ? {
-                ...data,
-                pages: data.pages.map((p) => ({ ...p, messages: p.messages.filter((x) => x.id !== m.id) })),
-              }
-            : data,
-        );
+      else dropFromCache(m);
     } catch (e) {
       Alert.alert('Couldn’t delete the message', messageOf(e));
     }
+  };
+
+  /** A reason picked: report it, and block its sender if they say so. */
+  const report = (m: ChatMessage, reason: string) => {
+    setReporting(null);
+    const name = nameOf(m.senderId);
+    const go = async (alsoBlock: boolean) => {
+      try {
+        await sendReport(m.id, reason, alsoBlock);
+        dropFromCache(m);
+        Alert.alert(
+          'Thanks for reporting',
+          `Portal’s team will review it within a day.${alsoBlock ? ` You blocked ${name}.` : ''}`,
+        );
+      } catch (e) {
+        Alert.alert('Couldn’t report the message', messageOf(e));
+      }
+    };
+    Alert.alert('Report this message?', `Portal’s team reviews it and removes it if it breaks the rules. It’s hidden for you now.`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Report', onPress: () => void go(false) },
+      { text: `Report and block ${name.split(' ')[0]}`, style: 'destructive', onPress: () => void go(true) },
+    ]);
   };
 
   const openFile = async (m: ChatMessage) => {
@@ -275,6 +309,21 @@ export default function ChatScreen() {
             : (chat.partner.positionTitle ?? '')
         : `${chat.group?.members.length ?? 0} people${chat.group?.companyName ? ` · ${chat.group.companyName}` : ''}`;
 
+  const direct = chat?.kind === 'direct' ? chat.partner : null;
+  const partnerBlocked = !!(chat?.kind === 'direct' && (chat.blocked || blocked.has(chat.partner.id)));
+
+  // A direct chat's menu: their page, and block or unblock them.
+  const more = () => {
+    if (!direct) return;
+    Alert.alert(direct.name ?? 'Chat', undefined, [
+      { text: 'View profile', onPress: () => router.push({ pathname: '/person/[id]', params: { id: direct.id } }) },
+      partnerBlocked
+        ? { text: `Unblock ${direct.name ?? ''}`.trim(), onPress: () => confirmUnblock(direct) }
+        : { text: `Block ${direct.name ?? ''}`.trim(), style: 'destructive', onPress: () => confirmBlock(direct) },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
   return (
     <View
       ref={box}
@@ -288,6 +337,7 @@ export default function ChatScreen() {
           // A solid header with no blur: messages never show through it.
           headerStyle: { backgroundColor: theme.backgroundElement },
           scrollEdgeEffects: { top: 'hidden', bottom: 'hidden', left: 'hidden', right: 'hidden' },
+          headerRight: direct ? () => <IconButton name="ellipsis" label="Chat options" onPress={more} /> : undefined,
           headerTitle: () =>
             !chat ? (
               <ThemedText type="smallBold">Chat</ThemedText>
@@ -345,7 +395,11 @@ export default function ChatScreen() {
             }
             ListEmptyComponent={
               <View style={styles.empty}>
-                <Notice title="No messages yet" body="Say hello." />
+                {partnerBlocked ? (
+                  <Notice title="No messages to show" body="Messages from people you block are hidden." />
+                ) : (
+                  <Notice title="No messages yet" body="Say hello." />
+                )}
               </View>
             }
             renderItem={({ item, index }) => {
@@ -437,6 +491,28 @@ export default function ChatScreen() {
           </View>
         ) : null}
 
+        {partnerBlocked && direct ? (
+          <View
+            style={[
+              styles.blockedBar,
+              {
+                borderColor: theme.border,
+                backgroundColor: theme.backgroundElement,
+                paddingBottom: Math.max(insets.bottom, Spacing.three),
+              },
+            ]}>
+            <ThemedText type="small" themeColor="textSecondary" style={styles.flex}>
+              You blocked {direct.name ?? 'this person'}. Neither of you can message the other.
+            </ThemedText>
+            <ThemedText
+              type="smallBold"
+              themeColor="accent"
+              accessibilityRole="button"
+              onPress={() => confirmUnblock(direct)}>
+              Unblock
+            </ThemedText>
+          </View>
+        ) : (
         <View
           style={[
             styles.composer,
@@ -474,6 +550,7 @@ export default function ChatScreen() {
             <Icon name="paperplane" size={19} color="#fff" />
           </Pressable>
         </View>
+        )}
       </View>
 
       {/* Long press: react, reply, copy, edit, delete. */}
@@ -522,6 +599,46 @@ export default function ChatScreen() {
               {!acting.pending ? (
                 <SheetRow title="Delete for me" danger onPress={() => void remove(acting, 'me')} />
               ) : null}
+              {acting.senderId !== me && !acting.pending ? (
+                <>
+                  <SheetRow
+                    title="Report"
+                    danger
+                    onPress={() => {
+                      setReporting(acting);
+                      setActing(null);
+                    }}
+                  />
+                  <SheetRow
+                    title={`Block ${nameOf(acting.senderId).split(' ')[0]}`}
+                    danger
+                    onPress={() => {
+                      const who = { id: acting.senderId, name: nameOf(acting.senderId) };
+                      setActing(null);
+                      confirmBlock(who);
+                    }}
+                  />
+                </>
+              ) : null}
+            </View>
+          ) : null}
+        </Pressable>
+      </Modal>
+
+      {/* Report: why, then report (and block, if they want). */}
+      <Modal visible={!!reporting} transparent animationType="fade" onRequestClose={() => setReporting(null)}>
+        <Pressable style={styles.backdrop} onPress={() => setReporting(null)}>
+          {reporting ? (
+            <View style={[styles.sheet, { backgroundColor: theme.backgroundElement, paddingBottom: insets.bottom + Spacing.three }]}>
+              <View style={styles.sheetHead}>
+                <ThemedText type="smallBold">Why are you reporting this message?</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>
+                  {previewOf(reporting)}
+                </ThemedText>
+              </View>
+              {REPORT_REASONS.map((reason) => (
+                <SheetRow key={reason} title={reason} onPress={() => report(reporting, reason)} />
+              ))}
             </View>
           ) : null}
         </Pressable>
@@ -906,6 +1023,15 @@ const styles = StyleSheet.create({
   sheetRow: {
     paddingVertical: Spacing.three,
     paddingHorizontal: Spacing.four,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  sheetHead: { gap: Spacing.one, paddingHorizontal: Spacing.four, paddingBottom: Spacing.three },
+  blockedBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.three,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   viewer: { flex: 1, backgroundColor: '#000' },

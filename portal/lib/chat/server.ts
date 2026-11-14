@@ -1,7 +1,9 @@
-import { ObjectId } from 'mongodb';
+import { type Filter, ObjectId } from 'mongodb';
 
 import { getMongoDb } from '@/lib/db/mongoose';
 import { db } from '@/lib/mongodb/db-client';
+import { ensureNotificationsReset } from '@/lib/notifications/server';
+import { SUPER_ADMIN_EMAILS } from '@/lib/permissions/superAdmin';
 import { sortByRecentPoints } from '@/lib/progress/myPoints';
 import { sendPushToUsers } from '@/lib/push/server';
 import { projectLabel } from '@/lib/workspace/projectLabel';
@@ -16,11 +18,21 @@ import {
   type ChatMessage,
   type ChatPerson,
   type ChatReplyPreview,
+  type ChatReport,
+  type ChatReportStatus,
   type ChatSystemNote,
 } from '@/models/chat';
+import { NotificationType } from '@/models/shared/enums';
 import type { Company, CompanyMember, Project } from '@/models/workspace';
 import { COMPANY_STATUS, MEMBER_STATUS } from '@/models/workspace';
 
+import {
+  addBlock,
+  blockBetween,
+  blockedIdsOf,
+  blockersOf,
+  removeBlock,
+} from './blocks';
 import { publishToUsers } from './realtime';
 import { chatPrefix, deleteMedia, kindOfMime, storedSize } from './storage';
 
@@ -34,6 +46,8 @@ import { chatPrefix, deleteMedia, kindOfMime, storedSize } from './storage';
  *                     "project:<projectId>" for a project's group.
  *   ChatMessage       one per message, newest read first by conversation.
  *   ChatPresence      each person's last time in the portal ("last seen").
+ *   ChatReport        a message someone reported, for the portal's admins.
+ *   ChatBlock         who blocked whom (lib/chat/blocks.ts).
  */
 
 type ConversationDoc = {
@@ -86,6 +100,22 @@ type MessageDoc = {
 
 type PresenceDoc = { _id: string; lastSeenAt: Date };
 
+type ReportDoc = {
+  _id: ObjectId;
+  messageId: string;
+  conversationId: string;
+  reporterId: string;
+  senderId: string;
+  reason: string;
+  /** What the message said when it was reported. */
+  text: string;
+  kind: ChatKind;
+  status: ChatReportStatus;
+  createdAt: Date;
+  resolvedAt?: Date | null;
+  resolvedById?: string | null;
+};
+
 export class ChatError extends Error {
   constructor(
     public status: number,
@@ -106,7 +136,10 @@ async function collections() {
   const conversations = mongo.collection<ConversationDoc>('ChatConversation');
   const messages = mongo.collection<MessageDoc>('ChatMessage');
   const presence = mongo.collection<PresenceDoc>('ChatPresence');
+  const reports = mongo.collection<ReportDoc>('ChatReport');
   indexesReady ??= Promise.all([
+    reports.createIndex({ messageId: 1, reporterId: 1 }, { unique: true }),
+    reports.createIndex({ status: 1, createdAt: -1 }),
     conversations.createIndex({ key: 1 }, { unique: true }),
     conversations.createIndex({ memberIds: 1, lastMessageAt: -1 }),
     messages.createIndex({ conversationId: 1, createdAt: -1 }),
@@ -126,7 +159,7 @@ async function collections() {
       console.error('[chat] creating indexes failed:', error);
     });
   await indexesReady;
-  return { conversations, messages, presence };
+  return { conversations, messages, presence, reports };
 }
 
 const iso = (value?: Date | null) => (value ? value.toISOString() : null);
@@ -569,6 +602,7 @@ async function conversationView(
     people,
     project,
     companyName,
+    blocked,
   }: {
     person?: ChatPerson;
     companies?: string[];
@@ -578,6 +612,8 @@ async function conversationView(
     people?: Map<string, ChatPerson>;
     project?: ProjectBrief | null;
     companyName?: string | null;
+    /** The people the viewer has blocked. */
+    blocked?: Set<string>;
   },
 ): Promise<ChatConversation> {
   const id = room._id.toHexString();
@@ -586,7 +622,8 @@ async function conversationView(
   const visibleLast =
     lastMessage &&
     !(lastMessage.hiddenFor ?? []).includes(userId) &&
-    !(since && lastMessage.createdAt <= since)
+    !(since && lastMessage.createdAt <= since) &&
+    !(lastMessage.kind !== 'system' && blocked?.has(lastMessage.senderId))
       ? lastMessage
       : null;
   const group = isGroup(room)
@@ -610,6 +647,7 @@ async function conversationView(
     pinned: !!state.pinned,
     archived: !!state.archived,
     partnerLastSeenAt: group ? null : iso(lastSeenAt),
+    blocked: !group && !!blocked?.has(partnerId),
   };
 }
 
@@ -619,10 +657,12 @@ async function conversationView(
  */
 export async function listConversations(userId: string) {
   const { conversations, messages } = await collections();
-  const [contacts, myProjects] = await Promise.all([
+  const [contacts, myProjects, blockedIds] = await Promise.all([
     contactsOf(userId),
     projectsOf(userId),
+    blockedIdsOf(userId),
   ]);
+  const blocked = new Set(blockedIds);
   const rooms = await conversations
     .find({
       $or: [
@@ -686,6 +726,7 @@ export async function listConversations(userId: string) {
         people,
         project,
         companyName: project ? companies.get(project.companyId) : null,
+        blocked,
       });
     }),
   );
@@ -699,13 +740,14 @@ export async function getConversation(userId: string, conversationId: string) {
   );
   const { messages } = await collections();
   const ids = partnerId ? [partnerId] : room.memberIds;
-  const [people, seen, last, names] = await Promise.all([
+  const [people, seen, last, names, blockedIds] = await Promise.all([
     peopleById(ids),
     partnerId ? lastSeenOf([partnerId]) : Promise.resolve(new Map()),
     room.lastMessageId && ObjectId.isValid(room.lastMessageId)
       ? messages.findOne({ _id: new ObjectId(room.lastMessageId) })
       : Promise.resolve(null),
     project ? companyNames([project.companyId]) : Promise.resolve(new Map()),
+    blockedIdsOf(userId),
   ]);
   return conversationView(room, userId, {
     person: partnerId ? people.get(partnerId) : undefined,
@@ -715,6 +757,7 @@ export async function getConversation(userId: string, conversationId: string) {
     people,
     project,
     companyName: project ? names.get(project.companyId) : null,
+    blocked: new Set(blockedIds),
   });
 }
 
@@ -1117,11 +1160,22 @@ export async function clearConversation(
 /*                                  Messages                                  */
 /* -------------------------------------------------------------------------- */
 
-const visibleTo = (room: ConversationDoc, userId: string) => {
+/** `blocked`: people the viewer blocked; their messages (not group notes) are left out. */
+const visibleTo = (
+  room: ConversationDoc,
+  userId: string,
+  blocked: string[] = [],
+) => {
   const since = visibleSince(room, stateOf(room, userId));
   return {
     hiddenFor: { $ne: userId },
     ...(since && { createdAt: { $gt: since } }),
+    ...(blocked.length && {
+      $or: [
+        { kind: 'system' as ChatKind },
+        { senderId: { $nin: blocked } },
+      ] as Filter<MessageDoc>[],
+    }),
   };
 };
 
@@ -1139,7 +1193,7 @@ export async function listMessages(
   const { messages } = await collections();
   const filter: Record<string, unknown> = {
     conversationId,
-    ...visibleTo(room, userId),
+    ...visibleTo(room, userId, await blockedIdsOf(userId)),
   };
   if (mediaOnly) {
     filter['attachment.key'] = { $exists: true };
@@ -1236,6 +1290,21 @@ export async function sendMessage(
   const existing = await messages.findOne({ senderId: userId, clientId });
   if (existing) return toMessage(existing);
 
+  // A direct chat closes when either person blocks the other. In a group,
+  // people who blocked the sender aren't told about the message.
+  if (!isGroup(room)) {
+    const block = await blockBetween(userId, partnerOf(room, userId));
+    if (block.aBlockedB)
+      throw new ChatError(
+        403,
+        'You blocked this person. Unblock them to send a message.',
+      );
+    if (block.bBlockedA)
+      throw new ChatError(403, 'You can’t message this person.');
+  }
+  const blockers = await blockersOf(userId, recipientIds);
+  const listeners = recipientIds.filter((id) => !blockers.has(id));
+
   let text = String(input.text ?? '').slice(0, CHAT_LIMITS.maxTextLength);
   let attachment: ChatAttachment | null = null;
   let forwarded = false;
@@ -1328,9 +1397,9 @@ export async function sendMessage(
         lastMessageId: doc._id.toHexString(),
         lastMessageAt: doc.createdAt,
       },
-      ...(recipientIds.length && {
+      ...(listeners.length && {
         $inc: Object.fromEntries(
-          recipientIds.map((id) => [`state.${id}.unread`, 1]),
+          listeners.map((id) => [`state.${id}.unread`, 1]),
         ),
       }),
     },
@@ -1340,12 +1409,12 @@ export async function sendMessage(
   const message = toMessage(doc);
   const after = updated ?? room;
   await Promise.all([
-    publishToUsers([...recipientIds, userId], {
+    publishToUsers([...listeners, userId], {
       type: 'message',
       conversationId,
       message,
     }),
-    notifyNewMessage(after, userId, recipientIds, doc),
+    notifyNewMessage(after, userId, listeners, doc),
   ]);
   return message;
 }
@@ -1621,12 +1690,17 @@ async function requireMessage(userId: string, messageId: string) {
   return { doc, room, messages };
 }
 
+/** Tell the chat's members about a changed message, except anyone who blocked its sender. */
 async function broadcastUpdate(doc: MessageDoc, memberIds: string[]) {
-  await publishToUsers(memberIds, {
-    type: 'update',
-    conversationId: doc.conversationId,
-    message: toMessage(doc),
-  });
+  const blockers = await blockersOf(doc.senderId, memberIds);
+  await publishToUsers(
+    memberIds.filter((id) => !blockers.has(id)),
+    {
+      type: 'update',
+      conversationId: doc.conversationId,
+      message: toMessage(doc),
+    },
+  );
 }
 
 /** Change a message's text (or a file's caption) within 15 minutes. */
@@ -1682,6 +1756,12 @@ export async function deleteMessage(
     );
   if (Date.now() - doc.createdAt.getTime() > CHAT_LIMITS.deleteWindowMs)
     throw new ChatError(400, 'It is too late to delete this for everyone.');
+  return eraseMessage(doc, room.memberIds);
+}
+
+/** "This message was deleted" for everyone: its text and file are gone. */
+async function eraseMessage(doc: MessageDoc, memberIds: string[]) {
+  const { messages } = await collections();
   const updated = await messages.findOneAndUpdate(
     { _id: doc._id },
     { $set: { deletedAt: new Date() } },
@@ -1702,7 +1782,7 @@ export async function deleteMessage(
         console.error('[chat] deleting media failed:', error),
       );
   }
-  if (updated) await broadcastUpdate(updated, room.memberIds);
+  if (updated) await broadcastUpdate(updated, memberIds);
   return updated ? toMessage(updated) : null;
 }
 
@@ -1745,6 +1825,251 @@ export async function messageForMedia(userId: string, messageId: string) {
 }
 
 /* -------------------------------------------------------------------------- */
+/*                            Blocking and reports                            */
+/* -------------------------------------------------------------------------- */
+
+/** The people the person has blocked, newest first. */
+export async function listBlocked(userId: string): Promise<ChatPerson[]> {
+  const ids = await blockedIdsOf(userId);
+  const people = await peopleById(ids);
+  return ids.map((id) => people.get(id) ?? { id, name: 'Someone' });
+}
+
+/** Block someone: their messages leave the person's chats (lib/chat/blocks.ts). */
+export async function blockPerson(userId: string, otherId: unknown) {
+  const id = String(otherId ?? '');
+  if (!id || id === userId) throw new ChatError(400, 'Pick someone to block.');
+  if (!ObjectId.isValid(id) || !(await peopleById([id])).has(id))
+    throw new ChatError(404, 'Person not found.');
+  await addBlock(userId, id);
+  await publishToUsers([userId], { type: 'conversation', conversationId: '*' });
+  return listBlocked(userId);
+}
+
+export async function unblockPerson(userId: string, otherId: unknown) {
+  await removeBlock(userId, String(otherId ?? ''));
+  await publishToUsers([userId], { type: 'conversation', conversationId: '*' });
+  return listBlocked(userId);
+}
+
+/** Everyone who runs the portal: they review reported messages. */
+async function portalAdminIds(): Promise<string[]> {
+  const admins: { id: string }[] = await db.user.findMany({
+    where: {
+      status: 'ACTIVE',
+      OR: [{ isAdmin: true }, { email: { in: [...SUPER_ADMIN_EMAILS] } }],
+    },
+    select: { id: true },
+  });
+  return admins.map((a) => a.id);
+}
+
+const REPORTS_PAGE = '/admin?tab=chat-reports';
+
+async function tellAdminsAboutReport(
+  reporterId: string,
+  doc: MessageDoc,
+  reason: string,
+) {
+  try {
+    const adminIds = (await portalAdminIds()).filter((id) => id !== reporterId);
+    if (!adminIds.length) return;
+    const people = await peopleById([reporterId, doc.senderId]);
+    const reporter = people.get(reporterId)?.name || 'Someone';
+    const sender = people.get(doc.senderId)?.name || 'someone';
+    const quote = previewText(doc).slice(0, 140);
+    const now = new Date();
+    await ensureNotificationsReset();
+    await db.notification.createMany({
+      data: adminIds.map((userId) => ({
+        userId,
+        title: 'Message reported',
+        description: `${reporter} reported a message from ${sender}: “${quote}”.${
+          reason ? ` Reason: ${reason}` : ''
+        }`,
+        matchId: doc._id.toHexString(),
+        matchType: 'ChatMessage',
+        notificationType: NotificationType.USER_TO_USER,
+        notificationData: {
+          kind: 'chat-report',
+          actions: [
+            {
+              title: 'Review reports',
+              trigger_type: 'link',
+              trigger: REPORTS_PAGE,
+            },
+          ],
+        },
+        isRead: false,
+        createdAt: now,
+        updatedAt: now,
+      })),
+    });
+    await sendPushToUsers(adminIds, {
+      title: 'Message reported',
+      body: `${reporter} reported a message from ${sender}.`,
+      url: REPORTS_PAGE,
+      tag: `chat-report-${doc._id.toHexString()}`,
+    }).catch(() => null);
+  } catch (error) {
+    console.error('[chat] telling admins about a report failed:', error);
+  }
+}
+
+/**
+ * Report someone else's message to the portal's admins, who remove it or
+ * leave it (resolveReport). It's hidden for the reporter at once, and with
+ * `block` its sender is blocked too.
+ */
+export async function reportMessage(
+  userId: string,
+  messageId: string,
+  { reason, block }: { reason?: unknown; block?: unknown } = {},
+) {
+  const { doc, messages } = await requireMessage(userId, messageId);
+  if (doc.senderId === userId)
+    throw new ChatError(400, 'You can’t report your own message.');
+  if (doc.deletedAt) throw new ChatError(400, 'This message was deleted.');
+  const { reports } = await collections();
+  const id = doc._id.toHexString();
+  const why = String(reason ?? '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 500);
+  const saved = await reports.updateOne(
+    { messageId: id, reporterId: userId },
+    {
+      $setOnInsert: {
+        _id: new ObjectId(),
+        messageId: id,
+        conversationId: doc.conversationId,
+        reporterId: userId,
+        senderId: doc.senderId,
+        reason: why,
+        text: previewText(doc).slice(0, 1000),
+        kind: doc.kind,
+        status: 'open',
+        createdAt: new Date(),
+        resolvedAt: null,
+        resolvedById: null,
+      },
+    },
+    { upsert: true },
+  );
+  await messages.updateOne(
+    { _id: doc._id },
+    { $addToSet: { hiddenFor: userId } },
+  );
+  const blocking = block === true;
+  if (blocking) await addBlock(userId, doc.senderId);
+  await publishToUsers([userId], {
+    type: 'conversation',
+    conversationId: blocking ? '*' : doc.conversationId,
+  });
+  if (saved.upsertedCount) await tellAdminsAboutReport(userId, doc, why);
+  return { reported: true, blocked: blocking };
+}
+
+/** Reported messages for the admins, newest first. */
+export async function listReports(
+  status: ChatReportStatus | 'all' = 'open',
+): Promise<ChatReport[]> {
+  const { reports, messages, conversations } = await collections();
+  const docs = await reports
+    .find(status === 'all' ? {} : { status })
+    .sort({ createdAt: -1 })
+    .limit(200)
+    .toArray();
+  const objectIds = (values: string[]) =>
+    Array.from(new Set(values))
+      .filter((v) => ObjectId.isValid(v))
+      .map((v) => new ObjectId(v));
+  const [people, found, rooms] = await Promise.all([
+    peopleById(
+      docs.flatMap((r) => [r.reporterId, r.senderId, r.resolvedById ?? '']),
+    ),
+    messages
+      .find({ _id: { $in: objectIds(docs.map((r) => r.messageId)) } })
+      .toArray(),
+    conversations
+      .find({ _id: { $in: objectIds(docs.map((r) => r.conversationId)) } })
+      .toArray(),
+  ]);
+  const messageById = new Map(found.map((m) => [m._id.toHexString(), m]));
+  const roomById = new Map(rooms.map((c) => [c._id.toHexString(), c]));
+  const person = (id: string): ChatPerson =>
+    people.get(id) ?? { id, name: 'Someone' };
+  return docs.map((r) => {
+    const room = roomById.get(r.conversationId);
+    const message = messageById.get(r.messageId);
+    const kind = room ? kindOf(room) : 'direct';
+    return {
+      id: r._id.toHexString(),
+      messageId: r.messageId,
+      conversationId: r.conversationId,
+      chatKind: kind,
+      chatName:
+        kind === 'direct'
+          ? 'Direct chat'
+          : room?.name || (kind === 'project' ? 'Project chat' : 'Group'),
+      reporter: person(r.reporterId),
+      sender: person(r.senderId),
+      reason: r.reason,
+      text: r.text,
+      kind: r.kind,
+      messageRemoved: !message || !!message.deletedAt,
+      status: r.status,
+      createdAt: r.createdAt.toISOString(),
+      resolvedAt: iso(r.resolvedAt),
+      resolvedBy: r.resolvedById ? (person(r.resolvedById).name ?? null) : null,
+    };
+  });
+}
+
+/**
+ * An admin's answer to a report: `remove` deletes the message for everyone
+ * ("This message was deleted"), `dismiss` leaves it. Every open report of
+ * the same message is answered with it.
+ */
+export async function resolveReport(
+  adminId: string,
+  reportId: string,
+  action: unknown,
+) {
+  if (action !== 'remove' && action !== 'dismiss')
+    throw new ChatError(400, 'Choose remove or dismiss.');
+  if (!ObjectId.isValid(reportId))
+    throw new ChatError(404, 'Report not found.');
+  const { reports, messages, conversations } = await collections();
+  const report = await reports.findOne({ _id: new ObjectId(reportId) });
+  if (!report) throw new ChatError(404, 'Report not found.');
+  if (action === 'remove' && ObjectId.isValid(report.messageId)) {
+    const doc = await messages.findOne({
+      _id: new ObjectId(report.messageId),
+    });
+    if (doc && !doc.deletedAt) {
+      const room = ObjectId.isValid(doc.conversationId)
+        ? await conversations.findOne({
+            _id: new ObjectId(doc.conversationId),
+          })
+        : null;
+      await eraseMessage(doc, room?.memberIds ?? []);
+    }
+  }
+  await reports.updateMany(
+    { messageId: report.messageId, status: 'open' },
+    {
+      $set: {
+        status: action === 'remove' ? 'removed' : 'dismissed',
+        resolvedAt: new Date(),
+        resolvedById: adminId,
+      },
+    },
+  );
+  return { resolved: true };
+}
+
+/* -------------------------------------------------------------------------- */
 /*                                   Search                                   */
 /* -------------------------------------------------------------------------- */
 
@@ -1773,11 +2098,12 @@ export async function searchMessages(
   }
   if (!rooms.length) return [];
   const regex = new RegExp(escapeRegex(query), 'i');
+  const blocked = await blockedIdsOf(userId);
   const docs = await messages
     .find({
       $or: rooms.map((c) => ({
         conversationId: c._id.toHexString(),
-        ...visibleTo(c, userId),
+        ...visibleTo(c, userId, blocked),
       })),
       deletedAt: null,
       $and: [{ $or: [{ text: regex }, { 'attachment.name': regex }] }],
