@@ -13,6 +13,7 @@ import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 
 import { ToastsContainer } from '@/components/elements/Toast';
+import { GetTheAppSplash } from '@/components/global/GetTheAppSplash';
 import { PermissionDeniedToaster } from '@/components/global/PermissionDeniedToaster';
 import { ServiceWorkerProvider } from '@/components/global/ServiceWorkerProvider';
 import { SignFirstGate } from '@/components/global/SignFirstGate';
@@ -91,6 +92,7 @@ export default function RootLayout({
                 <ToastsContainer />
                 <PermissionDeniedToaster />
                 <SignFirstGate />
+                <GetTheAppSplash />
               </ReduxProvider>
             </MantineProvider>
           </MUIThemeRegistry>
