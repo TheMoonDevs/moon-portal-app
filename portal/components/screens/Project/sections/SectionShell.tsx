@@ -28,7 +28,7 @@ export const SectionShell = ({
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.25, ease: 'easeOut' }}
     className={cn(
-      'mx-auto w-full max-w-5xl px-5 pb-24 pt-8 md:px-10 md:pt-12',
+      'mx-auto w-full max-w-6xl px-4 pb-24 pt-6 md:px-8 md:pt-8',
       className,
     )}
   >
