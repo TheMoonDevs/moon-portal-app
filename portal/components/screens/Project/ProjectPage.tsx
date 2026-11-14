@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { toast, Toaster } from 'sonner';
+import { toast } from 'sonner';
 
 import {
   Popover,
@@ -41,12 +41,20 @@ import {
   PROJECT_STATUS_META,
 } from '../Admin/Workspace/shared';
 import { useChat } from '../Messages/ChatProvider';
+import { DeletePlanDialog } from '../Plans/DeletePlanDialog';
 import type { PlanView } from '../Plans/types';
 import { usePlans } from '../Plans/usePlans';
 import { NewProjectDialog } from '../Projects/NewProjectDialog';
 import { NavMenuButton, useProjectsShell } from '../Projects/ProjectsShell';
+import {
+  copyLink,
+  openInNewTab,
+  type RowAction,
+  RowMenu,
+} from '../Projects/RowMenu';
 import { bannerOf, kitColors, kitImages, pickKit } from './brand';
 import type { DocLinks } from './DocEditor';
+import { MovePageDialog } from './MovePageDialog';
 import { PageDoc, SaveBadge, type SaveState } from './PageDoc';
 import { ProjectDetailsDialog } from './ProjectDetailsDialog';
 import { GoalsSection } from './sections/GoalsSection';
@@ -122,7 +130,10 @@ const PageTreeItem = ({
   onToggle,
   onSelect,
   onNewPage,
+  menuFor,
 }: {
+  /** The page's right-click menu. */
+  menuFor: (page: Page) => RowAction[];
   page: Page;
   pages: Page[];
   activeId: string | null;
@@ -138,87 +149,91 @@ const PageTreeItem = ({
   const isOpen = open.has(page.id);
   return (
     <div>
-      <div className="group/page relative">
-        <NavItem
-          icon=""
-          label={pageTitle(page)}
-          active={activeId === page.id}
-          onClick={() => onSelect(page.id)}
-          badge={
-            <span className="order-first -mr-1 flex items-center gap-1">
-              <span
-                role="button"
-                tabIndex={0}
-                aria-label={isOpen ? 'Collapse page' : 'Expand page'}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggle(page.id);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+      <RowMenu title={pageTitle(page)} actions={menuFor(page)}>
+        <div className="group/page relative">
+          <NavItem
+            icon=""
+            label={pageTitle(page)}
+            active={activeId === page.id}
+            onClick={() => onSelect(page.id)}
+            badge={
+              <span className="order-first -mr-1 flex items-center gap-1">
+                <span
+                  role="button"
+                  tabIndex={0}
+                  aria-label={isOpen ? 'Collapse page' : 'Expand page'}
+                  onClick={(e) => {
                     e.stopPropagation();
                     onToggle(page.id);
-                  }
-                }}
-                className={cn(
-                  'flex size-4 items-center justify-center rounded text-neutral-600 hover:bg-white/[0.08] hover:text-white',
-                  !inside.length && 'opacity-0 group-hover/page:opacity-100',
-                )}
-              >
-                <motion.span
-                  animate={{ rotate: isOpen ? 90 : 0 }}
-                  className="flex"
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.stopPropagation();
+                      onToggle(page.id);
+                    }
+                  }}
+                  className={cn(
+                    'flex size-4 items-center justify-center rounded text-neutral-600 hover:bg-white/[0.08] hover:text-white',
+                    !inside.length && 'opacity-0 group-hover/page:opacity-100',
+                  )}
                 >
-                  <Icon name="chevron_right" className="text-[14px]" />
-                </motion.span>
-              </span>
-              <span className="text-sm leading-none">{page.emoji || '📄'}</span>
-            </span>
-          }
-          trailing={
-            (canEdit || isRestricted(page)) && (
-              <span className="-mr-1 flex items-center gap-0.5">
-                {isRestricted(page) && (
-                  <span
-                    title="Restricted: only the people it is shared with"
+                  <motion.span
+                    animate={{ rotate: isOpen ? 90 : 0 }}
                     className="flex"
                   >
-                    <Icon
-                      name="lock"
-                      className="text-[13px] text-amber-200/70"
-                    />
-                  </span>
-                )}
-                {canEdit && (
-                  <span
-                    role="button"
-                    tabIndex={0}
-                    aria-label="Add a page inside"
-                    title="Add a page inside"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onNewPage(page.id);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
+                    <Icon name="chevron_right" className="text-[14px]" />
+                  </motion.span>
+                </span>
+                <span className="text-sm leading-none">
+                  {page.emoji || '📄'}
+                </span>
+              </span>
+            }
+            trailing={
+              (canEdit || isRestricted(page)) && (
+                <span className="-mr-1 flex items-center gap-0.5">
+                  {isRestricted(page) && (
+                    <span
+                      title="Restricted: only the people it is shared with"
+                      className="flex"
+                    >
+                      <Icon
+                        name="lock"
+                        className="text-[13px] text-amber-200/70"
+                      />
+                    </span>
+                  )}
+                  {canEdit && (
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      aria-label="Add a page inside"
+                      title="Add a page inside"
+                      onClick={(e) => {
                         e.stopPropagation();
                         onNewPage(page.id);
-                      }
-                    }}
-                    className="-mr-1 flex size-5 items-center justify-center rounded text-neutral-500 opacity-0 hover:bg-white/[0.08] hover:text-white group-hover/page:opacity-100"
-                  >
-                    {creatingIn === page.id ? (
-                      <Spin className="size-3" />
-                    ) : (
-                      <Icon name="add" className="text-[15px]" />
-                    )}
-                  </span>
-                )}
-              </span>
-            )
-          }
-        />
-      </div>
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.stopPropagation();
+                          onNewPage(page.id);
+                        }
+                      }}
+                      className="-mr-1 flex size-5 items-center justify-center rounded text-neutral-500 opacity-0 hover:bg-white/[0.08] hover:text-white group-hover/page:opacity-100"
+                    >
+                      {creatingIn === page.id ? (
+                        <Spin className="size-3" />
+                      ) : (
+                        <Icon name="add" className="text-[15px]" />
+                      )}
+                    </span>
+                  )}
+                </span>
+              )
+            }
+          />
+        </div>
+      </RowMenu>
       <AnimatePresence initial={false}>
         {isOpen && (
           <motion.div
@@ -241,6 +256,7 @@ const PageTreeItem = ({
                   onToggle={onToggle}
                   onSelect={onSelect}
                   onNewPage={onNewPage}
+                  menuFor={menuFor}
                 />
               ))}
               {!inside.length && (
@@ -286,7 +302,11 @@ const NestedMenu = ({
   canAddPlan,
   creatingPlan,
   onNewPlan,
+  pageMenu,
+  planMenu,
 }: {
+  pageMenu: (page: Page) => RowAction[];
+  planMenu: (plan: PlanView) => RowAction[];
   kind: 'pages' | 'plans';
   name: string;
   project: ProjectData['project'];
@@ -376,6 +396,7 @@ const NestedMenu = ({
                   onToggle={onTogglePage}
                   onSelect={(id) => onSelect('pages', id)}
                   onNewPage={onNewPage}
+                  menuFor={pageMenu}
                 />
               ))}
               {canEdit && (
@@ -421,21 +442,28 @@ const NestedMenu = ({
                 </p>
               )}
               {plans?.map((plan) => (
-                <NavItem
+                <RowMenu
                   key={plan.id}
-                  icon=""
-                  label={plan.title || 'Untitled plan'}
-                  active={view === 'plans' && planId === plan.id}
-                  onClick={() => onSelect('plans', plan.id)}
-                  badge={
-                    <span
-                      className={cn(
-                        'order-first -mr-1 size-1.5 shrink-0 rounded-full',
-                        PLAN_DOT[plan.status] ?? 'bg-neutral-600',
-                      )}
+                  title={plan.title || 'Untitled plan'}
+                  actions={planMenu(plan)}
+                >
+                  <div>
+                    <NavItem
+                      icon=""
+                      label={plan.title || 'Untitled plan'}
+                      active={view === 'plans' && planId === plan.id}
+                      onClick={() => onSelect('plans', plan.id)}
+                      badge={
+                        <span
+                          className={cn(
+                            'order-first -mr-1 size-1.5 shrink-0 rounded-full',
+                            PLAN_DOT[plan.status] ?? 'bg-neutral-600',
+                          )}
+                        />
+                      }
                     />
-                  }
-                />
+                  </div>
+                </RowMenu>
               ))}
               {canAddPlan && (
                 <button
@@ -659,6 +687,9 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
   /** Plans made here, listed even before they have a step for the project. */
   const [madeHere, setMadeHere] = useState<Set<string>>(new Set());
   const { slot, setNested, refreshNav } = useProjectsShell();
+  const [moving, setMoving] = useState<Page | null>(null);
+  const [planDeleting, setPlanDeleting] = useState<PlanView | null>(null);
+  const [planBusy, setPlanBusy] = useState<'plan' | 'all' | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const tabsRef = useRef<HTMLDivElement>(null);
 
@@ -1077,6 +1108,99 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
   ).length;
   const logo = project.logo || (isCore ? companyRecord?.logo : null) || null;
 
+  const pageHref = (id: string) => `${pathname}?view=pages&page=${id}`;
+  const pageMenu = (target: Page): RowAction[] => [
+    {
+      label: 'Open',
+      icon: 'arrow_forward',
+      onSelect: () => select('pages', target.id),
+    },
+    {
+      label: 'Open in new tab',
+      icon: 'open_in_new',
+      onSelect: () => openInNewTab(pageHref(target.id)),
+    },
+    {
+      label: 'Copy link',
+      icon: 'link',
+      onSelect: () => copyLink(pageHref(target.id)),
+    },
+    'separator',
+    canEdit && {
+      label: 'Add a page inside',
+      icon: 'note_add',
+      onSelect: () => newPage(target.id),
+    },
+    canEdit && {
+      label: 'Move to another project',
+      icon: 'drive_file_move',
+      onSelect: () => setMoving(target),
+    },
+    'separator',
+    canEdit && {
+      label: 'Delete',
+      icon: 'delete',
+      danger: true,
+      onSelect: () => setDeleting(target),
+    },
+  ];
+
+  const planHref = (id: string) => `${pathname}?view=plans&plan=${id}`;
+  const PLAN_STATUSES = [
+    { value: 'IDEA', label: 'Idea' },
+    { value: 'ACTIVE', label: 'Active' },
+    { value: 'DONE', label: 'Done' },
+    { value: 'DROPPED', label: 'Dropped' },
+  ];
+  const planMenu = (plan: PlanView): RowAction[] => [
+    {
+      label: 'Open',
+      icon: 'arrow_forward',
+      onSelect: () => select('plans', plan.id),
+    },
+    {
+      label: 'Open in new tab',
+      icon: 'open_in_new',
+      onSelect: () => openInNewTab(planHref(plan.id)),
+    },
+    {
+      label: 'Copy link',
+      icon: 'link',
+      onSelect: () => copyLink(planHref(plan.id)),
+    },
+    'separator',
+    plans.canEdit(plan) && {
+      label: 'Status',
+      icon: 'flag',
+      sub: PLAN_STATUSES.map((st) => ({
+        label: st.label,
+        checked: plan.status === st.value,
+        onSelect: () =>
+          plans.change(plan.id, (p) => ({
+            ...p,
+            status: st.value as PlanView['status'],
+          })),
+      })),
+    },
+    'separator',
+    plans.canDelete(plan) && {
+      label: 'Delete',
+      icon: 'delete',
+      danger: true,
+      onSelect: () => setPlanDeleting(plan),
+    },
+  ];
+
+  const deletePlan = async (withTasks: boolean) => {
+    if (!planDeleting) return;
+    setPlanBusy(withTasks ? 'all' : 'plan');
+    const gone = await plans.remove(planDeleting.id, withTasks);
+    setPlanBusy(null);
+    if (gone === false) return;
+    if (planId === planDeleting.id) select('plans', null);
+    setPlanDeleting(null);
+  };
+
   const changeBanner = async (image: string | null) => {
     try {
       await PortalSdk.putData(`/api/projects/${project.id}/header`, { image });
@@ -1112,6 +1236,8 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
             canAddPlan={plans.canCreate}
             creatingPlan={creatingPlan}
             onNewPlan={newPlan}
+            pageMenu={pageMenu}
+            planMenu={planMenu}
           />,
           slot,
         )}
@@ -1299,6 +1425,17 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
             {page && canEdit && (
               <button
                 type="button"
+                onClick={() => setMoving(page)}
+                aria-label="Move to another project"
+                title="Move to another project"
+                className="flex size-8 items-center justify-center rounded-lg text-neutral-500 hover:bg-white/[0.06] hover:text-white"
+              >
+                <Icon name="drive_file_move" className="text-[18px]" />
+              </button>
+            )}
+            {page && canEdit && (
+              <button
+                type="button"
                 onClick={() => setDeleting(page)}
                 aria-label="Delete page"
                 title="Delete page"
@@ -1449,7 +1586,37 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
           }}
         />
       )}
-      <Toaster theme="dark" position="bottom-right" richColors />
+      <MovePageDialog
+        page={moving}
+        inside={moving ? descendantIds(all, moving.id).size : 0}
+        projectId={project.id}
+        onOpenChange={(open) => !open && setMoving(null)}
+        onMoved={(ids, to) => {
+          const gone = new Set(ids);
+          setPages(
+            (p) => p && { ...p, pages: p.pages.filter((i) => !gone.has(i.id)) },
+          );
+          if (pageId && gone.has(pageId)) select('pages', null);
+          const movedId = moving?.id;
+          setMoving(null);
+          toast.success(`Moved to ${to.name}`, {
+            action: {
+              label: 'Open',
+              onClick: () =>
+                router.push(
+                  `${APP_ROUTES.projects}/${to.id}?view=pages${movedId ? `&page=${movedId}` : ''}`,
+                ),
+            },
+          });
+        }}
+      />
+      <DeletePlanDialog
+        plan={planDeleting}
+        open={!!planDeleting}
+        onOpenChange={(open) => !open && !planBusy && setPlanDeleting(null)}
+        deleting={planBusy}
+        onDelete={deletePlan}
+      />
     </div>
   );
 };

@@ -10,6 +10,7 @@ import {
   useMemo,
   useState,
 } from 'react';
+import { Toaster } from 'sonner';
 
 import { PortalSdk } from '@/utils/services/PortalSdk';
 
@@ -210,6 +211,7 @@ export const ProjectsShell = ({ children }: { children: React.ReactNode }) => {
           </motion.div>
         )}
       </AnimatePresence>
+      <Toaster theme="dark" position="bottom-right" richColors />
     </Ctx.Provider>
   );
 };

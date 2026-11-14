@@ -1,15 +1,17 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
 import { cn } from '@/lib/utils';
 import { projectLabelInCompany } from '@/lib/workspace/projectLabel';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
+import { useWorkspace } from '@/utils/hooks/useWorkspace';
 
 import { Icon } from '../Admin/shared/AdminUI';
 import { CompanyMark } from '../Admin/Workspace/shared';
+import { copyLink, openInNewTab, RowMenu } from './RowMenu';
 
 export type NavCompany = {
   id: string;
@@ -60,7 +62,10 @@ const Row = ({
   query,
   activeId,
   label,
+  personal,
 }: {
+  /** In the viewer's own Personal: no group chat there. */
+  personal?: boolean;
   project: NavProject;
   all: NavProject[];
   depth: number;
@@ -76,57 +81,100 @@ const Row = ({
   );
   const expanded = !!query || open.has(project.id);
   const active = activeId === project.id;
+  const router = useRouter();
+  const href = `${APP_ROUTES.projects}/${project.id}`;
+  const go = (view?: string) =>
+    router.push(view ? `${href}?view=${view}` : href);
   return (
     <li>
-      <div
-        className={cn(
-          'group flex items-center rounded-lg transition-colors',
-          active ? 'bg-white/[0.08]' : 'hover:bg-white/[0.05]',
-        )}
-        style={{ paddingLeft: depth * 14 }}
+      <RowMenu
+        title={label(project)}
+        actions={[
+          { label: 'Open', icon: 'arrow_forward', onSelect: () => go() },
+          {
+            label: 'Open in new tab',
+            icon: 'open_in_new',
+            onSelect: () => openInNewTab(href),
+          },
+          { label: 'Copy link', icon: 'link', onSelect: () => copyLink(href) },
+          'separator',
+          { label: 'Logs', icon: 'history_edu', onSelect: () => go('logs') },
+          {
+            label: 'Goals',
+            icon: 'track_changes',
+            onSelect: () => go('goals'),
+          },
+          { label: 'KPI', icon: 'monitoring', onSelect: () => go('kpi') },
+          { label: 'Plans', icon: 'map', onSelect: () => go('plans') },
+          { label: 'Pages', icon: 'description', onSelect: () => go('pages') },
+          { label: 'Team', icon: 'group', onSelect: () => go('members') },
+          'separator',
+          !personal && {
+            label: 'Group chat',
+            icon: 'forum',
+            onSelect: () =>
+              router.push(
+                `/messages?project=${encodeURIComponent(project.id)}`,
+              ),
+          },
+          subs.length > 0 &&
+            !query && {
+              label: expanded ? 'Hide sub-projects' : 'Show sub-projects',
+              icon: expanded ? 'unfold_less' : 'unfold_more',
+              onSelect: () => toggle(project.id),
+            },
+        ]}
       >
-        {subs.length ? (
-          <button
-            type="button"
-            aria-label={expanded ? 'Hide sub-projects' : 'Show sub-projects'}
-            aria-expanded={expanded}
-            onClick={() => toggle(project.id)}
-            className="flex size-6 shrink-0 items-center justify-center rounded text-neutral-500 hover:text-white"
-          >
-            <Icon
-              name="chevron_right"
-              className={cn(
-                'text-[16px] transition-transform',
-                expanded && 'rotate-90',
-              )}
-            />
-          </button>
-        ) : (
-          <span className="size-6 shrink-0" />
-        )}
-        <Link
-          href={`${APP_ROUTES.projects}/${project.id}`}
-          aria-current={active ? 'page' : undefined}
+        <div
           className={cn(
-            'flex min-w-0 flex-1 items-center gap-2 py-1.5 pr-2 text-[13px] outline-none focus-visible:text-white',
-            active
-              ? 'font-medium text-white'
-              : 'text-neutral-400 group-hover:text-white',
+            'group flex items-center rounded-lg transition-colors',
+            active ? 'bg-white/[0.08]' : 'hover:bg-white/[0.05]',
           )}
+          style={{ paddingLeft: depth * 14 }}
         >
-          <span
-            className="size-2 shrink-0 rounded-[3px]"
-            style={{ backgroundColor: project.color || '#737373' }}
-          />
-          <span className="truncate">{label(project)}</span>
-          {project.status && project.status !== 'ACTIVE' && (
-            <span
-              title="Not active"
-              className="ml-auto size-1.5 shrink-0 rounded-full bg-neutral-600"
-            />
+          {subs.length ? (
+            <button
+              type="button"
+              aria-label={expanded ? 'Hide sub-projects' : 'Show sub-projects'}
+              aria-expanded={expanded}
+              onClick={() => toggle(project.id)}
+              className="flex size-6 shrink-0 items-center justify-center rounded text-neutral-500 hover:text-white"
+            >
+              <Icon
+                name="chevron_right"
+                className={cn(
+                  'text-[16px] transition-transform',
+                  expanded && 'rotate-90',
+                )}
+              />
+            </button>
+          ) : (
+            <span className="size-6 shrink-0" />
           )}
-        </Link>
-      </div>
+          <Link
+            href={`${APP_ROUTES.projects}/${project.id}`}
+            aria-current={active ? 'page' : undefined}
+            className={cn(
+              'flex min-w-0 flex-1 items-center gap-2 py-1.5 pr-2 text-[13px] outline-none focus-visible:text-white',
+              active
+                ? 'font-medium text-white'
+                : 'text-neutral-400 group-hover:text-white',
+            )}
+          >
+            <span
+              className="size-2 shrink-0 rounded-[3px]"
+              style={{ backgroundColor: project.color || '#737373' }}
+            />
+            <span className="truncate">{label(project)}</span>
+            {project.status && project.status !== 'ACTIVE' && (
+              <span
+                title="Not active"
+                className="ml-auto size-1.5 shrink-0 rounded-full bg-neutral-600"
+              />
+            )}
+          </Link>
+        </div>
+      </RowMenu>
       {expanded && subs.length > 0 && (
         <ul>
           {subs.map((c) => (
@@ -140,6 +188,7 @@ const Row = ({
               query={query}
               activeId={activeId}
               label={label}
+              personal={personal}
             />
           ))}
         </ul>
@@ -176,6 +225,8 @@ export const ProjectsNav = ({
   onBack?: () => void;
 }) => {
   const pathname = usePathname() ?? '';
+  const router = useRouter();
+  const { can } = useWorkspace();
   const activeId =
     pathname.startsWith(`${APP_ROUTES.projects}/`) &&
     pathname.split('/')[2] !== undefined
@@ -292,32 +343,81 @@ export const ProjectsNav = ({
         )}
         {tree.map(({ company, projects }) => {
           const shut = !query && closedCompanies.has(company.id);
+          const core = all.find((p) => p.companyId === company.id && p.isCore);
           return (
             <div key={company.id} className="pt-3">
-              <button
-                type="button"
-                aria-expanded={!shut}
-                onClick={() => setClosedCompanies((s) => flip(s, company.id))}
-                className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-xs font-semibold text-neutral-300 hover:bg-white/[0.04]"
+              <RowMenu
+                title={company.name}
+                actions={[
+                  core && {
+                    label: company.isPersonal ? 'Open Personal' : 'Open Core',
+                    icon: 'hub',
+                    onSelect: () =>
+                      router.push(`${APP_ROUTES.projects}/${core.id}`),
+                  },
+                  !company.isPersonal &&
+                    can(company.id, 'companies:edit') && {
+                      label: 'Edit company',
+                      icon: 'edit',
+                      onSelect: () =>
+                        router.push(
+                          `${APP_ROUTES.admin}?tab=companies&companyId=${company.id}`,
+                        ),
+                    },
+                  'separator',
+                  {
+                    label: shut ? 'Show its projects' : 'Hide its projects',
+                    icon: shut ? 'unfold_more' : 'unfold_less',
+                    onSelect: () =>
+                      setClosedCompanies((s) => flip(s, company.id)),
+                  },
+                  {
+                    label: 'Hide other companies',
+                    icon: 'filter_list',
+                    onSelect: () =>
+                      setClosedCompanies(
+                        new Set(
+                          companies
+                            .map((c) => c.id)
+                            .filter((id) => id !== company.id),
+                        ),
+                      ),
+                  },
+                  closedCompanies.size > 0 && {
+                    label: 'Show every company',
+                    icon: 'select_all',
+                    onSelect: () => setClosedCompanies(new Set()),
+                  },
+                ]}
               >
-                <CompanyMark
-                  name={company.name}
-                  color={company.color}
-                  logo={company.logo}
-                  size={18}
-                />
-                <span className="flex-1 truncate">{company.name}</span>
-                {company.isPersonal && (
-                  <Icon name="lock" className="text-[13px] text-neutral-500" />
-                )}
-                <Icon
-                  name="expand_more"
-                  className={cn(
-                    'text-[16px] text-neutral-500 transition-transform',
-                    shut && '-rotate-90',
+                <button
+                  type="button"
+                  aria-expanded={!shut}
+                  onClick={() => setClosedCompanies((s) => flip(s, company.id))}
+                  className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-xs font-semibold text-neutral-300 hover:bg-white/[0.04]"
+                >
+                  <CompanyMark
+                    name={company.name}
+                    color={company.color}
+                    logo={company.logo}
+                    size={18}
+                  />
+                  <span className="flex-1 truncate">{company.name}</span>
+                  {company.isPersonal && (
+                    <Icon
+                      name="lock"
+                      className="text-[13px] text-neutral-500"
+                    />
                   )}
-                />
-              </button>
+                  <Icon
+                    name="expand_more"
+                    className={cn(
+                      'text-[16px] text-neutral-500 transition-transform',
+                      shut && '-rotate-90',
+                    )}
+                  />
+                </button>
+              </RowMenu>
               {!shut && (
                 <ul className="mt-0.5">
                   {projects.map((p) => (
@@ -331,6 +431,7 @@ export const ProjectsNav = ({
                       query={query}
                       activeId={activeId}
                       label={label}
+                      personal={company.isPersonal}
                     />
                   ))}
                 </ul>
