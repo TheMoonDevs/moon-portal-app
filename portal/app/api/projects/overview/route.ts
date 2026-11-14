@@ -45,6 +45,7 @@ export async function GET() {
     name: company.name,
     color: company.color ?? null,
     logo: company.logo ?? null,
+    banner: company.banner ?? null,
     description: company.description ?? null,
     ...(company.isPersonal && { isPersonal: true }),
   }));

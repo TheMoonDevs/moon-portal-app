@@ -8,6 +8,8 @@ export type OverviewCompany = {
   name: string;
   color: string | null;
   logo: string | null;
+  /** A wide image for the top of its bar. */
+  banner?: string | null;
   description?: string | null;
   /** Its active members. */
   memberIds?: string[];

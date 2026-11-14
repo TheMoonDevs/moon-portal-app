@@ -141,6 +141,10 @@ export async function POST(request: Request) {
     color: typeof body.color === 'string' ? body.color : null,
     icon: typeof body.icon === 'string' ? body.icon : null,
     logo: typeof body.logo === 'string' ? body.logo : null,
+    headerImage:
+      typeof body.headerImage === 'string' && body.headerImage
+        ? body.headerImage
+        : null,
     // Whoever makes it leads it, unless they named the leads.
     leadIds: asStringArray(body.leadIds).length ? body.leadIds : [user.id],
     memberIds: body.memberIds,

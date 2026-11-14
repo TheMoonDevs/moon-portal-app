@@ -148,12 +148,28 @@ export const CompanyBar = ({
     <div className="mb-3 flex flex-col overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-br from-white/[0.035] to-white/[0.01] lg:flex-row">
       {/* Who the company is */}
       <div
-        className="flex shrink-0 flex-col gap-3 border-b border-white/[0.06] p-5 lg:w-60 lg:border-b-0 lg:border-r"
+        className="relative isolate flex shrink-0 flex-col gap-3 overflow-hidden border-b border-white/[0.06] p-5 lg:w-60 lg:border-b-0 lg:border-r"
         style={{
           background: `linear-gradient(160deg, ${color}26, transparent 70%)`,
         }}
       >
-        <div className="flex items-center gap-3 lg:flex-col lg:items-start">
+        {company.banner && (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={company.banner}
+              alt=""
+              className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-28 w-full object-cover opacity-60 lg:h-32"
+            />
+            <span className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-28 bg-gradient-to-b from-transparent to-neutral-950 lg:h-32" />
+          </>
+        )}
+        <div
+          className={cn(
+            'flex items-center gap-3 lg:flex-col lg:items-start',
+            company.banner && 'pt-10',
+          )}
+        >
           <CompanyMark
             name={company.name}
             color={company.color}
@@ -202,7 +218,7 @@ export const CompanyBar = ({
           {editHref && (
             <Link
               href={editHref}
-              title={`Edit ${company.name}: name, logo, colour, members`}
+              title={`Edit ${company.name}: name, logo, banner, colour, members`}
               className="flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg bg-white/[0.06] px-3 text-xs font-semibold text-neutral-200 transition-colors hover:bg-white/[0.1] hover:text-white"
             >
               <Icon name="edit" className="text-[16px]" />

@@ -35,6 +35,7 @@ const draftOf = (project: ProjectData['project']) => ({
   status: project.status as string,
   color: project.color ?? '#0ea5e9',
   logo: project.logo ?? '',
+  headerImage: project.headerImage ?? '',
   effort: (project.effort ?? 'MEDIUM') as string,
   parentId: project.parentId ?? '',
 });
@@ -116,6 +117,7 @@ export const ProjectDetailsDialog = ({
           .map((a) => a.trim())
           .filter(Boolean),
         logo: draft.logo || null,
+        headerImage: draft.headerImage || null,
         parentId: draft.parentId || null,
       });
       toast.success('Project updated');
@@ -206,6 +208,17 @@ export const ProjectDetailsDialog = ({
                 />
               ))}
             </div>
+          </Field>
+          <Field
+            label="Banner"
+            hint="Optional. A wide image (about 3:1) for the top of the page. Left empty, the brand kit's banner is used."
+            className="md:col-span-2"
+          >
+            <ImageField
+              value={draft.headerImage}
+              onChange={(url) => set('headerImage', url)}
+              wide
+            />
           </Field>
           <Field label="Status">
             <NativeSelect

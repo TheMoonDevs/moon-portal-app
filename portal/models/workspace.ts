@@ -141,6 +141,8 @@ export type Company = Loose<
     slug: string;
     description?: Nullable<string>;
     logo?: Nullable<string>;
+    /** A wide image for the top of its bar and its CORE project's page. */
+    banner?: Nullable<string>;
     color?: Nullable<string>;
     /** Logos, colors, fonts, guide and other brand files. */
     brandKit?: Nullable<BrandKit>;
@@ -193,7 +195,7 @@ export type Project = Loose<
     /** Short names it goes by, e.g. AMZ (see lib/worklogs/aliases). */
     aliases?: string[];
     brandKit?: Nullable<BrandKit>;
-    /** The image atop its page in the mobile app, from the brand kit. */
+    /** The wide image atop its page: uploaded, or one of the brand kit's. */
     headerImage?: Nullable<string>;
     goals?: ProjectGoal[];
     effort?: Nullable<PROJECT_EFFORT>;

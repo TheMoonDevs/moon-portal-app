@@ -18,6 +18,7 @@ export const ImageField = ({
   shape = 'rounded',
   size = 56,
   allowLink = true,
+  wide = false,
   className,
 }: {
   value: string;
@@ -25,6 +26,8 @@ export const ImageField = ({
   shape?: 'rounded' | 'circle' | 'hex';
   size?: number;
   allowLink?: boolean;
+  /** A banner: the preview is three times as wide as it is tall. */
+  wide?: boolean;
   className?: string;
 }) => {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -49,7 +52,7 @@ export const ImageField = ({
           type="button"
           onClick={() => fileRef.current?.click()}
           style={{
-            width: size,
+            width: wide ? size * 3 : size,
             height: size,
             ...(shape === 'hex' && {
               clipPath:

@@ -23,6 +23,7 @@ import {
 } from '@/lib/workspace/projectPages';
 import { isRestricted, limitingParent } from '@/lib/workspace/sharing';
 import { APP_ROUTES } from '@/utils/constants/appInfo';
+import { uploadImage } from '@/utils/helpers/uploads';
 import { useUser } from '@/utils/hooks/useUser';
 import { useWorkspace } from '@/utils/hooks/useWorkspace';
 import { PortalSdk } from '@/utils/services/PortalSdk';
@@ -516,11 +517,25 @@ const Banner = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState<string | null | undefined>();
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   const pick = async (url: string | null) => {
     setSaving(url);
     await onChange(url);
     setSaving(undefined);
     setOpen(false);
+  };
+  const upload = async (file: File) => {
+    setUploading(true);
+    try {
+      const url = await uploadImage(file);
+      await onChange(url);
+      setOpen(false);
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setUploading(false);
+    }
   };
   return (
     <div
@@ -564,8 +579,32 @@ const Banner = ({
             align="end"
             className="w-80 border-white/10 bg-neutral-900 p-3 text-neutral-100"
           >
+            <button
+              type="button"
+              disabled={uploading}
+              onClick={() => fileRef.current?.click()}
+              className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-semibold text-neutral-950 transition-opacity hover:opacity-90 disabled:opacity-60"
+            >
+              {uploading ? (
+                <Spin className="size-3.5" />
+              ) : (
+                <Icon name="upload" className="text-[16px]" />
+              )}
+              {uploading ? 'Uploading…' : 'Upload a banner'}
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = '';
+                if (file) upload(file);
+              }}
+            />
             <p className="mb-2 text-xs font-semibold text-neutral-300">
-              Pick from the brand kit
+              Or pick from the brand kit
             </p>
             {images.length ? (
               <div className="grid max-h-64 grid-cols-2 gap-2 overflow-y-auto">
@@ -593,8 +632,7 @@ const Banner = ({
               </div>
             ) : (
               <p className="text-xs text-neutral-500">
-                The brand kit has no images yet. Add some with Edit, under Brand
-                kit.
+                The brand kit has no images yet.
               </p>
             )}
             <button
@@ -602,7 +640,7 @@ const Banner = ({
               onClick={() => pick(null)}
               className="mt-3 w-full rounded-lg bg-white/[0.06] px-3 py-1.5 text-xs text-neutral-300 hover:bg-white/[0.1]"
             >
-              {saving === null ? 'Saving…' : 'Use the kit’s own banner'}
+              {saving === null ? 'Saving…' : 'Reset to the default banner'}
             </button>
           </PopoverContent>
         </Popover>
@@ -1084,6 +1122,7 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
         brandKit?: BrandKit | null;
         color?: string | null;
         logo?: string | null;
+        banner?: string | null;
       }
     | undefined;
   const isCore = coreId === project.id;
@@ -1091,7 +1130,11 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
     project.brandKit as BrandKit | null | undefined,
     isCore ? companyRecord?.brandKit : null,
   );
-  const banner = project.headerImage ?? bannerOf(kit);
+  const banner =
+    project.headerImage ||
+    bannerOf(kit) ||
+    (isCore ? companyRecord?.banner : null) ||
+    null;
   const colors = kitColors(kit);
   const mainColor =
     project.color || colors.main || companyRecord?.color || '#6366f1';

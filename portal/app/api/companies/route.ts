@@ -53,6 +53,7 @@ export async function POST(request: Request) {
       slug,
       description: body.description ?? null,
       logo: body.logo ?? null,
+      banner: body.banner ?? null,
       color: body.color ?? null,
       status: COMPANY_STATUS.ACTIVE,
       createdById: user.id,

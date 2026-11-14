@@ -14,7 +14,14 @@ export const dynamic = 'force-dynamic';
 
 type Params = { params: { companyId: string } };
 
-const EDITABLE = ['name', 'description', 'logo', 'color', 'brandKit'] as const;
+const EDITABLE = [
+  'name',
+  'description',
+  'logo',
+  'banner',
+  'color',
+  'brandKit',
+] as const;
 
 export async function GET(_request: Request, { params }: Params) {
   const { response } = await requireCompanyPermission(
