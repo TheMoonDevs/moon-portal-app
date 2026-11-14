@@ -52,6 +52,7 @@ const CompanyForm = ({
     description?: string | null;
     color?: string | null;
     logo?: string | null;
+    banner?: string | null;
   };
   users: User[];
   onSaved: (companyId: string) => void;
@@ -60,6 +61,7 @@ const CompanyForm = ({
   const [description, setDescription] = useState('');
   const [color, setColor] = useState<string>('#6366f1');
   const [logo, setLogo] = useState('');
+  const [banner, setBanner] = useState('');
   const [ownerIds, setOwnerIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -69,6 +71,7 @@ const CompanyForm = ({
     setDescription(initial?.description ?? '');
     setColor(initial?.color ?? '#6366f1');
     setLogo(initial?.logo ?? '');
+    setBanner(initial?.banner ?? '');
     setOwnerIds([]);
   }, [open, initial]);
 
@@ -76,7 +79,13 @@ const CompanyForm = ({
     if (!name.trim()) return toast.error('Give the company a name.');
     setSaving(true);
     try {
-      const payload = { name, description, color, logo: logo || null };
+      const payload = {
+        name,
+        description,
+        color,
+        logo: logo || null,
+        banner: banner || null,
+      };
       const res = initial
         ? await PortalSdk.patchData(`/api/companies/${initial.id}`, payload)
         : await PortalSdk.postData('/api/companies', {
@@ -137,6 +146,12 @@ const CompanyForm = ({
         </Field>
         <Field label="Logo" hint="Optional. A square image works best.">
           <ImageField value={logo} onChange={setLogo} />
+        </Field>
+        <Field
+          label="Banner"
+          hint="Optional. A wide image (about 3:1) for the top of the company's bar and its Core page."
+        >
+          <ImageField value={banner} onChange={setBanner} wide />
         </Field>
         <Field label="Color">
           <ColorPicker value={color} onChange={setColor} />

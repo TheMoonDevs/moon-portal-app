@@ -76,6 +76,7 @@ const emptyDraft = {
   status: 'ACTIVE',
   color: '#0ea5e9',
   logo: '',
+  headerImage: '',
   effort: 'MEDIUM',
   parentId: '',
   goals: [] as GoalDraft[],
@@ -118,6 +119,7 @@ const ProjectForm = ({
             status: project.status,
             color: project.color ?? '#0ea5e9',
             logo: project.logo ?? '',
+            headerImage: project.headerImage ?? '',
             effort: project.effort ?? 'MEDIUM',
             parentId: project.parentId ?? '',
             goals: project.goals ?? [],
@@ -159,6 +161,7 @@ const ProjectForm = ({
           .map((a) => a.trim())
           .filter(Boolean),
         logo: draft.logo || null,
+        headerImage: draft.headerImage || null,
         parentId: draft.parentId || null,
         goals: goalsForSave(draft.goals),
       };
@@ -244,6 +247,17 @@ const ProjectForm = ({
           className="md:col-span-2"
         >
           <ImageField value={draft.logo} onChange={(url) => set('logo', url)} />
+        </Field>
+        <Field
+          label="Banner"
+          hint="Optional. A wide image (about 3:1) for the top of the project's page. Left empty, the brand kit's banner is used."
+          className="md:col-span-2"
+        >
+          <ImageField
+            value={draft.headerImage}
+            onChange={(url) => set('headerImage', url)}
+            wide
+          />
         </Field>
         <Field label="Status">
           <NativeSelect

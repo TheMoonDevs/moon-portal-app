@@ -33,6 +33,7 @@ const EDITABLE = [
   'color',
   'icon',
   'logo',
+  'headerImage',
   'brandKit',
   'leadIds',
   'memberIds',

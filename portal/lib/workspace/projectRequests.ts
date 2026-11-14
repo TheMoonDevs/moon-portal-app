@@ -85,6 +85,7 @@ export type NewProject = {
   color?: string | null;
   icon?: string | null;
   logo?: string | null;
+  headerImage?: string | null;
   leadIds?: unknown;
   memberIds?: unknown;
   goals?: unknown;
@@ -106,6 +107,7 @@ export async function createProject(input: NewProject, userId: string) {
       color: input.color ?? null,
       icon: input.icon ?? null,
       logo: input.logo || null,
+      headerImage: input.headerImage || null,
       leadIds: asStringArray(input.leadIds),
       memberIds: asStringArray(input.memberIds),
       goals: sanitizeGoals(input.goals),
