@@ -42,6 +42,8 @@ export type LinkCandidates = {
     coreProjectId?: string | null;
     /** The person's own PERSONAL. */
     isPersonal?: boolean;
+    /** They are one of its owners. */
+    owned?: boolean;
   }[];
 };
 
@@ -79,7 +81,13 @@ export async function linkCandidates(
 ): Promise<LinkCandidates> {
   const workspace = await getWorkspaceForUser(user);
   const mine = workspace.filter((w) => w.member);
-  const companies = (mine.length ? mine : workspace).map((w) => w.company);
+  const reach = mine.length ? mine : workspace;
+  const companies = reach.map((w) => w.company);
+  const owned = new Set(
+    reach
+      .filter((w) => w.member?.roleKeys?.includes('owner'))
+      .map((w) => w.company.id),
+  );
   if (!companies.length) return { projects: [], tasks: [], companies: [] };
   const companyIndex = new Map(companies.map((c, i) => [c.id, i]));
   const companyOrder = (id: string) => companyIndex.get(id) ?? companies.length;
@@ -168,6 +176,7 @@ export async function linkCandidates(
       coreProjectId:
         projects.find((p) => p.isCore && p.companyId === c.id)?.id ?? null,
       ...(c.isPersonal && { isPersonal: true }),
+      ...(owned.has(c.id) && { owned: true }),
     })),
   };
 }
