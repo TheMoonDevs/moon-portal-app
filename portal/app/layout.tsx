@@ -13,10 +13,12 @@ import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 
 import { ToastsContainer } from '@/components/elements/Toast';
+import { AppDownloadSplash } from '@/components/global/AppDownloadSplash';
 import { PermissionDeniedToaster } from '@/components/global/PermissionDeniedToaster';
 import { ServiceWorkerProvider } from '@/components/global/ServiceWorkerProvider';
 import { SignFirstGate } from '@/components/global/SignFirstGate';
 import { ChatProvider } from '@/components/screens/Messages/ChatProvider';
+import { APP_STORE_SEARCH_URL, getStoreUrls } from '@/lib/mobile/storeLinks';
 import { THEME_SCRIPT } from '@/lib/theme';
 import { MUIThemeRegistry } from '@/styles/provider';
 import { APP_BASE_URL } from '@/utils/constants/appInfo';
@@ -64,6 +66,7 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const storeUrls = getStoreUrls();
   return (
     <html lang="en" className={montserrat.variable} suppressHydrationWarning>
       <head>
@@ -91,6 +94,12 @@ export default function RootLayout({
                 <ToastsContainer />
                 <PermissionDeniedToaster />
                 <SignFirstGate />
+                <AppDownloadSplash
+                  storeUrls={{
+                    ios: storeUrls.ios ?? APP_STORE_SEARCH_URL,
+                    android: storeUrls.android,
+                  }}
+                />
               </ReduxProvider>
             </MantineProvider>
           </MUIThemeRegistry>
