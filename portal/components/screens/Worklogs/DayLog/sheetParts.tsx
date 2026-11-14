@@ -379,7 +379,17 @@ export const PlaceLogo = ({
   place: Pick<Place, 'name' | 'color' | 'logo' | 'kind'>;
   className?: string;
 }) =>
-  place.logo ? (
+  // Personal is always a green lock: only its owner sees it.
+  place.kind === 'personal' ? (
+    <span
+      className={cn(
+        'flex size-4 shrink-0 items-center justify-center rounded bg-emerald-500 text-[10px] text-white',
+        className,
+      )}
+    >
+      <Icon name="lock" filled />
+    </span>
+  ) : place.logo ? (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={place.logo}
@@ -394,17 +404,17 @@ export const PlaceLogo = ({
       )}
       style={{ backgroundColor: place.color || '#525252' }}
     >
-      {place.kind === 'personal' ? (
-        <Icon name="lock" className="text-[10px]" />
-      ) : (
-        place.name.slice(0, 1)
-      )}
+      {place.name.slice(0, 1)}
     </span>
   );
 
 export const PlaceDot = ({ place }: { place: Place }) =>
   place.kind === 'personal' ? (
-    <Icon name="lock" className="text-[12px]" />
+    <Icon
+      name="lock"
+      filled
+      className="text-[12px] text-emerald-400 auto-light:text-emerald-600"
+    />
   ) : place.kind === 'none' ? (
     <span className="size-1.5 shrink-0 rounded-full border border-dashed border-neutral-500" />
   ) : (

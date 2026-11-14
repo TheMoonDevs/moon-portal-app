@@ -1,5 +1,6 @@
 'use client';
 
+import * as Popover from '@radix-ui/react-popover';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -12,6 +13,7 @@ import { Icon, Spin } from '../../Admin/shared/AdminUI';
 import { DateBadge, DatePopover } from './DatePopover';
 import type { Place } from './sheetParts';
 import {
+  PERSONAL_ID,
   PlaceDot,
   placeOf,
   rowIcon,
@@ -19,6 +21,8 @@ import {
   StateDot,
   StatusIcon,
 } from './sheetParts';
+import type { TaskAction } from './TaskActions';
+import { canAssign, TaskActionDialogs } from './TaskActions';
 import type { DayCompany, DayProject, DayTask } from './useDay';
 
 /*
@@ -28,7 +32,39 @@ import type { DayCompany, DayProject, DayTask } from './useDay';
  * given a day, ticked off, or followed by a next step.
  */
 
-type Task = DayTask & { followsId?: string | null; dueDate?: string | null };
+type Task = DayTask & {
+  followsId?: string | null;
+  dueDate?: string | null;
+  planId?: string | null;
+  meetBookingId?: string | null;
+  assigneeIds?: string[];
+};
+
+/**
+ * The part of the portal a task came from, for grouping Upcoming:
+ * meetings, goals, plans, follow-ups, the person's own, and Claude's.
+ */
+type Section = 'meetings' | 'goals' | 'plans' | 'followups' | 'own' | 'claude';
+const SECTIONS: { key: Section; label: string; icon: string }[] = [
+  { key: 'meetings', label: 'Meetings', icon: 'videocam' },
+  { key: 'goals', label: 'Goals', icon: 'flag' },
+  { key: 'plans', label: 'Plans', icon: 'map' },
+  { key: 'followups', label: 'Follow-ups', icon: 'subdirectory_arrow_right' },
+  { key: 'own', label: 'Your tasks', icon: 'checklist' },
+  { key: 'claude', label: 'Added by Claude', icon: 'smart_toy' },
+];
+const sectionOf = (t: Task): Section =>
+  t.meetBookingId || t.madeBy === 'meet'
+    ? 'meetings'
+    : t.scheduleId || t.goalId
+      ? 'goals'
+      : t.planId
+        ? 'plans'
+        : t.followsId
+          ? 'followups'
+          : t.madeBy && t.madeBy !== 'person'
+            ? 'claude'
+            : 'own';
 
 const dayOf = (t: Task) => t.forDate || t.dueDate?.slice(0, 10) || null;
 
@@ -54,6 +90,123 @@ const sortUpcoming = (tasks: Task[], sort: Sort) =>
         : addedAt(a).localeCompare(addedAt(b)),
     );
 
+type RowMove = 'done' | 'todo' | 'doing' | 'archived';
+
+const menuItem =
+  'flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm hover:bg-white/[0.06] disabled:opacity-40 disabled:hover:bg-transparent auto-light:hover:bg-black/[0.06]';
+
+/** Everything a task in Your tasks can do, behind its three dots. */
+const RowActions = ({
+  status,
+  date,
+  canPlan,
+  hasDay,
+  disabled,
+  assignable,
+  onMove,
+  onPlan,
+  onFollowUp,
+  onAction,
+}: {
+  status: ReturnType<typeof rowStatus>;
+  date: string;
+  canPlan: boolean;
+  hasDay: boolean;
+  disabled: boolean;
+  assignable: boolean;
+  onMove: (to: RowMove) => void;
+  onPlan: (date: string | null) => void;
+  onFollowUp?: () => void;
+  onAction: (action: TaskAction) => void;
+}) => {
+  const [open, setOpen] = useState(false);
+  const today = dayjs().format('YYYY-MM-DD');
+  const tomorrow = dayjs().add(1, 'day').format('YYYY-MM-DD');
+  const item = (
+    icon: string,
+    label: string,
+    onClick: () => void,
+    opts: { disabled?: boolean; title?: string; danger?: boolean } = {},
+  ) => (
+    <button
+      type="button"
+      disabled={opts.disabled}
+      title={opts.title}
+      onClick={() => {
+        setOpen(false);
+        // After the menu closes, so a dialog it opens keeps the focus.
+        setTimeout(onClick, 0);
+      }}
+      className={menuItem}
+    >
+      <Icon
+        name={icon}
+        className="text-[16px] text-neutral-400 auto-light:text-neutral-500"
+      />
+      {label}
+    </button>
+  );
+  const rule = (
+    <div className="my-1 border-t border-white/[0.07] auto-light:border-black/10" />
+  );
+  return (
+    <Popover.Root open={open} onOpenChange={setOpen}>
+      <Popover.Trigger asChild>
+        <button
+          type="button"
+          disabled={disabled}
+          aria-label="Task actions"
+          title="Actions"
+          className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md text-neutral-500 hover:bg-white/[0.08] hover:text-white data-[state=open]:bg-white/[0.08] data-[state=open]:text-white auto-light:hover:bg-black/[0.08] auto-light:hover:text-neutral-950 auto-light:data-[state=open]:bg-black/[0.08] auto-light:data-[state=open]:text-neutral-950"
+        >
+          <Icon name="more_vert" className="text-[18px]" />
+        </button>
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content
+          align="end"
+          sideOffset={4}
+          collisionPadding={12}
+          className="auto-theme z-[1300] w-56 rounded-xl border border-white/10 bg-neutral-900 p-1 text-neutral-200 shadow-2xl shadow-black/50 auto-light:border-black/10 auto-light:bg-white auto-light:text-neutral-800 auto-light:shadow-black/10"
+        >
+          {status === 'done'
+            ? item('radio_button_unchecked', 'Open it again', () =>
+                onMove('todo'),
+              )
+            : item('check_circle', 'Mark done', () => onMove('done'))}
+          {status !== 'doing' &&
+            status !== 'done' &&
+            item('clock_loader_40', 'Start it (doing)', () => onMove('doing'))}
+          {rule}
+          {item('today', 'Plan for today', () => onPlan(today))}
+          {item('event', 'Plan for tomorrow', () => onPlan(tomorrow))}
+          {canPlan &&
+            date !== today &&
+            date !== tomorrow &&
+            item(
+              'event_available',
+              `Plan for ${dayjs(date).format('ddd D MMM')}`,
+              () => onPlan(date),
+            )}
+          {hasDay && item('event_busy', 'Clear its day', () => onPlan(null))}
+          {rule}
+          {onFollowUp &&
+            item('subdirectory_arrow_right', 'Add a follow-up', onFollowUp)}
+          {item('person_add', 'Assign to…', () => onAction('assign'), {
+            disabled: !assignable,
+            title: assignable
+              ? undefined
+              : 'Personal tasks and tasks in no project stay yours',
+          })}
+          {item('description', 'Add info…', () => onAction('info'))}
+          {rule}
+          {item('inventory_2', 'Archive', () => onMove('archived'))}
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  );
+};
+
 const TaskRow = ({
   task,
   place,
@@ -63,6 +216,8 @@ const TaskRow = ({
   onPlan,
   onMove,
   onFollowUp,
+  onAction,
+  assignable,
   archived,
 }: {
   task: Task;
@@ -72,8 +227,11 @@ const TaskRow = ({
   canPlan: boolean;
   after?: { title: string; status: string } | null;
   onPlan: (date: string | null) => Promise<unknown>;
-  onMove: (to: 'done' | 'todo') => Promise<unknown>;
+  onMove: (to: RowMove) => Promise<unknown>;
   onFollowUp?: (title: string) => Promise<boolean>;
+  /** Assign to (when it can be) or Add info. */
+  onAction: (action: TaskAction) => void;
+  assignable: boolean;
   archived?: boolean;
 }) => {
   const [busy, setBusy] = useState<'plan' | 'move' | null>(null);
@@ -206,22 +364,18 @@ const TaskRow = ({
                 }
               />
             }
-            {onFollowUp && (
-              <button
-                type="button"
-                aria-label="Add a follow-up task"
-                title="Add a follow-up task: the next step after this one"
-                onClick={() => setFollowing((v) => !v)}
-                className={cn(
-                  'mt-0.5 size-8 shrink-0 items-center justify-center rounded-md text-neutral-500 hover:bg-white/[0.08] hover:text-white auto-light:hover:bg-black/[0.08] auto-light:hover:text-neutral-950',
-                  following
-                    ? 'flex bg-white/[0.08] text-white auto-light:bg-black/[0.08] auto-light:text-neutral-950'
-                    : 'flex md:hidden md:group-focus-within:flex md:group-hover:flex',
-                )}
-              >
-                <Icon name="add" className="text-[17px]" />
-              </button>
-            )}
+            <RowActions
+              status={status}
+              date={date}
+              canPlan={canPlan}
+              hasDay={!!day}
+              disabled={!!busy}
+              onMove={(to) => run('move', () => onMove(to))}
+              onPlan={(d) => run('plan', () => onPlan(d))}
+              onFollowUp={onFollowUp ? () => setFollowing(true) : undefined}
+              onAction={onAction}
+              assignable={assignable}
+            />
           </>
         )}
       </div>
@@ -382,7 +536,14 @@ export const YourTasks = ({
   const afterOf = (t: Task) =>
     t.followsId ? (all.find((x) => x.id === t.followsId) ?? null) : null;
 
-  const move = async (task: Task, to: 'done' | 'todo') => {
+  const [acting, setActing] = useState<{
+    task: Task;
+    action: TaskAction;
+  } | null>(null);
+  const personal = (id?: string | null) =>
+    id === PERSONAL_ID || companies.some((c) => c.id === id && c.isPersonal);
+
+  const move = async (task: Task, to: RowMove) => {
     try {
       await PortalSdk.postData('/api/me/day/points', {
         taskId: task.id,
@@ -390,6 +551,7 @@ export const YourTasks = ({
         text: '',
       });
       if (to === 'done') toast.success(`Done: ${task.title}`);
+      if (to === 'archived') toast.success(`Archived: ${task.title}`);
       onChanged();
     } catch {
       toast.error('Could not update the task.');
@@ -438,6 +600,8 @@ export const YourTasks = ({
       onFollowUp={
         t.projectId && !isArchived ? (title) => followUp(t, title) : undefined
       }
+      onAction={(action) => setActing({ task: t, action })}
+      assignable={canAssign(t, personal)}
     />
   );
 
@@ -515,7 +679,22 @@ export const YourTasks = ({
                 ))}
               </div>
             </div>
-            {upcoming.map((t) => row(t))}
+            {SECTIONS.map((section) => {
+              const list = upcoming.filter((t) => sectionOf(t) === section.key);
+              if (!list.length) return null;
+              return (
+                <div key={section.key} className="mt-2 first:mt-0">
+                  <p className="flex items-center gap-1.5 px-2 pb-0.5 pt-1 text-[11px] font-medium text-neutral-400 auto-light:text-neutral-500">
+                    <Icon name={section.icon} className="text-[14px]" />
+                    {section.label}
+                    <span className="tabular-nums text-neutral-600 auto-light:text-neutral-400">
+                      {list.length}
+                    </span>
+                  </p>
+                  {list.map((t) => row(t))}
+                </div>
+              );
+            })}
             {upcoming.length === 0 && (
               <p className="px-2 pb-1 text-sm text-neutral-500">
                 Nothing upcoming. Tasks for later days, and tasks with no day
@@ -524,6 +703,12 @@ export const YourTasks = ({
             )}
             <NewTaskRow onAdded={onChanged} />
           </div>
+          <TaskActionDialogs
+            task={acting?.task ?? null}
+            action={acting?.action ?? null}
+            onClose={() => setActing(null)}
+            onDone={onChanged}
+          />
           {archived.length > 0 && (
             <div>
               {heading('Archived', archived.length, {

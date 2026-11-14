@@ -24,6 +24,7 @@ import type { TaskRowStatus } from './sheetParts';
 import {
   LineInput,
   movedOn,
+  PERSONAL_ID,
   PlaceChip,
   placeInput,
   placeOf,
@@ -35,6 +36,8 @@ import {
   statusForKey,
   StatusIcon,
 } from './sheetParts';
+import type { ActionTask, TaskAction } from './TaskActions';
+import { ActionsMenu, canAssign, TaskActionDialogs } from './TaskActions';
 import { hasDetails, MeetingTime, TaskInfo } from './TaskInfo';
 import type { Day, DayPoint, DayTask, PlaceInput, TaskMove } from './useDay';
 
@@ -396,6 +399,7 @@ const Details = ({
   editable,
   moveOptions,
   showPoints,
+  onAction,
 }: {
   task: DayTask;
   day: Day;
@@ -403,6 +407,8 @@ const Details = ({
   editable: boolean;
   moveOptions: PickerOption[];
   showPoints: boolean;
+  /** Assign to or Add info, from the Actions button beside its day. */
+  onAction?: (action: TaskAction) => void;
 }) => {
   const [note, setNote] = useState('');
   // Bare statuses are hidden unless asked for, e.g. to delete a wrong one.
@@ -460,6 +466,12 @@ const Details = ({
             }
           />
         )}
+        {saved && onAction && (
+          <ActionsMenu
+            assignable={canAssign(task, (id) => isPersonalCompany(id, day))}
+            onPick={onAction}
+          />
+        )}
       </div>
       {showPoints && points.length > 0 && (
         <ul className="mt-1.5">
@@ -507,6 +519,10 @@ const Details = ({
     </div>
   );
 };
+
+/** Whether a company is the person's Personal. */
+const isPersonalCompany = (id: string | null | undefined, day: Day) =>
+  id === PERSONAL_ID || day.companies.some((c) => c.id === id && c.isPersonal);
 
 /** Finished tasks of one goal folded into a line past this many. */
 const BUNDLE_MIN = 3;
@@ -682,6 +698,7 @@ export const TaskSheet = ({
   groups,
   editable,
   showPoints,
+  onChanged,
 }: {
   day: Day;
   /** The parts of the sheet, in order, each with its tasks in order. */
@@ -689,8 +706,15 @@ export const TaskSheet = ({
   editable: boolean;
   /** Work points: their count after each task, and the list under it. */
   showPoints: boolean;
+  /** After a task was given to someone or its info written. */
+  onChanged?: () => void;
 }) => {
   const inputs = useRef(new Map<string, HTMLTextAreaElement>());
+  // The task an Actions dialog is open for.
+  const [acting, setActing] = useState<{
+    task: ActionTask;
+    action: TaskAction;
+  } | null>(null);
   const [focusId, setFocusId] = useState<string | null>(null);
   const [open, setOpen] = useState<Set<string>>(new Set());
   // The task whose goal popover is open, and whether it lists goals to pick.
@@ -984,6 +1008,9 @@ export const TaskSheet = ({
             editable={canEdit}
             moveOptions={moveOptions}
             showPoints={showPoints}
+            onAction={
+              canEdit ? (action) => setActing({ task, action }) : undefined
+            }
           />
         )}
       </div>
@@ -1021,6 +1048,12 @@ export const TaskSheet = ({
           )}
         </div>
       ))}
+      <TaskActionDialogs
+        task={acting?.task ?? null}
+        action={acting?.action ?? null}
+        onClose={() => setActing(null)}
+        onDone={() => (onChanged ? onChanged() : day.reload())}
+      />
     </div>
   );
 };

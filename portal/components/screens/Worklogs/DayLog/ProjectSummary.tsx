@@ -26,7 +26,11 @@ export type PlaceCount = {
 
 /** The key a place is filtered by when its company is picked. */
 export const companyKeyOf = (place: Place) =>
-  place.companyId ? `company:${place.companyId}` : place.key;
+  place.kind === 'personal'
+    ? 'personal'
+    : place.companyId
+      ? `company:${place.companyId}`
+      : place.key;
 
 export function countPlaces(day: Day, tasks: DayTask[]): PlaceCount[] {
   const groups = new Map<string, PlaceCount>();
@@ -57,39 +61,73 @@ export function countPlaces(day: Day, tasks: DayTask[]): PlaceCount[] {
   );
 }
 
-type Badge = {
+export type CompanyTab = {
   key: string;
   place: Pick<Place, 'name' | 'color' | 'logo' | 'kind'>;
   done: number;
   total: number;
+  owned: boolean;
 };
 
-/** The day's companies (and personal or loose work), for the badges. */
-function companyBadges(counts: PlaceCount[], day: Day): Badge[] {
-  const badges = new Map<string, Badge>();
+/**
+ * A tab for each of the person's companies, Personal, and loose work when
+ * there is any: the companies they own first, then the ones with the most
+ * tasks on the day, then by name. Personal and loose work come last.
+ */
+export function companyTabs(counts: PlaceCount[], day: Day): CompanyTab[] {
+  const tabs = new Map<string, CompanyTab>();
+  for (const company of day.companies) {
+    const key = company.isPersonal ? 'personal' : `company:${company.id}`;
+    tabs.set(key, {
+      key,
+      place: company.isPersonal
+        ? { name: 'Personal', kind: 'personal' }
+        : {
+            name: company.name,
+            color: company.color,
+            logo: company.logo,
+            kind: 'company',
+          },
+      done: 0,
+      total: 0,
+      owned: !!company.owned,
+    });
+  }
   for (const c of counts) {
     const key = companyKeyOf(c.place);
     const company = c.place.companyId
       ? day.companies.find((x) => x.id === c.place.companyId)
       : undefined;
-    const badge = badges.get(key) ?? {
+    const tab = tabs.get(key) ?? {
       key,
-      place: company
-        ? {
-            name: company.name,
-            color: company.color,
-            logo: company.logo,
-            kind: 'company' as const,
-          }
-        : c.place,
+      place:
+        c.place.kind === 'personal'
+          ? { name: 'Personal', kind: 'personal' as const }
+          : company
+            ? {
+                name: company.name,
+                color: company.color,
+                logo: company.logo,
+                kind: 'company' as const,
+              }
+            : c.place,
       done: 0,
       total: 0,
+      owned: !!company?.owned,
     };
-    badge.done += c.done;
-    badge.total += c.total;
-    badges.set(key, badge);
+    tab.done += c.done;
+    tab.total += c.total;
+    tabs.set(key, tab);
   }
-  return Array.from(badges.values());
+  const rank = (t: CompanyTab) =>
+    t.place.kind === 'none' ? 2 : t.place.kind === 'personal' ? 1 : 0;
+  return Array.from(tabs.values()).sort(
+    (a, b) =>
+      rank(a) - rank(b) ||
+      Number(b.owned) - Number(a.owned) ||
+      b.total - a.total ||
+      a.place.name.localeCompare(b.place.name),
+  );
 }
 
 /** Colors for parts with none, or one another part already uses. */
@@ -267,8 +305,17 @@ const Part = ({
   );
 };
 
+const tabClass = (on: boolean) =>
+  cn(
+    'flex h-8 shrink-0 items-center gap-1.5 rounded-full border text-xs transition-colors',
+    on
+      ? 'border-white/30 bg-white/[0.08] pl-1 pr-2.5 text-white auto-light:border-black/30 auto-light:bg-black/[0.06] auto-light:text-neutral-950'
+      : 'border-white/[0.08] text-neutral-400 hover:border-white/20 hover:text-neutral-200 auto-light:border-black/10 auto-light:text-neutral-600 auto-light:hover:border-black/20 auto-light:hover:text-neutral-900',
+  );
+
 export const ProjectSummary = ({
   counts,
+  tabs,
   day,
   filter,
   onFilter,
@@ -276,6 +323,8 @@ export const ProjectSummary = ({
   onShowPoints,
 }: {
   counts: PlaceCount[];
+  /** From companyTabs, in order. */
+  tabs: CompanyTab[];
   day: Day;
   filter: string | null;
   onFilter: (key: string | null) => void;
@@ -284,35 +333,79 @@ export const ProjectSummary = ({
 }) => {
   const done = counts.reduce((n, c) => n + c.done, 0);
   const total = counts.reduce((n, c) => n + c.total, 0);
-  if (!total) return null;
-  const badges = companyBadges(counts, day);
+  if (!total && !tabs.length) return null;
   const colors = partColors(counts);
   const pick = (key: string) => onFilter(filter === key ? null : key);
   const lit = (c: PlaceCount) =>
     filter === c.place.key || filter === companyKeyOf(c.place);
+  // A project picked from the bar keeps its company's tab lit.
+  const tabOn = (key: string) =>
+    filter === key ||
+    (!!filter &&
+      counts.some(
+        (c) => c.place.key === filter && companyKeyOf(c.place) === key,
+      ));
+  const allOn = !filter;
   return (
     <div className="mb-3">
       <div className="flex items-center gap-1.5">
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
-          {badges.map((b) => (
-            <button
-              key={b.key}
-              type="button"
-              onClick={() => pick(b.key)}
-              className={cn(
-                'flex h-7 items-center gap-1.5 rounded-full border pl-1 pr-2.5 text-xs transition-colors',
-                filter === b.key
-                  ? 'border-white/30 bg-white/[0.08] text-white auto-light:border-black/30 auto-light:bg-black/[0.06] auto-light:text-neutral-950'
-                  : 'border-white/[0.08] text-neutral-400 hover:border-white/20 hover:text-neutral-200 auto-light:border-black/10 auto-light:text-neutral-600 auto-light:hover:border-black/20 auto-light:hover:text-neutral-900',
-              )}
-            >
-              <PlaceLogo place={b.place} className="size-5 rounded-full" />
-              <span className="max-w-[140px] truncate">{b.place.name}</span>
+        <div
+          role="tablist"
+          aria-label="Companies"
+          className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={allOn}
+            onClick={() => onFilter(null)}
+            className={cn(tabClass(allOn), 'px-3')}
+          >
+            <span className="font-medium">All</span>
+            {total > 0 && (
               <span className="tabular-nums text-neutral-500">
-                {b.done}/{b.total}
+                {done}/{total}
               </span>
-            </button>
-          ))}
+            )}
+          </button>
+          {tabs.map((t) => {
+            const on = tabOn(t.key);
+            const label = `${t.place.name}${t.total ? `: ${t.done} of ${t.total} done` : ''}`;
+            return (
+              <button
+                key={t.key}
+                type="button"
+                role="tab"
+                aria-selected={on}
+                aria-label={label}
+                title={label}
+                onClick={() => pick(t.key)}
+                className={cn(
+                  tabClass(on),
+                  // Not picked: the company's icon alone.
+                  !on && 'w-8 justify-center',
+                  !on && !t.total && 'opacity-60 hover:opacity-100',
+                )}
+              >
+                <PlaceLogo
+                  place={t.place}
+                  className="size-6 rounded-full text-[13px]"
+                />
+                {on && (
+                  <>
+                    <span className="max-w-[160px] truncate font-medium">
+                      {t.place.name}
+                    </span>
+                    {t.total > 0 && (
+                      <span className="tabular-nums text-neutral-500">
+                        {t.done}/{t.total}
+                      </span>
+                    )}
+                  </>
+                )}
+              </button>
+            );
+          })}
         </div>
         <button
           type="button"
@@ -320,7 +413,7 @@ export const ProjectSummary = ({
           aria-pressed={showPoints}
           title={showPoints ? 'Hide work points' : 'Show work points'}
           className={cn(
-            'flex size-7 shrink-0 items-center justify-center self-start rounded-lg transition-colors',
+            'flex size-8 shrink-0 items-center justify-center self-start rounded-lg transition-colors',
             showPoints
               ? 'bg-white/[0.1] text-white auto-light:bg-black/[0.08] auto-light:text-neutral-950'
               : 'text-neutral-500 hover:bg-white/[0.06] hover:text-neutral-200 auto-light:hover:bg-black/[0.06] auto-light:hover:text-neutral-800',
@@ -329,25 +422,27 @@ export const ProjectSummary = ({
           <Icon name="notes" className="text-[18px]" />
         </button>
       </div>
-      <div className="mt-2 flex items-center gap-3">
-        <div className="flex min-w-0 flex-1 gap-[3px]">
-          {counts.map((c) => (
-            <Part
-              key={c.place.key}
-              count={c}
-              color={colors.get(c.place.key)!}
-              day={day}
-              active={lit(c)}
-              dimmed={!!filter && !lit(c)}
-              showPoints={showPoints}
-              onPick={() => pick(c.place.key)}
-            />
-          ))}
+      {total > 0 && (
+        <div className="mt-2 flex items-center gap-3">
+          <div className="flex min-w-0 flex-1 gap-[3px]">
+            {counts.map((c) => (
+              <Part
+                key={c.place.key}
+                count={c}
+                color={colors.get(c.place.key)!}
+                day={day}
+                active={lit(c)}
+                dimmed={!!filter && !lit(c)}
+                showPoints={showPoints}
+                onPick={() => pick(c.place.key)}
+              />
+            ))}
+          </div>
+          <span className="shrink-0 text-[11px] tabular-nums text-neutral-500">
+            {done}/{total} done
+          </span>
         </div>
-        <span className="shrink-0 text-[11px] tabular-nums text-neutral-500">
-          {done}/{total} done
-        </span>
-      </div>
+      )}
     </div>
   );
 };

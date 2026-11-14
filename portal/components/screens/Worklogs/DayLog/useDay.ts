@@ -124,6 +124,8 @@ export type DayCompany = {
   coreProjectId?: string | null;
   /** The person's own PERSONAL. */
   isPersonal?: boolean;
+  /** They are one of its owners. */
+  owned?: boolean;
 };
 
 export type TaskMove = PointStatus | 'todo' | 'archived';

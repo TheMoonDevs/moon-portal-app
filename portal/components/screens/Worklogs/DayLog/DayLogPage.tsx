@@ -27,8 +27,14 @@ import { DatePopover } from './DatePopover';
 import { DayList } from './DayList';
 import { DaySummary } from './DaySummary';
 import { Picker } from './Picker';
-import { companyKeyOf, countPlaces, ProjectSummary } from './ProjectSummary';
-import type { TaskRowStatus } from './sheetParts';
+import {
+  companyKeyOf,
+  companyTabs,
+  countPlaces,
+  ProjectSummary,
+} from './ProjectSummary';
+import { ProjectTeamSheet, TeamCount, useProjectTeams } from './ProjectTeam';
+import type { Place, TaskRowStatus } from './sheetParts';
 import {
   movedOn,
   placeInputOf,
@@ -58,6 +64,19 @@ const fmt = (d: dayjs.Dayjs) => d.format('YYYY-MM-DD');
 const SHOW_POINTS_KEY = 'worklogs.points';
 // A new key: choices saved before Projects became the default start over.
 const VIEW_KEY = 'worklogs.view.v2';
+// Whether the Plan / Work / Mixed / Projects / Summary bar is shown.
+const VIEWS_SHOWN_KEY = 'worklogs.views.shown';
+
+/** Typing in a field: the page's own keys leave it alone. */
+const typing = (target: EventTarget | null) => {
+  const el = target as HTMLElement | null;
+  return (
+    !!el &&
+    (el.isContentEditable ||
+      ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName) ||
+      !!el.closest('[role="dialog"],[role="menu"],[role="listbox"]'))
+  );
+};
 
 /**
  * How the day's sheet is laid out: the plan (the day's tasks and what is
@@ -188,7 +207,14 @@ export const DayLogPage = ({
   const yourTasks = useYourTasks(day.version);
   const [sideTab, setSideTab] = useState<SideTab>('tasks');
   const [filter, setFilter] = useState<string | null>(null);
-  useEffect(() => setFilter(null), [date]);
+  // A company tab stays picked from day to day; a single project does not.
+  useEffect(
+    () =>
+      setFilter((f) =>
+        f && (f.startsWith('company:') || f === 'personal') ? f : null,
+      ),
+    [date],
+  );
   // Work points under tasks show unless the person turned them off.
   const [showPoints, setShowPoints] = useState(true);
   useEffect(() => {
@@ -206,16 +232,29 @@ export const DayLogPage = ({
       // Storage can be blocked; the choice then lasts for this visit.
     }
   };
-  // Projects for every day; a view the person picks is kept.
-  const [view, setView] = useState<View>(DEFAULT_VIEW);
+  // Projects for every day; a view the person picks is kept. The bar of
+  // views is hidden until asked for, and while hidden the day is by project.
+  const [pickedView, setView] = useState<View>(DEFAULT_VIEW);
+  const [viewsShown, setViewsShown] = useState(false);
   useEffect(() => {
     try {
       const saved = localStorage.getItem(VIEW_KEY) as View | null;
       if (saved && VIEWS.some((v) => v.value === saved)) setView(saved);
+      setViewsShown(localStorage.getItem(VIEWS_SHOWN_KEY) === '1');
     } catch {
       // Storage can be blocked; the choice then lasts for this visit.
     }
   }, []);
+  const toggleViews = () => {
+    const next = !viewsShown;
+    setViewsShown(next);
+    try {
+      localStorage.setItem(VIEWS_SHOWN_KEY, next ? '1' : '0');
+    } catch {
+      // Storage can be blocked; the choice then lasts for this visit.
+    }
+  };
+  const view: View = viewsShown ? pickedView : DEFAULT_VIEW;
   const pickView = (next: View) => {
     setView(next);
     try {
@@ -301,6 +340,40 @@ export const DayLogPage = ({
   );
 
   const counts = useMemo(() => countPlaces(day, day.tasks), [day]);
+  const tabs = useMemo(() => companyTabs(counts, day), [counts, day]);
+
+  // Left and right go a day back or on; with Cmd (Ctrl), to the company
+  // before or after, All first.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      if (e.altKey || e.shiftKey || typing(e.target)) return;
+      const step = e.key === 'ArrowLeft' ? -1 : 1;
+      if (e.metaKey || e.ctrlKey) {
+        if (!tabs.length) return;
+        e.preventDefault();
+        const keys: (string | null)[] = [null, ...tabs.map((t) => t.key)];
+        const at = Math.max(
+          0,
+          keys.findIndex(
+            (k) =>
+              k === filter ||
+              (!!filter &&
+                !!k &&
+                counts.some(
+                  (c) => c.place.key === filter && companyKeyOf(c.place) === k,
+                )),
+          ),
+        );
+        setFilter(keys[(at + step + keys.length) % keys.length]);
+        return;
+      }
+      e.preventDefault();
+      pick(fmt(dayjs(date).add(step, 'day')));
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [tabs, counts, filter, date, pick]);
   const shown = useMemo(
     () =>
       filter
@@ -321,6 +394,12 @@ export const DayLogPage = ({
   const showDays = layout === 'full';
   // On a phone the full page is the list of days; a day opens on its own.
   const showDay = layout === 'day' || wide;
+
+  // After a task was given away or its info written: both lists change.
+  const changed = () => {
+    day.reload();
+    yourTasks.reload();
+  };
 
   // The sheet's parts for the view picked in the header.
   const fromBefore = (t: DayTask) =>
@@ -404,13 +483,41 @@ export const DayLogPage = ({
     return { done: real.filter(finished).length, total: real.length };
   };
 
+  const teamIds = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          [
+            ...day.tasks.map(
+              (t) => placeOf(t, day.projects, day.companies).key,
+            ),
+            ...extraPlaces,
+          ].filter((k) => k.startsWith('project:')),
+        ),
+      ).map((k) => k.slice(8)),
+    [day.tasks, day.projects, day.companies, extraPlaces],
+  );
+  const teams = useProjectTeams(date, teamIds, day.version);
+  const [teamOf, setTeamOf] = useState<Place | null>(null);
+
   const projectGroups = (() => {
     const keys = [
       ...counts.map((c) => c.place.key),
       ...shown.map((t) => placeOf(t, day.projects, day.companies).key),
       ...extraPlaces,
     ].filter((k, i, all) => all.indexOf(k) === i);
+    // In the order of the company tabs, then as they came.
+    const tabRank = (key: string) => {
+      const at = tabs.findIndex(
+        (t) =>
+          t.key === companyKeyOf(placeOfKey(key, day.projects, day.companies)),
+      );
+      return at < 0 ? tabs.length : at;
+    };
     return keys
+      .map((key, i) => ({ key, i, rank: tabRank(key) }))
+      .sort((x, y) => x.rank - y.rank || x.i - y.i)
+      .map(({ key }) => key)
       .map((key): SheetGroup | null => {
         const tasks = shown.filter(
           (t) => placeOf(t, day.projects, day.companies).key === key,
@@ -431,6 +538,12 @@ export const DayLogPage = ({
               <span className="truncate normal-case tracking-normal text-neutral-400 auto-light:text-neutral-600">
                 {place.name}
               </span>
+              {place.kind === 'project' && (
+                <TeamCount
+                  team={teams[key.slice(8)]}
+                  onOpen={() => setTeamOf(place)}
+                />
+              )}
             </>
           ),
           tasks,
@@ -443,8 +556,13 @@ export const DayLogPage = ({
       .filter((g): g is SheetGroup => !!g);
   })();
 
+  // Add project: the projects not on the sheet yet, of the picked company.
   const placeChoices = placeOptions(day.projects, day.companies).filter(
-    (o) => !projectGroups.some((g) => g.key === o.id),
+    (o) =>
+      !projectGroups.some((g) => g.key === o.id) &&
+      (!filter ||
+        o.id === filter ||
+        companyKeyOf(placeOfKey(o.id, day.projects, day.companies)) === filter),
   );
 
   const sheetView = (
@@ -524,6 +642,7 @@ export const DayLogPage = ({
       {wide && (
         <ProjectSummary
           counts={counts}
+          tabs={tabs}
           day={day}
           filter={filter}
           onFilter={setFilter}
@@ -558,6 +677,7 @@ export const DayLogPage = ({
                 groups={planGroups}
                 editable={editable}
                 showPoints={showPoints}
+                onChanged={changed}
               />
             )}
             {view === 'work' && (
@@ -566,6 +686,7 @@ export const DayLogPage = ({
                 groups={workGroups(mine, 'work', addHere)}
                 editable={editable}
                 showPoints={showPoints}
+                onChanged={changed}
               />
             )}
             {view === 'mixed' && (
@@ -574,6 +695,7 @@ export const DayLogPage = ({
                 groups={defaultGroups}
                 editable={editable}
                 showPoints={showPoints}
+                onChanged={changed}
               />
             )}
             {view === 'projects' && (
@@ -589,13 +711,14 @@ export const DayLogPage = ({
                   groups={projectGroups}
                   editable={editable}
                   showPoints={showPoints}
+                  onChanged={changed}
                 />
                 {editable && (
                   <div className="px-2 pb-1 pt-2">
                     <Picker
                       options={placeChoices}
                       onPick={(o) => setExtraPlaces((keys) => [...keys, o.id])}
-                      placeholder="Pick a project…"
+                      placeholder="Find a project…"
                       empty="No projects match"
                       align="start"
                       trigger={
@@ -604,7 +727,8 @@ export const DayLogPage = ({
                           className="flex items-center gap-1.5 rounded-lg p-1 text-xs font-medium text-neutral-500 hover:text-neutral-200 auto-light:hover:text-neutral-800"
                         >
                           <Icon name="add" className="text-[16px]" />
-                          Add a task in another project
+                          Add project
+                          <Icon name="expand_more" className="text-[16px]" />
                         </button>
                       }
                     />
@@ -634,6 +758,7 @@ export const DayLogPage = ({
             groups={workGroups(claudes, 'claude-work', null)}
             editable={editable}
             showPoints={showPoints}
+            onChanged={changed}
           />
         </div>
       )}
@@ -652,6 +777,7 @@ export const DayLogPage = ({
             groups={claudeGroups}
             editable={editable}
             showPoints={showPoints}
+            onChanged={changed}
           />
         </div>
       )}
@@ -664,8 +790,9 @@ export const DayLogPage = ({
 
       <p className="mt-6 px-2 text-[11px] leading-5 text-neutral-600 auto-light:text-neutral-400">
         Enter adds the next task · Backspace on an empty task takes it out ·
-        Ctrl+Space done · Ctrl+P doing · Ctrl+Q not done · the arrow on the
-        right of a task shows its details and notes
+        Ctrl+Space done · Ctrl+P doing · Ctrl+Q not done · ← → another day ·
+        Cmd+← → another company · the arrow on the right of a task shows its
+        details, notes and actions
       </p>
     </div>
   );
@@ -757,7 +884,7 @@ export const DayLogPage = ({
         >
           My Worklogs
         </span>
-        {showDay && (
+        {showDay && viewsShown && (
           <nav
             aria-label="Views"
             // In the middle of the header: between the back arrow and the
@@ -796,6 +923,26 @@ export const DayLogPage = ({
           </span>
         )}
         <div className={cn('flex-1', showDay && 'max-sm:hidden')} />
+        {showDay && (
+          <button
+            type="button"
+            onClick={toggleViews}
+            aria-pressed={viewsShown}
+            title={
+              viewsShown
+                ? 'Hide the views (Plan, Work, Mixed, Summary)'
+                : 'Show the views (Plan, Work, Mixed, Summary)'
+            }
+            className={cn(
+              'flex size-8 items-center justify-center rounded-lg transition-colors',
+              viewsShown
+                ? 'bg-white/[0.1] text-white auto-light:bg-black/[0.08] auto-light:text-neutral-950'
+                : 'text-neutral-400 hover:bg-white/[0.06] hover:text-white auto-light:text-neutral-500 auto-light:hover:bg-black/[0.06] auto-light:hover:text-neutral-950',
+            )}
+          >
+            <Icon name="view_agenda" className="text-[18px]" />
+          </button>
+        )}
         <ThemeToggle />
         <Link
           href={APP_ROUTES.user}
@@ -838,6 +985,13 @@ export const DayLogPage = ({
           </aside>
         )}
       </main>
+      <ProjectTeamSheet
+        place={teamOf}
+        team={teamOf ? teams[teamOf.key.slice(8)] : undefined}
+        date={date}
+        myId={user?.id}
+        onClose={() => setTeamOf(null)}
+      />
       <Toaster position="bottom-right" richColors theme="system" />
     </div>
   );
