@@ -11,8 +11,10 @@ import { applyCorsHeaders } from '@/middlewares/cors';
 // sign an agreement, `/verify` anyone's check of a signed PDF. `/policies`
 // is the codes we work by. `/privacy`, `/terms`, `/delete-account` and
 // `/support` are the pages the App Store and Play listings link to.
+// `/app` is the link to share for getting the mobile app.
 // `/~offline` is cached by the service worker for when there's no network.
 const PUBLIC_PAGES = [
+  '/app',
   '/login',
   '/logout',
   '/apply',

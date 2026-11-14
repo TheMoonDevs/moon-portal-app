@@ -21,6 +21,7 @@ type Blocking = {
 };
 
 const OPEN_PATHS = [
+  '/app',
   '/sign',
   '/join',
   '/login',

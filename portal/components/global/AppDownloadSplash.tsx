@@ -9,17 +9,19 @@ import { useEffect, useState } from 'react';
  * they pick is remembered for 30 days on that browser. Pages people reach
  * from outside the team (applying, signing, booking a meeting, the legal
  * pages) never show it, and nor does the app's own in-app browser, which
- * opens pages with `inApp=1`.
+ * opens pages with `inApp=1`. `/app` is the same screen as a link to share,
+ * on any device.
  */
 
 type Platform = 'ios' | 'android';
-type StoreUrls = { ios: string; android: string };
+export type StoreUrls = { ios: string; android: string };
 
 const SEEN_KEY = 'portal:app-splash';
 const IN_APP_KEY = 'portal:in-app';
 const REMEMBER_MS = 30 * 24 * 60 * 60 * 1000;
 
 const SKIP_PATHS = [
+  '/app',
   '/apply',
   '/task',
   '/join',
@@ -87,38 +89,22 @@ const STORES: Record<
   android: { mark: PlayMark, small: 'Get it on', name: 'Google Play' },
 };
 
-export const AppDownloadSplash = ({ storeUrls }: { storeUrls: StoreUrls }) => {
-  const pathname = usePathname() ?? '/';
-  const [platform, setPlatform] = useState<Platform | null>(null);
-
-  useEffect(() => {
-    if (new URLSearchParams(window.location.search).get('inApp') === '1')
-      write(IN_APP_KEY, '1');
-    if (read(IN_APP_KEY) === '1') return;
-    const seen = Number(read(SEEN_KEY) || 0);
-    if (Date.now() - seen < REMEMBER_MS) return;
-    setPlatform(detectPlatform());
-  }, []);
-
-  const open = !!platform && !skipPath(pathname);
-
-  useEffect(() => {
-    if (!open) return;
-    const { overflow } = document.body.style;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = overflow;
-    };
-  }, [open]);
-
-  if (!open || !platform) return null;
-
-  const close = () => {
-    write(SEEN_KEY, String(Date.now()));
-    setPlatform(null);
-  };
+/** The download screen itself: shared by the phone splash and `/app`. */
+export const AppDownloadScreen = ({
+  storeUrls,
+  platform,
+  onDone,
+  continueHref,
+}: {
+  storeUrls: StoreUrls;
+  platform: Platform | null;
+  onDone: () => void;
+  continueHref?: string;
+}) => {
   const order: Platform[] =
-    platform === 'ios' ? ['ios', 'android'] : ['android', 'ios'];
+    platform === 'android' ? ['android', 'ios'] : ['ios', 'android'];
+  const continueClass =
+    'relative mx-auto mt-6 px-4 py-3 text-sm font-medium text-[var(--portal-text-muted)] underline-offset-4 hover:underline';
 
   return (
     <div
@@ -172,7 +158,7 @@ export const AppDownloadSplash = ({ storeUrls }: { storeUrls: StoreUrls }) => {
                 href={storeUrls[store]}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={close}
+                onClick={onDone}
                 className={`flex h-14 w-full items-center justify-center gap-3 rounded-2xl border px-5 transition active:scale-[0.98] ${
                   primary
                     ? 'border-transparent bg-[var(--portal-text)] text-[var(--portal-bg)]'
@@ -192,13 +178,64 @@ export const AppDownloadSplash = ({ storeUrls }: { storeUrls: StoreUrls }) => {
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={close}
-        className="relative mx-auto mt-6 px-4 py-3 text-sm font-medium text-[var(--portal-text-muted)] underline-offset-4 hover:underline"
-      >
-        Continue to website
-      </button>
+      {continueHref ? (
+        <a href={continueHref} onClick={onDone} className={continueClass}>
+          Continue to website
+        </a>
+      ) : (
+        <button type="button" onClick={onDone} className={continueClass}>
+          Continue to website
+        </button>
+      )}
     </div>
+  );
+};
+
+/** Remembers the visitor's pick, so the phone splash leaves them be. */
+export const rememberAppSplashChoice = () =>
+  write(SEEN_KEY, String(Date.now()));
+
+/** Which store this device uses, or null on a computer. */
+export const useStorePlatform = () => {
+  const [platform, setPlatform] = useState<Platform | null>(null);
+  useEffect(() => setPlatform(detectPlatform()), []);
+  return platform;
+};
+
+export const AppDownloadSplash = ({ storeUrls }: { storeUrls: StoreUrls }) => {
+  const pathname = usePathname() ?? '/';
+  const [platform, setPlatform] = useState<Platform | null>(null);
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('inApp') === '1')
+      write(IN_APP_KEY, '1');
+    if (read(IN_APP_KEY) === '1') return;
+    const seen = Number(read(SEEN_KEY) || 0);
+    if (Date.now() - seen < REMEMBER_MS) return;
+    setPlatform(detectPlatform());
+  }, []);
+
+  const open = !!platform && !skipPath(pathname);
+
+  useEffect(() => {
+    if (!open) return;
+    const { overflow } = document.body.style;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = overflow;
+    };
+  }, [open]);
+
+  if (!open || !platform) return null;
+
+  return (
+    <AppDownloadScreen
+      storeUrls={storeUrls}
+      platform={platform}
+      onDone={() => {
+        rememberAppSplashChoice();
+        setPlatform(null);
+      }}
+    />
   );
 };
