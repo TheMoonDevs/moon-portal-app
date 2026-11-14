@@ -4,9 +4,16 @@ import type { ProjectPage as Page, User } from '@db/client';
 import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { toast, Toaster } from 'sonner';
 
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import type { BrandKit } from '@/lib/brandKit';
 import { cn } from '@/lib/utils';
 import { projectLabelInCompany } from '@/lib/workspace/projectLabel';
 import {
@@ -37,30 +44,32 @@ import { useChat } from '../Messages/ChatProvider';
 import type { PlanView } from '../Plans/types';
 import { usePlans } from '../Plans/usePlans';
 import { NewProjectDialog } from '../Projects/NewProjectDialog';
+import { NavMenuButton, useProjectsShell } from '../Projects/ProjectsShell';
+import { bannerOf, kitColors, kitImages, pickKit } from './brand';
 import type { DocLinks } from './DocEditor';
 import { PageDoc, SaveBadge, type SaveState } from './PageDoc';
 import { ProjectDetailsDialog } from './ProjectDetailsDialog';
-import { ProjectSwitcher } from './ProjectSwitcher';
 import { GoalsSection } from './sections/GoalsSection';
 import { KpiSection } from './sections/KpiSection';
 import { MembersSection } from './sections/MembersSection';
 import { PagesGallery, PagesInside } from './sections/PagesSection';
 import { plansFor, PlansSection } from './sections/PlansSection';
-import { TasksInActionSection } from './sections/TasksInActionSection';
+import { ProjectHome } from './sections/ProjectHome';
 import { WorklogsSection } from './sections/WorklogsSection';
 import { ShareButton, type ShareChange, ShareDialog } from './ShareDialog';
 import {
   byCreation,
-  isView,
   type PagesData,
   pageTitle,
   type ProjectData,
+  tabOf,
+  TABS,
+  viewFrom,
   type ViewKey,
-  VIEWS,
 } from './types';
 
 /* -------------------------------------------------------------------------- */
-/*                                   Sidebar                                  */
+/*                      The nested menu (Pages, Plans)                        */
 /* -------------------------------------------------------------------------- */
 
 const NavItem = ({
@@ -255,475 +264,370 @@ const PLAN_DOT: Record<string, string> = {
   DROPPED: 'bg-neutral-600',
 };
 
-const Sidebar = ({
-  data,
+/**
+ * The project's pages (with pages inside pages) or its plans, shown in the
+ * projects sidebar on the left while the Pages or Plans tab is open.
+ */
+const NestedMenu = ({
+  kind,
+  name,
+  project,
   pages,
-  companyName,
   view,
   pageId,
-  pagesOpen,
   openPages,
   canEdit,
   creatingIn,
-  onPagesOpen,
   onTogglePage,
   onSelect,
   onNewPage,
-  onNewSub,
-  onEditDetails,
   plans,
   planId,
-  plansOpen,
   canAddPlan,
   creatingPlan,
-  onPlansOpen,
   onNewPlan,
-  personal,
 }: {
-  data: ProjectData;
+  kind: 'pages' | 'plans';
+  name: string;
+  project: ProjectData['project'];
   pages: PagesData | null;
-  companyName?: string;
   view: ViewKey;
   pageId: string | null;
-  pagesOpen: boolean;
   openPages: Set<string>;
   canEdit: boolean;
   creatingIn: string | null | undefined;
-  onPagesOpen: (open: boolean) => void;
   onTogglePage: (id: string) => void;
-  onSelect: (view: ViewKey, pageId?: string | null) => void;
+  onSelect: (view: ViewKey, id?: string | null) => void;
   onNewPage: (parentId: string | null) => void;
-  onNewSub: () => void;
-  /** Opens the project's details; only for people who may edit them. */
-  onEditDetails?: () => void;
-  /** The company's plans with a step for this project; null while loading. */
   plans: PlanView[] | null;
   planId: string | null;
-  plansOpen: boolean;
   canAddPlan: boolean;
   creatingPlan: boolean;
-  onPlansOpen: (open: boolean) => void;
   onNewPlan: () => void;
-  /** In the viewer's own PERSONAL. */
-  personal?: boolean;
 }) => {
-  const { project, people } = data;
-  const tree = data.tree ?? [];
-  const parent = tree.find((p) => p.id === project.parentId);
-  const core = tree.find((p) => p.isCore);
-  const subs = tree.filter((p) => p.parentId === project.id);
-  // The company's core project reads "ZONE (Core)".
-  const name = projectLabelInCompany(
-    { ...project, isCore: core?.id === project.id, isPersonal: personal },
-    companyName,
-  );
-  const status =
-    PROJECT_STATUS_META[project.status] ?? PROJECT_STATUS_META.ACTIVE;
   const all = useMemo(
     () => [...(pages?.pages ?? [])].sort(byCreation),
     [pages?.pages],
   );
   const top = childPages(all, null);
-
   return (
-    <aside className="hidden w-[272px] shrink-0 flex-col border-r border-white/[0.07] bg-neutral-950 md:flex">
-      <div className="px-4 pb-3 pt-4">
-        <Link
-          href={APP_ROUTES.projects}
-          className="mb-4 inline-flex items-center gap-1 text-xs text-neutral-500 transition-colors hover:text-neutral-200"
-        >
-          <Icon name="arrow_back" className="text-[15px]" /> Projects
-        </Link>
-        <div className="flex items-center gap-3">
-          <CompanyMark
-            name={name}
-            color={project.color}
-            logo={project.logo}
-            size={40}
-          />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[15px] font-semibold text-white">
-              {name}
-            </p>
-            {parent ? (
-              <Link
-                href={`${APP_ROUTES.projects}/${parent.id}`}
-                className="flex items-center gap-0.5 truncate text-xs text-neutral-500 hover:text-neutral-200"
-              >
-                <Icon name="subdirectory_arrow_right" className="text-[13px]" />
-                <span className="truncate">{parent.name}</span>
-              </Link>
-            ) : personal ? (
-              <p className="flex items-center gap-1 truncate text-xs text-neutral-500">
-                <Icon name="lock" className="text-[12px]" />
-                Only you
-              </p>
-            ) : core && core.id !== project.id ? (
-              <Link
-                href={`${APP_ROUTES.projects}/${core.id}`}
-                title={`Open ${companyName ?? 'the company'}'s core project`}
-                className="block truncate text-xs text-neutral-500 hover:text-neutral-200"
-              >
-                {companyName}
-              </Link>
-            ) : (
-              <p className="truncate text-xs text-neutral-500">{companyName}</p>
-            )}
-          </div>
-          {onEditDetails && (
-            <button
-              type="button"
-              onClick={onEditDetails}
-              aria-label="Edit project details"
-              title="Edit project details and brand kit"
-              className="flex size-8 shrink-0 items-center justify-center rounded-lg text-neutral-500 transition-colors hover:bg-white/[0.06] hover:text-white"
-            >
-              <Icon name="edit" className="text-[17px]" />
-            </button>
-          )}
-        </div>
-        {personal ? (
-          <PersonalHint />
-        ) : (
-          project.description && (
-            <p className="mt-3 line-clamp-3 text-xs leading-relaxed text-neutral-400">
-              {project.description}
-            </p>
-          )
-        )}
-        <div className="mt-3 flex items-center gap-2">
-          <Pill tone={status.tone}>{status.label}</Pill>
-          {people.length > 0 && <AvatarStack users={people} max={5} />}
-        </div>
-        <div className="mt-3">
-          <div className="mb-1 flex justify-between text-[11px] text-neutral-500">
-            <span>Tasks done</span>
-            <span>{project.progress?.percent ?? 0}%</span>
-          </div>
-          <div className="h-1 overflow-hidden rounded-full bg-white/[0.06]">
-            <motion.div
-              className="h-full rounded-full"
-              style={{ backgroundColor: project.color || '#10b981' }}
-              initial={{ width: 0 }}
-              animate={{ width: `${project.progress?.percent ?? 0}%` }}
-              transition={{ duration: 0.8, ease: 'easeOut' }}
-            />
-          </div>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex items-center gap-2.5 px-5 py-3">
+        <CompanyMark
+          name={name}
+          color={project.color}
+          logo={project.logo}
+          size={28}
+        />
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-white">{name}</p>
+          <p className="text-[11px] text-neutral-500">
+            {kind === 'pages' ? 'Pages' : 'Plans'}
+          </p>
         </div>
       </div>
-
-      <div className="mx-4 border-t border-white/[0.06]" />
-
-      <nav className="custom-scrollbar flex-1 overflow-y-auto px-2 py-3">
-        <LayoutGroup id="project-nav">
-          {viewsFor(personal).map((v) =>
-            v.key === 'pages' ? (
-              <div key={v.key}>
-                <NavItem
-                  icon={v.icon}
-                  label={v.label}
-                  active={view === 'pages' && !pageId}
-                  onClick={() => {
-                    onSelect('pages', null);
-                    onPagesOpen(true);
-                  }}
-                  badge={
-                    all.length > 0 && (
-                      <span className="text-[11px] text-neutral-600">
-                        {all.length}
-                      </span>
-                    )
-                  }
-                  trailing={
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      aria-label={pagesOpen ? 'Collapse pages' : 'Expand pages'}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onPagesOpen(!pagesOpen);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.stopPropagation();
-                          onPagesOpen(!pagesOpen);
-                        }
-                      }}
-                      className="-mr-1 flex size-5 items-center justify-center rounded text-neutral-500 hover:bg-white/[0.08] hover:text-white"
-                    >
-                      <motion.span
-                        animate={{ rotate: pagesOpen ? 90 : 0 }}
-                        className="flex"
-                      >
-                        <Icon name="chevron_right" className="text-[16px]" />
-                      </motion.span>
-                    </span>
-                  }
-                />
-                <AnimatePresence initial={false}>
-                  {pagesOpen && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2, ease: 'easeOut' }}
-                      className="overflow-hidden"
-                    >
-                      <div className="ml-[19px] flex flex-col border-l border-white/[0.07] py-1 pl-1.5">
-                        {top.map((page) => (
-                          <PageTreeItem
-                            key={page.id}
-                            page={page}
-                            pages={all}
-                            activeId={view === 'pages' ? pageId : null}
-                            open={openPages}
-                            canEdit={canEdit}
-                            creatingIn={creatingIn}
-                            onToggle={onTogglePage}
-                            onSelect={(id) => onSelect('pages', id)}
-                            onNewPage={onNewPage}
-                          />
-                        ))}
-                        {canEdit && (
-                          <button
-                            type="button"
-                            onClick={() => onNewPage(null)}
-                            disabled={creatingIn !== undefined}
-                            className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs text-neutral-500 transition-colors hover:bg-white/[0.04] hover:text-neutral-200"
-                          >
-                            {creatingIn === null ? (
-                              <Spin className="size-3" />
-                            ) : (
-                              <Icon name="add" className="text-[15px]" />
-                            )}
-                            New page
-                          </button>
-                        )}
-                        {!canEdit && !all.length && (
-                          <p className="px-2.5 py-1.5 text-xs text-neutral-600">
-                            No pages yet
-                          </p>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            ) : v.key === 'plans' ? (
-              <div key={v.key}>
-                <NavItem
-                  icon={v.icon}
-                  label={v.label}
-                  active={view === 'plans' && !planId}
-                  onClick={() => {
-                    onSelect('plans', null);
-                    onPlansOpen(true);
-                  }}
-                  badge={
-                    !!plans?.length && (
-                      <span className="text-[11px] text-neutral-600">
-                        {plans.length}
-                      </span>
-                    )
-                  }
-                  trailing={
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      aria-label={plansOpen ? 'Collapse plans' : 'Expand plans'}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onPlansOpen(!plansOpen);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.stopPropagation();
-                          onPlansOpen(!plansOpen);
-                        }
-                      }}
-                      className="-mr-1 flex size-5 items-center justify-center rounded text-neutral-500 hover:bg-white/[0.08] hover:text-white"
-                    >
-                      <motion.span
-                        animate={{ rotate: plansOpen ? 90 : 0 }}
-                        className="flex"
-                      >
-                        <Icon name="chevron_right" className="text-[16px]" />
-                      </motion.span>
-                    </span>
-                  }
-                />
-                <AnimatePresence initial={false}>
-                  {plansOpen && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2, ease: 'easeOut' }}
-                      className="overflow-hidden"
-                    >
-                      <div className="ml-[19px] flex flex-col border-l border-white/[0.07] py-1 pl-1.5">
-                        {plans === null && (
-                          <p className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-neutral-600">
-                            <Spin className="size-3" /> Loading plans
-                          </p>
-                        )}
-                        {plans?.map((plan) => (
-                          <NavItem
-                            key={plan.id}
-                            icon=""
-                            label={plan.title || 'Untitled plan'}
-                            active={view === 'plans' && planId === plan.id}
-                            onClick={() => onSelect('plans', plan.id)}
-                            badge={
-                              <span
-                                className={cn(
-                                  'order-first -mr-1 size-1.5 shrink-0 rounded-full',
-                                  PLAN_DOT[plan.status] ?? 'bg-neutral-600',
-                                )}
-                              />
-                            }
-                          />
-                        ))}
-                        {canAddPlan && (
-                          <button
-                            type="button"
-                            onClick={onNewPlan}
-                            disabled={creatingPlan}
-                            className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs text-neutral-500 transition-colors hover:bg-white/[0.04] hover:text-neutral-200"
-                          >
-                            {creatingPlan ? (
-                              <Spin className="size-3" />
-                            ) : (
-                              <Icon name="add" className="text-[15px]" />
-                            )}
-                            New plan
-                          </button>
-                        )}
-                        {!canAddPlan && plans?.length === 0 && (
-                          <p className="px-2.5 py-1.5 text-xs text-neutral-600">
-                            No plans yet
-                          </p>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            ) : (
+      <nav className="custom-scrollbar min-h-0 flex-1 overflow-y-auto px-3 pb-8">
+        <LayoutGroup id="project-nested">
+          {kind === 'pages' ? (
+            <div className="flex flex-col">
               <NavItem
-                key={v.key}
-                icon={v.icon}
-                label={v.label}
-                active={view === v.key}
-                onClick={() => onSelect(v.key)}
+                icon="apps"
+                label="All pages"
+                active={view === 'pages' && !pageId}
+                onClick={() => onSelect('pages', null)}
                 badge={
-                  v.key === 'kpi' && (
-                    <span className="rounded-full bg-violet-500/15 px-1.5 py-px text-[10px] font-medium text-violet-300">
-                      Soon
+                  all.length > 0 && (
+                    <span className="text-[11px] text-neutral-600">
+                      {all.length}
                     </span>
                   )
                 }
               />
-            ),
+              <NavItem
+                icon=""
+                label="Objective"
+                active={view === 'objective'}
+                onClick={() => onSelect('objective')}
+                badge={
+                  <span className="order-first flex items-center gap-1">
+                    <span className="size-4" />
+                    <span className="text-sm leading-none">
+                      {pages?.objective?.emoji || '🎯'}
+                    </span>
+                  </span>
+                }
+                trailing={
+                  <Icon
+                    name="push_pin"
+                    className="text-[13px] text-neutral-600"
+                  />
+                }
+              />
+              <div className="my-1.5 h-px bg-white/[0.05]" />
+              {top.map((page) => (
+                <PageTreeItem
+                  key={page.id}
+                  page={page}
+                  pages={all}
+                  activeId={view === 'pages' ? pageId : null}
+                  open={openPages}
+                  canEdit={canEdit}
+                  creatingIn={creatingIn}
+                  onToggle={onTogglePage}
+                  onSelect={(id) => onSelect('pages', id)}
+                  onNewPage={onNewPage}
+                />
+              ))}
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={() => onNewPage(null)}
+                  disabled={creatingIn !== undefined}
+                  className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs text-neutral-500 transition-colors hover:bg-white/[0.04] hover:text-neutral-200"
+                >
+                  {creatingIn === null ? (
+                    <Spin className="size-3" />
+                  ) : (
+                    <Icon name="add" className="text-[15px]" />
+                  )}
+                  New page
+                </button>
+              )}
+              {!canEdit && !all.length && (
+                <p className="px-2.5 py-1.5 text-xs text-neutral-600">
+                  No pages yet
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col">
+              <NavItem
+                icon="apps"
+                label="All plans"
+                active={view === 'plans' && !planId}
+                onClick={() => onSelect('plans', null)}
+                badge={
+                  !!plans?.length && (
+                    <span className="text-[11px] text-neutral-600">
+                      {plans.length}
+                    </span>
+                  )
+                }
+              />
+              <div className="my-1.5 h-px bg-white/[0.05]" />
+              {plans === null && (
+                <p className="flex items-center gap-2 px-2.5 py-1.5 text-xs text-neutral-600">
+                  <Spin className="size-3" /> Loading plans
+                </p>
+              )}
+              {plans?.map((plan) => (
+                <NavItem
+                  key={plan.id}
+                  icon=""
+                  label={plan.title || 'Untitled plan'}
+                  active={view === 'plans' && planId === plan.id}
+                  onClick={() => onSelect('plans', plan.id)}
+                  badge={
+                    <span
+                      className={cn(
+                        'order-first -mr-1 size-1.5 shrink-0 rounded-full',
+                        PLAN_DOT[plan.status] ?? 'bg-neutral-600',
+                      )}
+                    />
+                  }
+                />
+              ))}
+              {canAddPlan && (
+                <button
+                  type="button"
+                  onClick={onNewPlan}
+                  disabled={creatingPlan}
+                  className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs text-neutral-500 transition-colors hover:bg-white/[0.04] hover:text-neutral-200"
+                >
+                  {creatingPlan ? (
+                    <Spin className="size-3" />
+                  ) : (
+                    <Icon name="add" className="text-[15px]" />
+                  )}
+                  New plan
+                </button>
+              )}
+              {!canAddPlan && plans?.length === 0 && (
+                <p className="px-2.5 py-1.5 text-xs text-neutral-600">
+                  No plans yet
+                </p>
+              )}
+            </div>
           )}
         </LayoutGroup>
-
-        <div className="mt-4 border-t border-white/[0.06] pt-3">
-          <p className="flex items-center justify-between px-2.5 pb-1 text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
-            Sub-projects
-            <button
-              type="button"
-              onClick={onNewSub}
-              aria-label="New sub-project"
-              title="New sub-project"
-              className="flex size-5 items-center justify-center rounded text-neutral-500 hover:bg-white/[0.08] hover:text-white"
-            >
-              <Icon name="add" className="text-[16px]" />
-            </button>
-          </p>
-          {subs.map((sub) => (
-            <Link
-              key={sub.id}
-              href={`${APP_ROUTES.projects}/${sub.id}`}
-              className="flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm text-neutral-400 transition-colors hover:bg-white/[0.04] hover:text-neutral-100"
-            >
-              <span
-                className="size-2 shrink-0 rounded-full"
-                style={{ backgroundColor: sub.color || '#737373' }}
-              />
-              <span className="flex-1 truncate">{sub.name}</span>
-              {tree.some((p) => p.parentId === sub.id) && (
-                <Icon
-                  name="account_tree"
-                  className="text-[14px] text-neutral-600"
-                />
-              )}
-            </Link>
-          ))}
-          {!subs.length && (
-            <button
-              type="button"
-              onClick={onNewSub}
-              className="w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-neutral-600 hover:bg-white/[0.04] hover:text-neutral-300"
-            >
-              Split this project into smaller ones
-            </button>
-          )}
-        </div>
       </nav>
-    </aside>
+    </div>
   );
 };
 
-/** A PERSONAL has nobody else to list under Members. */
-const viewsFor = (personal?: boolean) =>
-  personal ? VIEWS.filter((v) => v.key !== 'members') : VIEWS;
+/* -------------------------------------------------------------------------- */
+/*                             Banner and identity                            */
+/* -------------------------------------------------------------------------- */
 
-/** What a PERSONAL is for, under its name. */
-const PersonalHint = () => (
-  <div className="mt-3 rounded-lg border border-teal-400/15 bg-teal-400/[0.06] p-2.5 text-xs leading-relaxed text-teal-100/80">
-    <p className="mb-1 flex items-center gap-1.5 font-semibold text-teal-200">
-      <Icon name="lock" className="text-[13px]" />
-      Just for you
-    </p>
-    Your own goals and habits go here: gym, exercise, reading, learning or any
-    other self-help. Set goals, make plans, write pages and log your work like
-    in any project. Nobody else can see it.
-  </div>
-);
-
-/** On phones the sections scroll sideways under the header. */
-const MobileNav = ({
-  view,
-  onSelect,
-  personal,
+/** The wide image at the top: picked, the brand kit's, or a soft gradient. */
+const Banner = ({
+  image,
+  color,
+  second,
+  images,
+  canChange,
+  onChange,
 }: {
-  view: ViewKey;
-  onSelect: (view: ViewKey) => void;
-  personal?: boolean;
-}) => (
-  <div className="flex gap-1.5 overflow-x-auto border-b border-white/[0.07] px-3 py-2 md:hidden">
-    {viewsFor(personal).map((v) => (
-      <button
-        key={v.key}
-        type="button"
-        ref={(el) => {
-          if (view === v.key)
-            el?.scrollIntoView({ inline: 'center', block: 'nearest' });
-        }}
-        onClick={() => onSelect(v.key)}
-        className={cn(
-          'flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
-          view === v.key
-            ? 'bg-white text-neutral-950'
-            : 'bg-white/[0.05] text-neutral-400',
-        )}
-      >
-        <Icon name={v.icon} className="text-[15px]" />
-        {v.label}
-      </button>
-    ))}
-  </div>
+  image: string | null;
+  color: string;
+  second: string | null;
+  /** The brand kit's images, to pick from. */
+  images: string[];
+  canChange: boolean;
+  onChange: (image: string | null) => Promise<void>;
+}) => {
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState<string | null | undefined>();
+  const pick = async (url: string | null) => {
+    setSaving(url);
+    await onChange(url);
+    setSaving(undefined);
+    setOpen(false);
+  };
+  return (
+    <div
+      className="relative h-32 overflow-hidden md:h-48"
+      style={{
+        background: `linear-gradient(120deg, ${color} 0%, ${second ?? color}${second ? '' : '80'} 100%)`,
+      }}
+    >
+      {image ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={image}
+          alt=""
+          className="absolute inset-0 size-full object-cover"
+        />
+      ) : (
+        <svg
+          aria-hidden
+          className="absolute inset-0 size-full"
+          viewBox="0 0 320 100"
+          preserveAspectRatio="none"
+        >
+          <circle cx="270" cy="12" r="58" fill="#fff" opacity={0.08} />
+          <circle cx="300" cy="96" r="34" fill="#fff" opacity={0.06} />
+          <circle cx="40" cy="104" r="44" fill="#000" opacity={0.08} />
+        </svg>
+      )}
+      <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-neutral-950/60 to-transparent" />
+      {canChange && (
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="absolute right-3 top-3 flex h-8 items-center gap-1.5 rounded-lg bg-black/45 px-2.5 text-xs font-medium text-white backdrop-blur transition-colors hover:bg-black/60"
+            >
+              <Icon name="photo" className="text-[16px]" />
+              <span className="hidden sm:inline">Change banner</span>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="end"
+            className="w-80 border-white/10 bg-neutral-900 p-3 text-neutral-100"
+          >
+            <p className="mb-2 text-xs font-semibold text-neutral-300">
+              Pick from the brand kit
+            </p>
+            {images.length ? (
+              <div className="grid max-h-64 grid-cols-2 gap-2 overflow-y-auto">
+                {images.map((url) => (
+                  <button
+                    key={url}
+                    type="button"
+                    onClick={() => pick(url)}
+                    className={cn(
+                      'relative aspect-[3/1] overflow-hidden rounded-lg border',
+                      image === url
+                        ? 'border-white'
+                        : 'border-white/10 hover:border-white/40',
+                    )}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt="" className="size-full object-cover" />
+                    {saving === url && (
+                      <span className="absolute inset-0 flex items-center justify-center bg-black/50">
+                        <Spin className="size-4" />
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-neutral-500">
+                The brand kit has no images yet. Add some with Edit, under Brand
+                kit.
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={() => pick(null)}
+              className="mt-3 w-full rounded-lg bg-white/[0.06] px-3 py-1.5 text-xs text-neutral-300 hover:bg-white/[0.1]"
+            >
+              {saving === null ? 'Saving…' : 'Use the kit’s own banner'}
+            </button>
+          </PopoverContent>
+        </Popover>
+      )}
+    </div>
+  );
+};
+
+const HeaderButton = ({
+  icon,
+  label,
+  onClick,
+  href,
+  primary,
+  title,
+}: {
+  icon: string;
+  label: string;
+  onClick?: () => void;
+  href?: string;
+  primary?: boolean;
+  title?: string;
+}) => {
+  const className = cn(
+    'flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition-colors',
+    primary
+      ? 'bg-white text-neutral-950 hover:opacity-90'
+      : 'bg-white/[0.06] text-neutral-200 hover:bg-white/[0.1] hover:text-white',
+  );
+  const body = (
+    <>
+      <Icon name={icon} className="text-[17px]" />
+      <span>{label}</span>
+    </>
+  );
+  return href ? (
+    <Link href={href} title={title} className={className}>
+      {body}
+    </Link>
+  ) : (
+    <button type="button" onClick={onClick} title={title} className={className}>
+      {body}
+    </button>
+  );
+};
+
+/** A PERSONAL's note, under its name. */
+const PersonalHint = () => (
+  <p className="mt-3 flex max-w-2xl items-start gap-1.5 rounded-lg border border-teal-400/15 bg-teal-400/[0.06] p-2.5 text-xs leading-relaxed text-teal-100/80">
+    <Icon name="lock" className="mt-px text-[13px] text-teal-200" />
+    Just for you. Your own goals and habits go here: gym, exercise, reading,
+    learning or any other self-help. Nobody else can see it.
+  </p>
 );
 
 /* -------------------------------------------------------------------------- */
@@ -742,7 +646,6 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
   const [error, setError] = useState<string | null>(null);
   const [pages, setPages] = useState<PagesData | null>(null);
   const [companyUsers, setCompanyUsers] = useState<User[]>([]);
-  const [pagesOpen, setPagesOpen] = useState(true);
   const [openPages, setOpenPages] = useState<Set<string>>(new Set());
   /** The parent a new page is being made in: null at the top level. */
   const [creatingIn, setCreatingIn] = useState<string | null | undefined>();
@@ -752,22 +655,16 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
   const { user: meUser } = useUser();
   const [busy, setBusy] = useState(false);
   const [editingDetails, setEditingDetails] = useState(false);
-  const [plansOpen, setPlansOpen] = useState(true);
   const [creatingPlan, setCreatingPlan] = useState(false);
   /** Plans made here, listed even before they have a step for the project. */
   const [madeHere, setMadeHere] = useState<Set<string>>(new Set());
+  const { slot, setNested, refreshNav } = useProjectsShell();
+  const scroller = useRef<HTMLDivElement>(null);
+  const tabsRef = useRef<HTMLDivElement>(null);
 
-  // Links from when pages were called ideas, and from the task schedule
-  // (now part of goals), still open the right place.
-  const asked = params?.get('view');
-  const view: ViewKey =
-    asked === 'ideas'
-      ? 'pages'
-      : asked === 'schedule'
-        ? 'goals'
-        : isView(asked)
-          ? (asked as ViewKey)
-          : VIEWS[0].key;
+  // Old links (Tasks in Action, Worklogs, ideas, schedule) open their tab.
+  const view: ViewKey = viewFrom(params?.get('view'));
+  const tab = tabOf(view);
   const pageId =
     view === 'pages'
       ? (params?.get('page') ?? params?.get('idea') ?? null)
@@ -781,9 +678,27 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
       if (id) q.set(next === 'plans' ? 'plan' : 'page', id);
       setSaveState('idle');
       router.replace(`${pathname}?${q.toString()}`, { scroll: false });
+      // Scrolled past the banner: the new tab starts under the tabs.
+      const box = scroller.current;
+      const tabs = tabsRef.current;
+      if (box && tabs && box.scrollTop > tabs.offsetTop)
+        box.scrollTo({ top: tabs.offsetTop });
     },
     [router, pathname],
   );
+
+  // Pages and Plans put their menu in the sidebar on the left.
+  const nestedKind: 'pages' | 'plans' | null =
+    tab === 'pages' ? 'pages' : tab === 'plans' ? 'plans' : null;
+  const projectTitle = data?.project.name;
+  useEffect(() => {
+    setNested(
+      nestedKind && projectTitle
+        ? `${projectTitle} ${nestedKind === 'pages' ? 'pages' : 'plans'}`
+        : null,
+    );
+  }, [nestedKind, projectTitle, setNested]);
+  useEffect(() => () => setNested(null), [setNested]);
 
   const load = useCallback(() => {
     PortalSdk.getData(`/api/projects/${projectId}`, null)
@@ -836,7 +751,6 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
     setCreatingPlan(false);
     if (!created) return;
     keepPlan(created);
-    setPlansOpen(true);
     select('plans', created.id);
   };
 
@@ -901,7 +815,6 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
       });
       const page: Page = res?.data?.page;
       savePage(page);
-      setPagesOpen(true);
       if (parentId) setOpenPages((open) => new Set(open).add(parentId));
       if (!stay) select('pages', page.id);
       return page;
@@ -977,7 +890,7 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
 
   if (error)
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-neutral-950 md:left-16">
+      <div className="absolute inset-0 flex items-center justify-center">
         <EmptyState
           icon="folder_off"
           title="Project not found"
@@ -993,7 +906,7 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
 
   if (!data)
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-neutral-950 md:left-16">
+      <div className="absolute inset-0 flex items-center justify-center">
         <Spin className="size-5" />
       </div>
     );
@@ -1016,7 +929,6 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
   const trail = page ? ancestorPages(all, page.id) : [];
   const nestedCount = deleting ? descendantIds(all, deleting.id).size : 0;
   const isDoc = view === 'objective' || (view === 'pages' && !!page);
-  const current = VIEWS.find((v) => v.key === view)!;
   const openPlan = linkedPlans?.find((p) => p.id === planId) ?? null;
 
   const content = (() => {
@@ -1038,7 +950,7 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
           />
         ) : null;
       case 'kpi':
-        return <KpiSection />;
+        return <KpiSection project={project} tasks={tasks} />;
       case 'pages':
         return page ? (
           <PageDoc
@@ -1086,29 +998,39 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
         );
       case 'members':
         return (
-          <MembersSection
-            project={project}
-            tasks={tasks}
-            people={people}
+          <div>
+            <button
+              type="button"
+              onClick={() => select('home')}
+              className="mx-auto mt-5 flex w-full max-w-5xl items-center gap-1 px-5 text-xs text-neutral-500 hover:text-neutral-200 md:px-10"
+            >
+              <Icon name="arrow_back" className="text-[15px]" /> Home
+            </button>
+            <MembersSection
+              project={project}
+              tasks={tasks}
+              people={people}
+              companyUsers={companyUsers}
+              canEdit={canEdit}
+              onSaved={load}
+            />
+          </div>
+        );
+      case 'home':
+        return (
+          <ProjectHome
+            data={data}
+            objective={pages?.objective ?? null}
             companyUsers={companyUsers}
             canEdit={canEdit}
-            onSaved={load}
-          />
-        );
-      case 'tasks':
-        return (
-          <TasksInActionSection
-            projectId={project.id}
-            tasks={tasks}
-            people={people}
-            companyUsers={companyUsers}
             canAdd={canInProject(project, 'tasks:create')}
             canTick={canInProject(project, 'tasks:edit')}
             canDelete={canInProject(project, 'tasks:delete')}
             onSaved={load}
+            onOpen={(v) => select(v)}
           />
         );
-      case 'worklogs':
+      case 'logs':
         return <WorklogsSection projectId={project.id} tasks={tasks} />;
       case 'plans':
         return (
@@ -1124,184 +1046,336 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
     }
   })();
 
+  const companyRecord = companies.find(
+    (c) => c.company.id === project.companyId,
+  )?.company as
+    | {
+        brandKit?: BrandKit | null;
+        color?: string | null;
+        logo?: string | null;
+      }
+    | undefined;
+  const isCore = coreId === project.id;
+  const kit = pickKit(
+    project.brandKit as BrandKit | null | undefined,
+    isCore ? companyRecord?.brandKit : null,
+  );
+  const banner = project.headerImage ?? bannerOf(kit);
+  const colors = kitColors(kit);
+  const mainColor =
+    project.color || colors.main || companyRecord?.color || '#6366f1';
+  const images = kitImages(
+    project.brandKit as BrandKit | null | undefined,
+    isCore ? companyRecord?.brandKit : null,
+  );
+  const isLead = !!me && (project.leadIds ?? []).includes(me);
+  const parent = data.tree?.find((p) => p.id === project.parentId);
+  const status =
+    PROJECT_STATUS_META[project.status] ?? PROJECT_STATUS_META.ACTIVE;
+  const openCount = tasks.filter((t) =>
+    ['TODO', 'IN_PROGRESS', 'IN_REVIEW'].includes(t.status),
+  ).length;
+  const logo = project.logo || (isCore ? companyRecord?.logo : null) || null;
+
+  const changeBanner = async (image: string | null) => {
+    try {
+      await PortalSdk.putData(`/api/projects/${project.id}/header`, { image });
+      load();
+    } catch (err) {
+      toast.error(errorText(err, 'Could not change the banner.'));
+    }
+  };
+
   return (
-    <div className="fixed inset-0 flex bg-neutral-950 pb-[72px] text-neutral-100 md:left-16 md:pb-0">
-      <Sidebar
-        data={data}
-        pages={pages}
-        companyName={companyName}
-        view={view}
-        pageId={pageId}
-        pagesOpen={pagesOpen}
-        openPages={openPages}
-        canEdit={canEdit}
-        creatingIn={creatingIn}
-        onPagesOpen={setPagesOpen}
-        onTogglePage={togglePage}
-        onSelect={select}
-        onNewPage={newPage}
-        onNewSub={() => setAddingSub(true)}
-        onEditDetails={canEdit ? () => setEditingDetails(true) : undefined}
-        plans={linkedPlans}
-        planId={planId}
-        plansOpen={plansOpen}
-        canAddPlan={plans.canCreate}
-        creatingPlan={creatingPlan}
-        onPlansOpen={setPlansOpen}
-        onNewPlan={newPlan}
-        personal={personal}
+    <div
+      ref={scroller}
+      className="custom-scrollbar absolute inset-0 overflow-y-auto pb-[72px] md:pb-0"
+    >
+      {nestedKind &&
+        slot &&
+        createPortal(
+          <NestedMenu
+            kind={nestedKind}
+            name={projectName}
+            project={project}
+            pages={pages}
+            view={view}
+            pageId={pageId}
+            openPages={openPages}
+            canEdit={canEdit}
+            creatingIn={creatingIn}
+            onTogglePage={togglePage}
+            onSelect={select}
+            onNewPage={newPage}
+            plans={linkedPlans}
+            planId={planId}
+            canAddPlan={plans.canCreate}
+            creatingPlan={creatingPlan}
+            onNewPlan={newPlan}
+          />,
+          slot,
+        )}
+
+      <Banner
+        image={banner}
+        color={mainColor}
+        second={colors.second}
+        images={images}
+        canChange={(isLead || canEdit) && !personal}
+        onChange={changeBanner}
       />
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-12 shrink-0 items-center gap-2 border-b border-white/[0.07] px-4 text-sm">
-          <Link
-            href={APP_ROUTES.projects}
-            className="text-neutral-500 hover:text-white md:hidden"
-            aria-label="All projects"
-          >
-            <Icon name="arrow_back" className="text-[18px]" />
-          </Link>
-          <span
-            className={cn(
-              'hidden min-w-0 items-center gap-2',
-              // A PERSONAL's own project needs no company before it.
-              !(personal && coreId === project.id) && 'md:flex',
-            )}
-          >
-            {coreId && coreId !== project.id ? (
-              <Link
-                href={`${APP_ROUTES.projects}/${coreId}`}
-                title={`Open ${companyName ?? 'the company'}'s core project`}
-                className="truncate text-neutral-500 transition-colors hover:text-white"
-              >
-                {companyName}
-              </Link>
-            ) : (
-              <span className="truncate text-neutral-500">{companyName}</span>
-            )}
-            <Icon
-              name="chevron_right"
-              className="text-[16px] text-neutral-700"
+      {/* Who the project is */}
+      <div className="mx-auto w-full max-w-6xl px-4 md:px-8">
+        <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
+          <div className="relative z-10 -mt-10 shrink-0 rounded-[22px] bg-neutral-950 p-1 md:-mt-12">
+            <CompanyMark
+              name={projectName}
+              color={mainColor}
+              logo={logo}
+              size={88}
             />
-          </span>
-          <ProjectSwitcher projectId={project.id} name={projectName} />
-          <Icon name="chevron_right" className="text-[16px] text-neutral-700" />
-          <button
-            type="button"
-            onClick={() => select(view)}
-            className="truncate text-neutral-400 hover:text-white"
-          >
-            {current.label}
-          </button>
-          {trail.map((above) => (
-            <span key={above.id} className="flex min-w-0 items-center gap-2">
-              <Icon
-                name="chevron_right"
-                className="text-[16px] text-neutral-700"
+          </div>
+          <div className="min-w-0 flex-1 pt-2">
+            <h1 className="truncate text-2xl font-bold tracking-tight text-white md:text-[28px]">
+              {projectName}
+            </h1>
+            <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-neutral-500">
+              {personal ? (
+                <span className="flex items-center gap-1">
+                  <Icon name="lock" className="text-[14px]" /> Only you
+                </span>
+              ) : coreId && !isCore ? (
+                <Link
+                  href={`${APP_ROUTES.projects}/${coreId}`}
+                  title={`Open ${companyName ?? 'the company'}'s core project`}
+                  className="hover:text-white"
+                >
+                  {companyName}
+                </Link>
+              ) : (
+                <span>{isCore ? 'Company work' : companyName}</span>
+              )}
+              {parent && (
+                <>
+                  <span className="text-neutral-700">·</span>
+                  <Link
+                    href={`${APP_ROUTES.projects}/${parent.id}`}
+                    className="flex items-center gap-0.5 hover:text-white"
+                  >
+                    <Icon
+                      name="subdirectory_arrow_right"
+                      className="text-[14px]"
+                    />
+                    {parent.name}
+                  </Link>
+                </>
+              )}
+              {project.status !== 'ACTIVE' && (
+                <Pill tone={status.tone}>{status.label}</Pill>
+              )}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 pb-1">
+            {onTeam && !personal && (
+              <HeaderButton
+                icon="forum"
+                label="Group chat"
+                primary
+                href={`/messages?project=${encodeURIComponent(project.id)}`}
+                title="Message everyone on this project in its group chat"
               />
+            )}
+            {!personal && (
+              <HeaderButton
+                icon="account_tree"
+                label="Sub-project"
+                onClick={() => setAddingSub(true)}
+                title="Split this project into a smaller one"
+              />
+            )}
+            {canEdit && (
+              <HeaderButton
+                icon="edit"
+                label="Edit"
+                onClick={() => setEditingDetails(true)}
+                title="Edit project details and brand kit"
+              />
+            )}
+          </div>
+        </div>
+        {personal ? (
+          <PersonalHint />
+        ) : (
+          project.description && (
+            <p className="mt-3 line-clamp-2 max-w-3xl text-sm leading-relaxed text-neutral-400">
+              {project.description}
+            </p>
+          )
+        )}
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-neutral-500">
+          {people.length > 0 && (
+            <button
+              type="button"
+              onClick={() => select('members')}
+              className="flex items-center gap-2 hover:text-neutral-200"
+            >
+              <AvatarStack users={people} max={5} />
+              {people.length} {people.length === 1 ? 'person' : 'people'}
+            </button>
+          )}
+          <span>
+            {openCount} open {openCount === 1 ? 'task' : 'tasks'}
+          </span>
+          {!!project.progress?.total && (
+            <span>{Math.round(project.progress.percent)}% done</span>
+          )}
+        </div>
+      </div>
+
+      {/* Tabs, kept at the top while the page scrolls */}
+      <div
+        ref={tabsRef}
+        className="sticky top-0 z-20 mt-4 border-b border-white/[0.07] bg-neutral-950/90 backdrop-blur"
+      >
+        <div className="mx-auto flex w-full max-w-6xl items-center gap-1 px-2 md:px-6">
+          <NavMenuButton />
+          <div className="no-scrollbar flex min-w-0 flex-1 overflow-x-auto">
+            <LayoutGroup id="project-tabs">
+              {TABS.map((t) => {
+                const active = tab === t.key;
+                return (
+                  <button
+                    key={t.key}
+                    type="button"
+                    ref={(el) => {
+                      if (active)
+                        el?.scrollIntoView({
+                          inline: 'nearest',
+                          block: 'nearest',
+                        });
+                    }}
+                    onClick={() => select(t.key)}
+                    className={cn(
+                      'relative flex h-12 shrink-0 items-center gap-1.5 px-3 text-sm font-medium transition-colors',
+                      active
+                        ? 'text-white'
+                        : 'text-neutral-500 hover:text-neutral-200',
+                    )}
+                  >
+                    {t.label}
+                    {t.key === 'pages' && all.length > 0 && (
+                      <span className="text-[11px] text-neutral-600">
+                        {all.length}
+                      </span>
+                    )}
+                    {active && (
+                      <motion.span
+                        layoutId="project-tab-line"
+                        className="absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-white"
+                        transition={{
+                          type: 'spring',
+                          stiffness: 500,
+                          damping: 40,
+                        }}
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </LayoutGroup>
+          </div>
+          {/* What the open page or plan can do */}
+          <div className="flex shrink-0 items-center gap-1 pl-2">
+            {isDoc && canEdit && <SaveBadge state={saveState} />}
+            {openPlan && <SaveBadge state={plans.saveState} />}
+            {page && !personal && (
+              <ShareButton
+                sharing={page.sharing}
+                canShare={canEdit}
+                onClick={() => setSharing(true)}
+              />
+            )}
+            {page && canEdit && (
               <button
                 type="button"
-                onClick={() => select('pages', above.id)}
-                className="truncate text-neutral-400 hover:text-white"
+                onClick={() => setDeleting(page)}
+                aria-label="Delete page"
+                title="Delete page"
+                className="flex size-8 items-center justify-center rounded-lg text-neutral-500 hover:bg-white/[0.06] hover:text-rose-300"
               >
-                {pageTitle(above)}
+                <Icon name="delete" className="text-[18px]" />
               </button>
-            </span>
-          ))}
-          {page && (
-            <>
-              <Icon
-                name="chevron_right"
-                className="text-[16px] text-neutral-700"
-              />
-              <span className="truncate text-neutral-400">
-                {pageTitle(page)}
-              </span>
-            </>
-          )}
-          {openPlan && (
-            <>
-              <Icon
-                name="chevron_right"
-                className="text-[16px] text-neutral-700"
-              />
-              <span className="truncate text-neutral-400">
-                {openPlan.title || 'Untitled plan'}
-              </span>
-            </>
-          )}
-          <div className="flex-1" />
-          {isDoc && canEdit && <SaveBadge state={saveState} />}
-          {onTeam && !personal && (
-            <Link
-              href={`/messages?project=${encodeURIComponent(project.id)}`}
-              title="Message everyone on this project in its group chat"
-              className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2 text-neutral-400 transition-colors hover:bg-white/[0.06] hover:text-white"
+            )}
+          </div>
+        </div>
+        {/* Where you are inside Pages or Plans */}
+        {(trail.length > 0 || page || openPlan || view === 'objective') && (
+          <div className="mx-auto flex w-full max-w-6xl items-center gap-1.5 overflow-x-auto px-4 pb-2 text-xs text-neutral-500 md:px-8">
+            <button
+              type="button"
+              onClick={() => select(tab)}
+              className="shrink-0 hover:text-white"
             >
-              <Icon name="forum" className="text-[18px]" />
-              <span className="hidden text-xs font-medium lg:inline">
-                Group chat
+              {tab === 'plans' ? 'Plans' : 'Pages'}
+            </button>
+            {[
+              ...trail.map((above) => ({
+                id: above.id,
+                label: pageTitle(above),
+              })),
+            ].map((above) => (
+              <span
+                key={above.id}
+                className="flex shrink-0 items-center gap-1.5"
+              >
+                <Icon
+                  name="chevron_right"
+                  className="text-[14px] text-neutral-700"
+                />
+                <button
+                  type="button"
+                  onClick={() => select('pages', above.id)}
+                  className="hover:text-white"
+                >
+                  {above.label}
+                </button>
               </span>
-            </Link>
-          )}
-          {openPlan && <SaveBadge state={plans.saveState} />}
-          {page && !personal && (
-            <ShareButton
-              sharing={page.sharing}
-              canShare={canEdit}
-              onClick={() => setSharing(true)}
+            ))}
+            <Icon
+              name="chevron_right"
+              className="text-[14px] text-neutral-700"
             />
-          )}
-          {page && canEdit && (
-            <button
-              type="button"
-              onClick={() => setDeleting(page)}
-              aria-label="Delete page"
-              title="Delete page"
-              className="flex size-8 items-center justify-center rounded-lg text-neutral-500 hover:bg-white/[0.06] hover:text-rose-300"
-            >
-              <Icon name="delete" className="text-[18px]" />
-            </button>
-          )}
-          {canEdit && (
-            <button
-              type="button"
-              onClick={() => setEditingDetails(true)}
-              aria-label="Edit project details"
-              title="Edit project details and brand kit"
-              className="flex size-8 shrink-0 items-center justify-center rounded-lg text-neutral-500 hover:bg-white/[0.06] hover:text-white md:hidden"
-            >
-              <Icon name="edit" className="text-[18px]" />
-            </button>
-          )}
-        </header>
-        <MobileNav
-          view={view}
-          onSelect={(v) => select(v)}
-          personal={personal}
-        />
-
-        <main className="custom-scrollbar min-h-0 flex-1 overflow-y-auto">
-          {/* On phones the sidebar's hint shows on the opening view. */}
-          {personal && view === 'tasks' && (
-            <div className="px-4 md:hidden">
-              <PersonalHint />
-            </div>
-          )}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`${view}:${pageId ?? planId ?? ''}`}
-              className={cn(openPlan && 'h-full')}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.12 }}
-            >
-              {content}
-            </motion.div>
-          </AnimatePresence>
-        </main>
+            <span className="truncate text-neutral-300">
+              {view === 'objective'
+                ? 'Objective'
+                : page
+                  ? pageTitle(page)
+                  : openPlan?.title || 'Untitled plan'}
+            </span>
+          </div>
+        )}
       </div>
+
+      <main
+        className={cn(
+          'min-w-0',
+          openPlan && 'h-[calc(100dvh-49px)] pb-[72px] md:pb-0',
+        )}
+      >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={`${view}:${pageId ?? planId ?? ''}`}
+            className={cn(openPlan && 'h-full')}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.12 }}
+          >
+            {content}
+          </motion.div>
+        </AnimatePresence>
+      </main>
 
       <ConfirmDialog
         open={!!deleting}
@@ -1358,6 +1432,7 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
         companyId={project.companyId}
         parentId={project.id}
         onDone={(result) => {
+          refreshNav();
           if (result.kind === 'created')
             router.push(`${APP_ROUTES.projects}/${result.projectId}`);
           else load();
@@ -1368,7 +1443,10 @@ export const ProjectPage = ({ projectId }: { projectId: string }) => {
           open={editingDetails}
           onOpenChange={setEditingDetails}
           data={data}
-          onSaved={load}
+          onSaved={() => {
+            load();
+            refreshNav();
+          }}
         />
       )}
       <Toaster theme="dark" position="bottom-right" richColors />

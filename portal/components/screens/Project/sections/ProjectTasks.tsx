@@ -27,7 +27,6 @@ import {
 import { AvatarStack, errorText } from '../../Admin/Workspace/shared';
 import { DatePopover, shortDay } from '../../Worklogs/DayLog/DatePopover';
 import type { Person } from '../types';
-import { SectionShell, Stat } from './SectionShell';
 
 type Point = {
   id: string;
@@ -42,7 +41,6 @@ type Point = {
 type Data = { points: Point[]; users: Person[] };
 type Who = Pick<Person, 'id' | 'name' | 'avatar'>;
 
-type Show = 'open' | 'done' | 'all';
 type Whose = 'everyone' | 'mine';
 
 const UNDER_WAY = ['IN_PROGRESS', 'IN_REVIEW'];
@@ -693,14 +691,126 @@ const TaskRow = ({
 };
 
 /* -------------------------------------------------------------------------- */
+/*                                   Views                                    */
+/* -------------------------------------------------------------------------- */
+
+export type TaskLayout = 'board' | 'list' | 'timeline' | 'people';
+
+export const TASK_LAYOUTS: {
+  value: TaskLayout;
+  label: string;
+  icon: string;
+}[] = [
+  { value: 'board', label: 'Board', icon: 'view_kanban' },
+  { value: 'list', label: 'List', icon: 'view_agenda' },
+  { value: 'timeline', label: 'Timeline', icon: 'calendar_view_week' },
+  { value: 'people', label: 'People', icon: 'group' },
+];
+
+const LAYOUT_KEY = 'portal:project-home-view';
+
+/** The view picked last time, on this device. */
+export const useTaskLayout = () => {
+  const [layout, setLayout] = useState<TaskLayout>('board');
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(LAYOUT_KEY) as TaskLayout;
+      if (TASK_LAYOUTS.some((l) => l.value === saved)) setLayout(saved);
+    } catch {
+      /* storage unavailable */
+    }
+  }, []);
+  const pick = (next: TaskLayout) => {
+    setLayout(next);
+    try {
+      window.localStorage.setItem(LAYOUT_KEY, next);
+    } catch {
+      /* storage unavailable */
+    }
+  };
+  return [layout, pick] as const;
+};
+
+/** The day a task is for: its day on the worklog, else when it is due. */
+const dayOf = (t: Task) =>
+  t.forDate ?? (t.dueDate ? String(t.dueDate).slice(0, 10) : null);
+
+const doneSince = (t: Task, since: dayjs.Dayjs) =>
+  t.status === 'DONE' &&
+  !!t.completedAt &&
+  dayjs(t.completedAt as unknown as string).isAfter(since);
+
+const Empty = ({ children }: { children: React.ReactNode }) => (
+  <p className="rounded-xl border border-dashed border-white/[0.08] px-3 py-4 text-center text-xs text-neutral-600">
+    {children}
+  </p>
+);
+
+const ColumnTitle = ({
+  icon,
+  title,
+  count,
+  tone,
+}: {
+  icon: string;
+  title: string;
+  count: number;
+  tone?: string;
+}) => (
+  <h3
+    className={cn(
+      'mb-2.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-neutral-500',
+      tone,
+    )}
+  >
+    <Icon name={icon} className="text-[16px]" />
+    {title}
+    <span className="text-neutral-600">{count}</span>
+  </h3>
+);
+
+/** A small chip for a task on the timeline. */
+const TaskChip = ({
+  task,
+  userOf,
+}: {
+  task: Task;
+  userOf: (id: string) => Who | undefined;
+}) => {
+  const done = task.status === 'DONE';
+  const underWay = UNDER_WAY.includes(task.status);
+  const who = (task.assigneeIds ?? []).map(userOf).filter(Boolean) as Who[];
+  return (
+    <li
+      title={task.title}
+      className={cn(
+        'flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-[11px] leading-tight',
+        done
+          ? 'border-emerald-400/15 bg-emerald-400/[0.06] text-neutral-400 line-through decoration-neutral-600'
+          : underWay
+            ? 'border-sky-400/20 bg-sky-400/[0.07] text-neutral-100'
+            : 'border-white/[0.07] bg-white/[0.03] text-neutral-200',
+      )}
+    >
+      <span className="line-clamp-2 min-w-0 flex-1">{task.title}</span>
+      {who[0] && (
+        <UserAvatar src={who[0].avatar} name={who[0].name} size={16} />
+      )}
+    </li>
+  );
+};
+
+/* -------------------------------------------------------------------------- */
 /*                                  Section                                   */
 /* -------------------------------------------------------------------------- */
 
 /**
- * The project's tasks and the work logged on them. Worklogs and tasks are
- * one thing: what people log are work points under a task.
+ * The project's tasks and the work logged on them, in one of four views:
+ * a board by status, a list by when they are for, the next two weeks, or
+ * each person's work. Worklogs and tasks are one thing: what people log are
+ * work points under a task.
  */
-export const TasksInActionSection = ({
+export const ProjectTasks = ({
   projectId,
   tasks,
   people,
@@ -709,6 +819,9 @@ export const TasksInActionSection = ({
   canTick,
   canDelete,
   onSaved,
+  layout,
+  onLayout,
+  onPoints,
 }: {
   projectId: string;
   tasks: Task[];
@@ -721,14 +834,18 @@ export const TasksInActionSection = ({
   canTick: boolean;
   canDelete: boolean;
   onSaved: () => void;
+  layout: TaskLayout;
+  onLayout: (layout: TaskLayout) => void;
+  /** The work points on the project's tasks, once loaded. */
+  onPoints?: (data: Data) => void;
 }) => {
   const { user } = useUser();
-  const [show, setShow] = useState<Show>('open');
   const [whose, setWhose] = useState<Whose>('everyone');
   const [data, setData] = useState<Data | null>(null);
   const [local, setLocal] = useState<Task[]>(tasks);
   const [removing, setRemoving] = useState<Task | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showDone, setShowDone] = useState(false);
 
   useEffect(() => setLocal(tasks), [tasks]);
 
@@ -742,6 +859,11 @@ export const TasksInActionSection = ({
     loadPoints();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
+
+  useEffect(() => {
+    if (data) onPoints?.(data);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
   const everyone = useMemo(() => {
     const out = new Map<string, Who>();
@@ -792,54 +914,26 @@ export const TasksInActionSection = ({
     ((t.assigneeIds ?? []).includes(user.id) || t.ownerId === user.id);
   const scoped = whose === 'mine' ? live.filter(mine) : live;
   const open = scoped.filter(isOpen);
-  const finished = scoped.filter((t) => !isOpen(t));
+  const weekAgo = dayjs().subtract(7, 'day');
+  const doneThisWeek = scoped.filter((t) => doneSince(t, weekAgo));
 
   const byRecent = (a: Task, b: Task) =>
     lastActive(b, pointsOf.get(b.id) ?? []).localeCompare(
       lastActive(a, pointsOf.get(a.id) ?? []),
     );
   const byDay = (a: Task, b: Task) =>
-    (a.forDate ?? '9999').localeCompare(b.forDate ?? '9999') || byRecent(a, b);
-
-  const groups: { key: string; title: string; icon: string; tasks: Task[] }[] =
-    [];
-  if (show !== 'done') {
-    groups.push({
-      key: 'under-way',
-      title: 'Under way',
-      icon: 'progress_activity',
-      tasks: open.filter((t) => UNDER_WAY.includes(t.status)).sort(byRecent),
-    });
-    groups.push({
-      key: 'to-do',
-      title: 'To do',
-      icon: 'radio_button_unchecked',
-      tasks: open.filter((t) => t.status === 'TODO').sort(byDay),
-    });
-  }
-  if (show !== 'open')
-    groups.push({
-      key: 'done',
-      title: 'Done',
-      icon: 'check_circle',
-      tasks: [...finished].sort(byRecent),
-    });
-
-  const monthAgo = dayjs().subtract(30, 'day');
-  const doneLately = live.filter(
-    (t) =>
-      t.status === 'DONE' &&
-      t.completedAt &&
-      dayjs(t.completedAt as unknown as string).isAfter(monthAgo),
-  ).length;
-  const working = new Set(
-    live.filter(isOpen).flatMap((t) => t.assigneeIds ?? []),
-  ).size;
+    (dayOf(a) ?? '9999').localeCompare(dayOf(b) ?? '9999') || byRecent(a, b);
 
   const tick = async (task: Task) => {
     setLocal((all) =>
       all.map((t) =>
-        t.id === task.id ? { ...t, status: TASK_STATUS.DONE } : t,
+        t.id === task.id
+          ? {
+              ...t,
+              status: TASK_STATUS.DONE,
+              completedAt: new Date() as unknown as Task['completedAt'],
+            }
+          : t,
       ),
     );
     try {
@@ -885,43 +979,350 @@ export const TasksInActionSection = ({
     }
   };
 
-  const shown = groups.filter((g) => g.tasks.length);
+  const rows = (list: Task[], empty: string) =>
+    list.length ? (
+      <ul className="flex flex-col gap-2">
+        {list.map((task) => (
+          <TaskRow
+            key={task.id}
+            task={task}
+            points={pointsOf.get(task.id) ?? []}
+            userOf={userOf}
+            people={assignable}
+            canTick={canTick}
+            canEdit={canTick}
+            canDelete={canDelete}
+            onTick={tick}
+            onUpdate={update}
+            onDelete={setRemoving}
+          />
+        ))}
+      </ul>
+    ) : (
+      <Empty>{empty}</Empty>
+    );
+
+  const today = dayjs().format('YYYY-MM-DD');
+  const weekEnd = dayjs().add(6, 'day').format('YYYY-MM-DD');
+
+  const view = (() => {
+    switch (layout) {
+      case 'board': {
+        const columns = [
+          {
+            key: 'todo',
+            title: 'To do',
+            icon: 'radio_button_unchecked',
+            tasks: open.filter((t) => t.status === 'TODO').sort(byDay),
+            empty: 'Nothing waiting',
+          },
+          {
+            key: 'doing',
+            title: 'Doing',
+            icon: 'progress_activity',
+            tasks: open
+              .filter((t) => UNDER_WAY.includes(t.status))
+              .sort(byRecent),
+            empty: 'Nothing under way',
+          },
+          {
+            key: 'done',
+            title: 'Done this week',
+            icon: 'check_circle',
+            tasks: [...doneThisWeek].sort(byRecent),
+            empty: 'Nothing finished this week',
+          },
+        ];
+        return (
+          <div className="grid gap-5 lg:grid-cols-3">
+            {columns.map((c) => (
+              <div key={c.key} className="min-w-0">
+                <ColumnTitle
+                  icon={c.icon}
+                  title={c.title}
+                  count={c.tasks.length}
+                />
+                {rows(c.tasks, c.empty)}
+              </div>
+            ))}
+          </div>
+        );
+      }
+      case 'list': {
+        const sorted = [...open].sort(byDay);
+        const groups = [
+          {
+            key: 'late',
+            title: 'Overdue',
+            icon: 'schedule',
+            tone: 'text-rose-300/80',
+            tasks: sorted.filter((t) => (dayOf(t) ?? '9999') < today),
+          },
+          {
+            key: 'today',
+            title: 'Today',
+            icon: 'today',
+            tasks: sorted.filter((t) => dayOf(t) === today),
+          },
+          {
+            key: 'week',
+            title: 'Next 7 days',
+            icon: 'date_range',
+            tasks: sorted.filter((t) => {
+              const d = dayOf(t);
+              return !!d && d > today && d <= weekEnd;
+            }),
+          },
+          {
+            key: 'later',
+            title: 'Later',
+            icon: 'event_upcoming',
+            tasks: sorted.filter((t) => (dayOf(t) ?? '') > weekEnd),
+          },
+          {
+            key: 'none',
+            title: 'No date',
+            icon: 'event_busy',
+            tasks: sorted.filter((t) => !dayOf(t)),
+          },
+        ].filter((g) => g.tasks.length);
+        return (
+          <div className="flex flex-col gap-7">
+            {!groups.length && <Empty>No open tasks</Empty>}
+            {groups.map((g) => (
+              <div key={g.key}>
+                <ColumnTitle
+                  icon={g.icon}
+                  title={g.title}
+                  count={g.tasks.length}
+                  tone={g.tone}
+                />
+                {rows(g.tasks, '')}
+              </div>
+            ))}
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowDone((v) => !v)}
+                className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-neutral-500 hover:text-neutral-300"
+              >
+                <Icon
+                  name="chevron_right"
+                  className={cn(
+                    'text-[16px] transition-transform',
+                    showDone && 'rotate-90',
+                  )}
+                />
+                Done this week
+                <span className="text-neutral-600">{doneThisWeek.length}</span>
+              </button>
+              {showDone && (
+                <div className="mt-2.5">
+                  {rows(
+                    [...doneThisWeek].sort(byRecent),
+                    'Nothing finished this week',
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      }
+      case 'timeline': {
+        const start = dayjs().startOf('day');
+        const days = Array.from({ length: 7 }, (_, i) => start.add(i, 'day'));
+        const last = days[days.length - 1].format('YYYY-MM-DD');
+        const earlier = open
+          .filter((t) => (dayOf(t) ?? '9999') < today)
+          .sort(byDay);
+        const undated = open.filter((t) => !dayOf(t));
+        const later = open.filter((t) => (dayOf(t) ?? '') > last);
+        const on = (day: string) =>
+          scoped.filter(
+            (t) =>
+              (isOpen(t) && dayOf(t) === day) ||
+              (t.status === 'DONE' &&
+                !!t.completedAt &&
+                dayjs(t.completedAt as unknown as string).format(
+                  'YYYY-MM-DD',
+                ) === day &&
+                day === today),
+          );
+        return (
+          <div>
+            <div className="custom-scrollbar -mx-1 overflow-x-auto px-1 pb-2">
+              <div className="grid min-w-[760px] grid-cols-[repeat(8,minmax(0,1fr))] gap-1.5">
+                <div className="min-w-0">
+                  <p className="mb-2 text-[11px] font-semibold text-rose-300/80">
+                    Overdue
+                  </p>
+                  <ul className="flex flex-col gap-1">
+                    {earlier.map((t) => (
+                      <TaskChip key={t.id} task={t} userOf={userOf} />
+                    ))}
+                  </ul>
+                </div>
+                {days.map((d) => {
+                  const key = d.format('YYYY-MM-DD');
+                  const isToday = key === today;
+                  const weekend = d.day() === 0 || d.day() === 6;
+                  const list = on(key);
+                  return (
+                    <div
+                      key={key}
+                      className={cn(
+                        'min-w-0 rounded-xl p-1',
+                        isToday && 'bg-white/[0.04] ring-1 ring-white/10',
+                        weekend && !isToday && 'bg-white/[0.015]',
+                      )}
+                    >
+                      <p
+                        className={cn(
+                          'mb-2 px-1 text-[11px]',
+                          isToday
+                            ? 'font-semibold text-white'
+                            : 'text-neutral-500',
+                        )}
+                      >
+                        {isToday ? 'Today' : d.format('ddd')}{' '}
+                        <span className="text-neutral-600">
+                          {d.format('D')}
+                        </span>
+                      </p>
+                      <ul className="flex flex-col gap-1">
+                        {list.map((t) => (
+                          <TaskChip key={t.id} task={t} userOf={userOf} />
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            {(undated.length > 0 || later.length > 0) && (
+              <p className="mt-3 text-xs text-neutral-500">
+                {[
+                  undated.length &&
+                    `${undated.length} open task${undated.length === 1 ? ' has' : 's have'} no date`,
+                  later.length &&
+                    `${later.length} ${later.length === 1 ? 'is' : 'are'} for after this week`,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+                . The List view shows them.
+              </p>
+            )}
+          </div>
+        );
+      }
+      case 'people': {
+        const ids = Array.from(
+          new Set([
+            ...people.map((p) => p.id),
+            ...open.flatMap((t) => t.assigneeIds ?? []),
+          ]),
+        );
+        const rowsOf = ids
+          .map((id) => {
+            const theirs = (t: Task) => (t.assigneeIds ?? []).includes(id);
+            return {
+              who: userOf(id),
+              id,
+              doing: open
+                .filter((t) => theirs(t) && UNDER_WAY.includes(t.status))
+                .sort(byRecent),
+              todo: open
+                .filter((t) => theirs(t) && t.status === 'TODO')
+                .sort(byDay),
+              done: doneThisWeek.filter(theirs).length,
+            };
+          })
+          .filter((r) => r.who)
+          .sort(
+            (a, b) =>
+              b.doing.length - a.doing.length ||
+              b.todo.length - a.todo.length ||
+              b.done - a.done,
+          );
+        const nobody = open.filter((t) => !(t.assigneeIds ?? []).length);
+        return (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {rowsOf.map((r) => (
+              <div
+                key={r.id}
+                className="min-w-0 rounded-2xl border border-white/[0.06] bg-white/[0.015] p-3"
+              >
+                <div className="mb-3 flex items-center gap-2.5">
+                  <UserAvatar
+                    src={r.who!.avatar}
+                    name={r.who!.name}
+                    size={28}
+                  />
+                  <p className="min-w-0 flex-1 truncate text-sm font-medium text-white">
+                    {r.who!.name}
+                  </p>
+                  <span className="flex shrink-0 gap-3 text-[11px] tabular-nums text-neutral-500">
+                    <span>
+                      <b className="font-semibold text-sky-300">
+                        {r.doing.length}
+                      </b>{' '}
+                      doing
+                    </span>
+                    <span>
+                      <b className="font-semibold text-neutral-200">
+                        {r.todo.length}
+                      </b>{' '}
+                      to do
+                    </span>
+                    <span>
+                      <b className="font-semibold text-emerald-300">{r.done}</b>{' '}
+                      done
+                    </span>
+                  </span>
+                </div>
+                {rows(
+                  [...r.doing, ...r.todo].slice(0, 4),
+                  'Nothing open right now',
+                )}
+                {r.doing.length + r.todo.length > 4 && (
+                  <p className="mt-2 text-[11px] text-neutral-500">
+                    +{r.doing.length + r.todo.length - 4} more
+                  </p>
+                )}
+              </div>
+            ))}
+            {nobody.length > 0 && (
+              <div className="min-w-0 rounded-2xl border border-dashed border-white/[0.08] p-3">
+                <p className="mb-3 text-sm font-medium text-neutral-400">
+                  Nobody on it yet{' '}
+                  <span className="text-neutral-600">{nobody.length}</span>
+                </p>
+                {rows(nobody.sort(byDay).slice(0, 4), '')}
+              </div>
+            )}
+          </div>
+        );
+      }
+    }
+  })();
 
   return (
-    <SectionShell
-      icon="bolt"
-      title="Tasks in Action"
-      description="Every task in this project and the work logged on it. Add one for yourself, or switch who it is for."
-      actions={
-        <>
-          <Segmented<Whose>
-            value={whose}
-            onChange={setWhose}
-            options={[
-              { value: 'everyone', label: 'Everyone' },
-              { value: 'mine', label: 'Mine' },
-            ]}
-          />
-          <Segmented<Show>
-            value={show}
-            onChange={setShow}
-            options={[
-              { value: 'open', label: 'Open', count: open.length },
-              { value: 'done', label: 'Done', count: finished.length },
-              { value: 'all', label: 'All' },
-            ]}
-          />
-        </>
-      }
-    >
-      <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Stat label="Open" value={live.filter(isOpen).length} />
-        <Stat
-          label="Under way"
-          value={live.filter((t) => UNDER_WAY.includes(t.status)).length}
+    <div>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <Segmented<TaskLayout>
+          value={layout}
+          onChange={onLayout}
+          options={TASK_LAYOUTS}
         />
-        <Stat label="Done" value={doneLately} hint="last 30 days" />
-        <Stat label="People on open tasks" value={working} />
+        <div className="flex-1" />
+        <Segmented<Whose>
+          value={whose}
+          onChange={setWhose}
+          options={[
+            { value: 'everyone', label: 'Everyone' },
+            { value: 'mine', label: 'Mine' },
+          ]}
+        />
       </div>
 
       {canAdd && me && (
@@ -936,51 +1337,11 @@ export const TasksInActionSection = ({
         />
       )}
 
-      {shown.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-white/10 px-6 py-14 text-center">
-          <p className="text-sm text-neutral-300">
-            {show === 'done' ? 'Nothing finished yet' : 'No open tasks'}
-          </p>
-          <p className="mx-auto mt-1 max-w-sm text-xs text-neutral-500">
-            {canAdd
-              ? 'Write one above. It lands on today’s worklog of whoever it is for.'
-              : 'Tasks people add to this project, and the work they log on them, show here.'}
-          </p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-8">
-          {shown.map((group) => (
-            <div key={group.key}>
-              <h3 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">
-                <Icon name={group.icon} className="text-[16px]" />
-                {group.title}
-                <span className="text-neutral-600">{group.tasks.length}</span>
-              </h3>
-              <ul className="flex flex-col gap-2">
-                {group.tasks.map((task) => (
-                  <TaskRow
-                    key={task.id}
-                    task={task}
-                    points={pointsOf.get(task.id) ?? []}
-                    userOf={userOf}
-                    people={assignable}
-                    canTick={canTick}
-                    canEdit={canTick}
-                    canDelete={canDelete}
-                    onTick={tick}
-                    onUpdate={update}
-                    onDelete={setRemoving}
-                  />
-                ))}
-              </ul>
-            </div>
-          ))}
-          {!data && (
-            <p className="flex items-center gap-2 text-xs text-neutral-500">
-              <Spin className="size-3" /> Loading work points…
-            </p>
-          )}
-        </div>
+      {view}
+      {!data && (
+        <p className="mt-3 flex items-center gap-2 text-xs text-neutral-500">
+          <Spin className="size-3" /> Loading work points…
+        </p>
       )}
       <ConfirmDialog
         open={!!removing}
@@ -991,6 +1352,8 @@ export const TasksInActionSection = ({
         loading={busy}
         onConfirm={remove}
       />
-    </SectionShell>
+    </div>
   );
 };
+
+export type { Point as TaskPoint, Data as TaskPointsData };

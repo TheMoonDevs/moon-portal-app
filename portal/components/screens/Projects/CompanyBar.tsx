@@ -12,9 +12,11 @@ import { AvatarStack, CompanyMark } from '../Admin/Workspace/shared';
 import type { Person } from '../Project/types';
 import {
   monthName,
-  monthTasks,
   type OverviewCompany,
   type OverviewProject,
+  type Pulse,
+  pulseOf,
+  PULSES,
 } from './overview';
 import { Tip, TipRow, TipTitle } from './Tip';
 
@@ -62,22 +64,22 @@ const Heading = ({ children }: { children: React.ReactNode }) => (
 );
 
 /**
- * The company's banner, at the top of its projects: its logo and basics on
- * the left, then how it is doing this month: what got done, how much work was logged each day, which projects moved most and
- * how each member is contributing. Sub-projects count in the project above
- * them.
+ * A company's bar on projects Home: its logo, basics and Core / Edit
+ * buttons on the left, then how it is doing this month: what got done, how
+ * much work was logged each day, how many of its projects are moving, quiet
+ * or need a look, and how each member is contributing.
  */
-export const CompanyMonth = ({
+export const CompanyBar = ({
   company,
-  projects,
   all,
   people,
+  editHref,
 }: {
   company: OverviewCompany;
-  /** The company's top projects, as shown below. */
-  projects: OverviewProject[];
   all: OverviewProject[];
   people: Map<string, Person>;
+  /** Where its Edit button goes, for people who may edit the company. */
+  editHref?: string | null;
 }) => {
   const color = company.color || '#10b981';
   const now = new Date();
@@ -88,7 +90,7 @@ export const CompanyMonth = ({
   ).getDate();
   const month = monthName(now);
 
-  const { daily, rows, members, quiet, totals } = useMemo(() => {
+  const { daily, members, quiet, totals } = useMemo(() => {
     const mine = all.filter((p) => p.companyId === company.id);
     const daily = Array.from({ length: daysInMonth }, () => 0);
     const byPerson = new Map<string, { logged: number; done: number }>();
@@ -101,9 +103,6 @@ export const CompanyMonth = ({
         byPerson.set(row.userId, at);
       }
     }
-    const rows = projects
-      .map((p) => ({ project: p, ...monthTasks(p, all) }))
-      .sort((a, b) => b.logged - a.logged || b.done - a.done);
     const members = Array.from(byPerson, ([id, row]) => ({
       person: people.get(id),
       ...row,
@@ -119,7 +118,6 @@ export const CompanyMonth = ({
       .filter((p): p is Person => !!p);
     return {
       daily,
-      rows,
       members,
       quiet,
       totals: {
@@ -127,13 +125,13 @@ export const CompanyMonth = ({
         major: mine.reduce((n, p) => n + (p.month?.major ?? 0), 0),
         logged: daily.reduce((n, d) => n + d, 0),
         open: mine.reduce((n, p) => n + p.tasks.open, 0),
+        overdue: mine.reduce((n, p) => n + p.tasks.overdue, 0),
       },
     };
-  }, [all, company, projects, people, daysInMonth]);
+  }, [all, company, people, daysInMonth]);
 
   const today = now.getDate();
   const peak = Math.max(1, ...daily);
-  const maxRow = Math.max(1, ...rows.map((r) => r.logged));
   const maxMember = Math.max(1, ...members.map((m) => m.logged));
   const memberCount = company.memberIds?.length ?? members.length;
   const companyProjects = all.filter((p) => p.companyId === company.id);
@@ -141,6 +139,10 @@ export const CompanyMonth = ({
     (p) => p.status === 'ACTIVE',
   ).length;
   const core = companyProjects.find((p) => p.isCore);
+  const byPulse = (Object.keys(PULSES) as Pulse[]).map((key) => ({
+    key,
+    projects: companyProjects.filter((p) => pulseOf(p) === key),
+  }));
 
   return (
     <div className="mb-3 flex flex-col overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-br from-white/[0.035] to-white/[0.01] lg:flex-row">
@@ -186,15 +188,28 @@ export const CompanyMonth = ({
             {activeCount < companyProjects.length && ` · ${activeCount} active`}
           </span>
         </div>
-        {core && (
-          <Link
-            href={`${APP_ROUTES.projects}/${core.id}`}
-            className="flex w-fit items-center gap-1 text-xs font-medium text-white hover:underline"
-          >
-            Open {core.name}
-            <Icon name="arrow_forward" className="text-[14px]" />
-          </Link>
-        )}
+        <div className="flex gap-2">
+          {core && (
+            <Link
+              href={`${APP_ROUTES.projects}/${core.id}`}
+              title={`Open ${company.name}'s core project`}
+              className="flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg bg-white px-3 text-xs font-semibold text-neutral-950 transition-opacity hover:opacity-90"
+            >
+              <Icon name="hub" className="text-[16px]" />
+              Core
+            </Link>
+          )}
+          {editHref && (
+            <Link
+              href={editHref}
+              title={`Edit ${company.name}: name, logo, colour, members`}
+              className="flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg bg-white/[0.06] px-3 text-xs font-semibold text-neutral-200 transition-colors hover:bg-white/[0.1] hover:text-white"
+            >
+              <Icon name="edit" className="text-[16px]" />
+              Edit
+            </Link>
+          )}
+        </div>
       </div>
 
       <div className="grid min-w-0 flex-1 gap-5 p-4 md:grid-cols-2 xl:grid-cols-3">
@@ -286,57 +301,52 @@ export const CompanyMonth = ({
           </div>
         </div>
 
-        {/* Projects, by work logged this month */}
+        {/* How its projects are doing, by count (the list is on the left) */}
         <div className="min-w-0">
           <Heading>Projects</Heading>
-          <div className="flex flex-col gap-1">
-            {rows.slice(0, MAX_ROWS).map((r) => (
+          <div className="grid grid-cols-2 gap-2">
+            {byPulse.map(({ key, projects: list }) => (
               <Tip
-                key={r.project.id}
+                key={key}
                 content={
                   <>
-                    <TipTitle>
-                      {r.project.name} in {month}
-                    </TipTitle>
-                    <TipRow label="Work logged" value={r.logged} />
-                    <TipRow label="Tasks done" value={r.done} />
-                    <TipRow label="Still open" value={r.open} />
-                    {r.overdue > 0 && (
-                      <TipRow label="Overdue" value={r.overdue} />
+                    <TipTitle>{PULSES[key].label}</TipTitle>
+                    <p>{PULSES[key].hint}</p>
+                    {list.length > 0 && (
+                      <p className="mt-1.5 text-neutral-400">
+                        {list.map((p) => p.name).join(', ')}
+                      </p>
                     )}
-                    <p className="mt-1.5 text-[11px] text-neutral-500">
-                      With its sub-projects.
-                    </p>
                   </>
                 }
               >
-                <Link
-                  href={`${APP_ROUTES.projects}/${r.project.id}`}
-                  className="-mx-1.5 flex items-center gap-2.5 rounded-lg px-1.5 py-1 text-xs outline-none transition-colors hover:bg-white/[0.04] focus-visible:bg-white/[0.06]"
+                <div
+                  tabIndex={0}
+                  className={cn(
+                    'cursor-help rounded-xl bg-white/[0.03] px-3 py-2 outline-none focus-visible:bg-white/[0.06]',
+                    !list.length && 'opacity-50',
+                  )}
                 >
-                  <span
-                    className="size-1.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: r.project.color || color }}
-                  />
-                  <span className="w-24 shrink-0 truncate text-neutral-300">
-                    {r.project.name}
-                  </span>
-                  <Bar
-                    share={r.logged / maxRow}
-                    color={r.project.color || color}
-                  />
-                  <span className="w-12 shrink-0 text-right text-[11px] tabular-nums text-neutral-400">
-                    {r.done} done
-                  </span>
-                </Link>
+                  <p className="flex items-center gap-2 text-xl font-semibold tabular-nums tracking-tight text-white">
+                    {list.length}
+                    <span
+                      className={cn('size-1.5 rounded-full', PULSES[key].dot)}
+                    />
+                  </p>
+                  <p className="truncate text-[11px] text-neutral-500">
+                    {PULSES[key].label.toLowerCase()}
+                  </p>
+                </div>
               </Tip>
             ))}
-            {rows.length > MAX_ROWS && (
-              <p className="px-0 pt-0.5 text-[11px] text-neutral-500">
-                +{rows.length - MAX_ROWS} more below
-              </p>
-            )}
           </div>
+          {totals.overdue > 0 && (
+            <p className="mt-2 flex items-center gap-1.5 text-[11px] text-rose-300/90">
+              <Icon name="schedule" className="text-[14px]" />
+              {totals.overdue} overdue task{totals.overdue === 1 ? '' : 's'}{' '}
+              across its projects
+            </p>
+          )}
         </div>
 
         {/* People, by work logged this month */}

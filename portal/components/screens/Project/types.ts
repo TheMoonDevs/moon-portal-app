@@ -30,22 +30,43 @@ export type PagesData = {
   pages: ProjectPage[];
 };
 
-/** The first one is where a project opens. */
-export const VIEWS = [
-  { key: 'tasks', label: 'Tasks in Action', icon: 'bolt' },
-  { key: 'worklogs', label: 'Worklogs', icon: 'history_edu' },
+/** The tabs under a project's banner; the first is where it opens. */
+export const TABS = [
+  { key: 'home', label: 'Home', icon: 'home' },
+  { key: 'logs', label: 'Logs', icon: 'history_edu' },
   { key: 'goals', label: 'Goals', icon: 'track_changes' },
-  { key: 'objective', label: 'Objective', icon: 'flag' },
   { key: 'kpi', label: 'KPI', icon: 'monitoring' },
-  { key: 'plans', label: 'Project Plans', icon: 'map' },
+  { key: 'plans', label: 'Plans', icon: 'map' },
   { key: 'pages', label: 'Pages', icon: 'description' },
-  { key: 'members', label: 'Members', icon: 'group' },
 ] as const;
 
-export type ViewKey = (typeof VIEWS)[number]['key'];
+export type TabKey = (typeof TABS)[number]['key'];
 
-export const isView = (value: unknown): value is ViewKey =>
-  VIEWS.some((v) => v.key === value);
+/**
+ * What a project page can show: a tab, or the team (from Home) or the
+ * objective (pinned first in Pages).
+ */
+export type ViewKey = TabKey | 'members' | 'objective';
+
+/** The tab a view sits under. */
+export const tabOf = (view: ViewKey): TabKey =>
+  view === 'members' ? 'home' : view === 'objective' ? 'pages' : view;
+
+/** Old links: the sections a project page used to have. */
+const OLD_VIEWS: Record<string, ViewKey> = {
+  tasks: 'home',
+  worklogs: 'logs',
+  ideas: 'pages',
+  schedule: 'goals',
+};
+
+/** The view a `?view=` value opens. */
+export const viewFrom = (value: string | null | undefined): ViewKey => {
+  if (!value) return 'home';
+  if (OLD_VIEWS[value]) return OLD_VIEWS[value];
+  if (value === 'members' || value === 'objective') return value;
+  return TABS.some((t) => t.key === value) ? (value as TabKey) : 'home';
+};
 
 export const pageTitle = (page: Pick<ProjectPage, 'title'>) =>
   page.title?.trim() || 'Untitled';
