@@ -53,6 +53,18 @@ export function screenFor(link: string | null | undefined): Href | null {
   return null;
 }
 
+/**
+ * A portal page for the in-app browser. `inApp=1` tells the website it's
+ * already inside the app, so it skips its "Get the app" splash.
+ */
+const inAppUrl = (link: string) => {
+  const url = portalUrl(link);
+  if (!url.startsWith(PORTAL_URL)) return url;
+  const [base, hash] = url.split('#');
+  const tagged = `${base}${base.includes('?') ? '&' : '?'}inApp=1`;
+  return hash === undefined ? tagged : `${tagged}#${hash}`;
+};
+
 /** Opens a portal link: its app screen, or the website in the app. */
 export async function openLink(link: string | null | undefined) {
   if (!link) return;
@@ -61,10 +73,10 @@ export async function openLink(link: string | null | undefined) {
     router.push(screen);
     return;
   }
-  await WebBrowser.openBrowserAsync(portalUrl(link)).catch(() => null);
+  await WebBrowser.openBrowserAsync(inAppUrl(link)).catch(() => null);
 }
 
 /** Opens a website page in the in-app browser. */
 export function openWebsite(path = '/') {
-  return WebBrowser.openBrowserAsync(portalUrl(path)).catch(() => null);
+  return WebBrowser.openBrowserAsync(inAppUrl(path)).catch(() => null);
 }
