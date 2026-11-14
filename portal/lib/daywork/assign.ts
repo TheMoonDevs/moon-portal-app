@@ -48,7 +48,13 @@ export function withNote(
 export async function assignTask(
   task: Task,
   by: Who,
-  input: { userId: string; note?: string; keep?: boolean },
+  input: {
+    userId: string;
+    note?: string;
+    keep?: boolean;
+    /** `person`, or the assistant that did it for them (e.g. `claude`). */
+    via?: string;
+  },
 ): Promise<Task> {
   if (!task.companyId || !task.projectId)
     throw new AssignError(
@@ -99,6 +105,7 @@ export async function assignTask(
     userId: by.id,
     date: day,
     text: `${shift ? 'Shifted to' : 'Assigned to'} ${nameOf(target)}${note ? `: ${note}` : ''}`,
+    by: input.via ?? 'person',
   });
 
   if (input.userId !== by.id && (!already || shift || note))
@@ -110,6 +117,17 @@ export async function assignTask(
       note,
     }).catch((e) => console.error('[tasks] assign notification failed', e));
   return updated;
+}
+
+/** Tells each person newly put on a task, e.g. by changing its people. */
+export async function notifyNewAssignees(before: Task, after: Task, by: Who) {
+  const added = (after.assigneeIds ?? []).filter(
+    (id) => id !== by.id && !(before.assigneeIds ?? []).includes(id),
+  );
+  for (const to of added)
+    await notifyAssigned({ task: after, to, by, shift: false, note: '' }).catch(
+      (e) => console.error('[tasks] assign notification failed', e),
+    );
 }
 
 async function notifyAssigned({

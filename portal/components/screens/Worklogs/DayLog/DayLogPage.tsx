@@ -500,11 +500,14 @@ export const DayLogPage = ({
   const teams = useProjectTeams(date, teamIds, day.version);
   const [teamOf, setTeamOf] = useState<Place | null>(null);
 
+  const hasPersonal = editable && day.projects.some((p) => p.isPersonal);
   const projectGroups = (() => {
     const keys = [
       ...counts.map((c) => c.place.key),
       ...shown.map((t) => placeOf(t, day.projects, day.companies).key),
       ...extraPlaces,
+      // Personal is always there, ready to write in.
+      ...(hasPersonal ? ['personal'] : []),
     ].filter((k, i, all) => all.indexOf(k) === i);
     // In the order of the company tabs, then as they came.
     const tabRank = (key: string) => {
@@ -527,7 +530,8 @@ export const DayLogPage = ({
         const place = tasks.length
           ? placeOf(tasks[0], day.projects, day.companies)
           : placeOfKey(key, day.projects, day.companies);
-        if (!tasks.length && !extraPlaces.includes(key)) return null;
+        if (!tasks.length && !extraPlaces.includes(key) && key !== 'personal')
+          return null;
         if (filter && key !== filter && companyKeyOf(place) !== filter)
           return null;
         return {

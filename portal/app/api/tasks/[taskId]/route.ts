@@ -1,3 +1,4 @@
+import { notifyNewAssignees } from '@/lib/daywork/assign';
 import {
   deleteTask,
   isMine,
@@ -142,6 +143,8 @@ export async function PATCH(request: Request, { params }: Params) {
     });
   await syncTaskPoints(updated);
   await noteStatusChange(task, updated, user.id);
+  // People newly put on it hear about it.
+  if ('assigneeIds' in data) await notifyNewAssignees(task, updated, user);
   return ok({ task: updated });
 }
 

@@ -1,4 +1,9 @@
 import {
+  AssignError,
+  assignTask,
+  notifyNewAssignees,
+} from '@/lib/daywork/assign';
+import {
   isMine,
   noteStatusChange,
   stillNamedByWords,
@@ -1001,7 +1006,64 @@ export const WORKSPACE_TOOLS: Tool[] = [
       );
       await syncTaskPoints(updated);
       await noteStatusChange(task, updated, user.id, 'claude');
+      if (data.assigneeIds) await notifyNewAssignees(task, updated, user);
       return { task: await describeTask(updated, project) };
+    },
+  },
+  {
+    name: 'assign_task',
+    title: 'Give a task to a teammate',
+    description:
+      "Gives a task to someone in its company, as the worklog page's Assign to does. By default it is shifted: they become its owner and only assignee, so it leaves the person's day and lands on theirs. With keep, they are added and the person stays on it too. A note (what to add or do, links) goes into the task's info. The teammate gets a portal notification and a push. Personal tasks and tasks in no project cannot be given away. Use update_task's assignees only to set the full list of people without a hand-over.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        taskId: { type: 'string' },
+        to: {
+          type: 'string',
+          description: 'The teammate: their name, first name or email.',
+        },
+        note: {
+          type: 'string',
+          description: 'What they should know or add; goes into its info.',
+        },
+        keep: {
+          type: 'boolean',
+          description: 'Keep the person on it too (default false: shift it).',
+        },
+      },
+      required: ['taskId', 'to'],
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false },
+    run: async (user, args) => {
+      const task = await findTask(user, args?.taskId, 'tasks:edit');
+      if (typeof args?.to !== 'string' || !args.to.trim())
+        throw new ToolError('Say who to give it to (name or email).');
+      const [userId] =
+        (await resolvePeople(user, task.companyId, [args.to])) ?? [];
+      if (!userId)
+        throw new ToolError(`Nobody in its company is "${args.to}".`);
+      if (userId === user.id)
+        throw new ToolError('That is the person themselves; name a teammate.');
+      try {
+        const updated = await assignTask(task, user, {
+          userId,
+          note: typeof args?.note === 'string' ? args.note : '',
+          keep: args?.keep === true,
+          via: 'claude',
+        });
+        const project: Project | null = await db.project.findFirst({
+          where: { id: updated.projectId },
+        });
+        return {
+          shifted: args?.keep !== true,
+          notified: true,
+          task: await describeTask(updated, project),
+        };
+      } catch (e) {
+        if (e instanceof AssignError) throw new ToolError(e.message);
+        throw e;
+      }
     },
   },
 ];
