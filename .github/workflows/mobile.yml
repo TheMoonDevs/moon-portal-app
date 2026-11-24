@@ -25,4 +25,19 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run check-types
-      - run: npx expo-doctor@latest
+      # Expo ships patch releases of its packages every few days, so the
+      # "packages match the SDK" check would fail every pull request until
+      # someone bumps them. Bumping changes native code, which belongs in a
+      # store release (see mobile-update.yml), so it is reported below as a
+      # warning instead of failing the check. The doctor version is pinned so
+      # a new doctor release can't start failing pull requests on its own.
+      - name: Expo doctor
+        run: npx --yes expo-doctor@1.21.8
+        env:
+          EXPO_DOCTOR_SKIP_DEPENDENCY_VERSION_CHECK: '1'
+      - name: Expo packages behind the SDK (warning only)
+        run: |
+          if ! npx expo install --check > expo-check.txt 2>&1; then
+            cat expo-check.txt
+            echo "::warning title=Expo packages behind the SDK::Run 'npx expo install --fix' in mobile/ with the next store release."
+          fi
