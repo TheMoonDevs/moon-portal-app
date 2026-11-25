@@ -57,6 +57,7 @@ const POINT_STATUS: Record<
   doing: { label: 'Doing', tone: 'info' },
   done: { label: 'Done', tone: 'positive' },
   not_done: { label: 'Not done', tone: 'neutral' },
+  failed: { label: 'Failed', tone: 'danger' },
   blocked: { label: 'Blocked', tone: 'danger' },
   waiting: { label: 'Waiting', tone: 'warning' },
 };

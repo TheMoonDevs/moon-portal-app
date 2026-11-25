@@ -60,7 +60,7 @@ export type Workspace = {
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE' | 'IGNORED' | 'ARCHIVED';
 
 /** What a work point can move its task to. */
-export type PointStatus = 'doing' | 'paused' | 'done' | 'not_done' | 'blocked' | 'waiting';
+export type PointStatus = 'doing' | 'paused' | 'done' | 'not_done' | 'failed' | 'blocked' | 'waiting';
 
 /** What the app can set on a task (PATCH /api/me/day/tasks/:id). */
 export type TaskMove = PointStatus | 'todo' | 'archived';
@@ -112,6 +112,8 @@ export type Task = {
   goalId?: string | null;
   /** "waiting", "blocked" or "paused": a status the task's last point set. */
   flag?: 'waiting' | 'blocked' | 'paused' | null;
+  /** The day it was marked failed: it stays on that day and never moves on. */
+  failedOn?: string | null;
   ownerId?: string | null;
   assigneeIds?: string[];
   madeBy?: string | null;

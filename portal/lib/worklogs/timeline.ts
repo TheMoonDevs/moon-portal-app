@@ -10,6 +10,7 @@ export const POINT_STATUSES = {
   paused: { emoji: '⏸️', label: 'Paused' },
   done: { emoji: '✅', label: 'Done' },
   not_done: { emoji: '❌', label: 'Not done' },
+  failed: { emoji: '💥', label: 'Failed' },
   blocked: { emoji: '🔴', label: 'Blocked' },
   waiting: { emoji: '❓', label: 'Waiting on you' },
 } as const;
@@ -29,7 +30,7 @@ export type PointEvent = {
   by: 'claude' | 'person';
 };
 
-const FINISHED: (PointStatus | null)[] = ['done', 'not_done'];
+const FINISHED: (PointStatus | null)[] = ['done', 'not_done', 'failed'];
 
 /** When a point started and, if it has, finished. */
 export function pointSpan(events: PointEvent[]) {

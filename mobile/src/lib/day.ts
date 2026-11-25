@@ -25,11 +25,14 @@ export type RowStatus =
   | 'paused'
   | 'doing'
   | 'not_done'
+  | 'failed'
   | null;
 
 /** How a task stands on a day: its status, else the day's last point. */
 export function rowStatus(task: Task, points: WorkPoint[], date: string): RowStatus {
   if (task.status === 'DONE') return 'done';
+  // Failed on its day: closed there, never carried to the next day.
+  if (task.status === 'IGNORED' && task.failedOn) return 'failed';
   if (task.status === 'ARCHIVED' || task.status === 'IGNORED') return 'archived';
   if (task.flag === 'blocked' || task.flag === 'waiting' || task.flag === 'paused') return task.flag;
   if (task.status === 'IN_PROGRESS' || task.status === 'IN_REVIEW') return 'doing';
@@ -37,7 +40,7 @@ export function rowStatus(task: Task, points: WorkPoint[], date: string): RowSta
   return last?.status === 'not_done' ? 'not_done' : null;
 }
 
-const FINISHED: RowStatus[] = ['done', 'not_done', 'archived'];
+const FINISHED: RowStatus[] = ['done', 'not_done', 'failed', 'archived'];
 
 /**
  * A task that moved on from a past day: still open, or finished on a later

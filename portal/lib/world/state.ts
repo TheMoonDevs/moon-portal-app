@@ -17,6 +17,7 @@ export type PointStatus =
   | 'paused'
   | 'done'
   | 'not_done'
+  | 'failed'
   | 'blocked'
   | 'waiting';
 
@@ -253,6 +254,7 @@ export const STATUS_EMOJI: Record<PointStatus, string> = {
   paused: '⏸️',
   done: '✅',
   not_done: '❌',
+  failed: '💥',
   blocked: '🔴',
   waiting: '❓',
 };

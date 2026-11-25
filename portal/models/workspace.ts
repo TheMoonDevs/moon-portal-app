@@ -338,6 +338,12 @@ export type Task = Loose<
     }>;
     /** The goal day this task was moved on from, when it was postponed. */
     carriedFrom?: Nullable<string>;
+    /**
+     * The day it was marked failed (YYYY-MM-DD). A failed task is IGNORED,
+     * so it never moves on to a later day; it stays on its own day (and the
+     * day it was marked) as failed. A goal task also misses its goal's day.
+     */
+    failedOn?: Nullable<string>;
   }
 >;
 
@@ -346,6 +352,7 @@ export type WorkPointStatus =
   | 'paused'
   | 'done'
   | 'not_done'
+  | 'failed'
   | 'blocked'
   | 'waiting';
 

@@ -48,6 +48,7 @@ const LABEL: Record<string, string> = {
   waiting: 'Waiting',
   blocked: 'Blocked',
   not_done: 'Not done',
+  failed: 'Failed',
 };
 
 const StatusMark = ({ status }: { status: TaskRowStatus }) => (

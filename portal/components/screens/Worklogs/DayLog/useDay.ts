@@ -47,6 +47,8 @@ export type DayTask = {
   } | null;
   /** The goal day it was moved on from. */
   carriedFrom?: string | null;
+  /** The day it was marked failed: it stays on that day, never moves on. */
+  failedOn?: string | null;
   /** Only on the page: not saved yet. */
   draft?: boolean;
   /** Only on the page: the row's key while it is open, kept once saved. */
@@ -139,9 +141,13 @@ export type PlaceInput =
 let seq = 0;
 const draftId = () => `draft-${Date.now().toString(36)}${(seq++).toString(36)}`;
 
-/** Archived tasks are off the day; Your tasks keeps them to bring back. */
-const onDay = (t: Pick<DayTask, 'status'>) =>
-  t.status !== 'ARCHIVED' && t.status !== 'IGNORED';
+/**
+ * Archived tasks are off the day; Your tasks keeps them to bring back.
+ * Failed ones stay on the day they failed.
+ */
+const onDay = (t: Pick<DayTask, 'status' | 'failedOn'>) =>
+  (t.status !== 'ARCHIVED' && t.status !== 'IGNORED') ||
+  (t.status === 'IGNORED' && !!t.failedOn);
 
 const errorOf = (e: any, fallback: string) =>
   (typeof e?.error === 'string' && e.error) || fallback;
@@ -414,11 +420,13 @@ export function useDay(date: string) {
           ? 'DONE'
           : to === 'archived'
             ? 'ARCHIVED'
-            : to === 'todo' || to === 'paused'
-              ? 'TODO'
-              : to === 'not_done'
-                ? (row?.status ?? 'TODO')
-                : 'IN_PROGRESS';
+            : to === 'failed'
+              ? 'IGNORED'
+              : to === 'todo' || to === 'paused'
+                ? 'TODO'
+                : to === 'not_done'
+                  ? (row?.status ?? 'TODO')
+                  : 'IN_PROGRESS';
       setTasks((ts) =>
         ts
           .map((t) =>
@@ -426,6 +434,7 @@ export function useDay(date: string) {
               ? {
                   ...t,
                   status,
+                  failedOn: to === 'failed' ? dateRef.current : null,
                   flag:
                     to === 'blocked' || to === 'waiting' || to === 'paused'
                       ? to
