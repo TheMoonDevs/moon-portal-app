@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
+import { todayKey } from './dates';
 import { type LogPointInput, MUTATIONS, queryClient, type TaskChangeInput } from './query';
 import type { Day, MyTasks, PointStatus, Task, TaskMove, TaskStatus } from './types';
 
@@ -29,6 +30,7 @@ export const POINT_STATUSES: { value: PointStatus; label: string }[] = [
   { value: 'blocked', label: 'Blocked' },
   { value: 'done', label: 'Done' },
   { value: 'not_done', label: 'Not done' },
+  { value: 'failed', label: 'Failed' },
 ];
 
 export const POINT_LABEL: Record<string, string> = {
@@ -36,6 +38,7 @@ export const POINT_LABEL: Record<string, string> = {
   paused: 'Paused',
   done: 'Done',
   not_done: 'Not done',
+  failed: 'Failed',
   blocked: 'Blocked',
   waiting: 'Waiting',
   archived: 'Archived',
@@ -57,6 +60,8 @@ function statusAfter(task: Task, move: TaskMove): Partial<Task> {
       return { status: 'ARCHIVED', flag: null };
     case 'not_done':
       return { flag: null };
+    case 'failed':
+      return { status: 'IGNORED', flag: null, failedOn: todayKey() };
     case 'blocked':
     case 'waiting':
       return { status: task.status === 'IN_REVIEW' ? 'IN_REVIEW' : 'IN_PROGRESS', flag: move };

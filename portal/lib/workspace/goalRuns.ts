@@ -67,7 +67,7 @@ export const ofSchedule = (schedule: TaskSchedule, task: Task) =>
 
 /**
  * The tasks standing for a schedule's runs from `from` to `to`: those it
- * made and others linked to its goal, not put away.
+ * made and others linked to its goal, not put away (failed ones count).
  */
 export async function runTasks(
   schedule: TaskSchedule,
@@ -77,7 +77,7 @@ export async function runTasks(
   const tasks: Task[] = await db.task.findMany({
     where: {
       projectId: schedule.projectId,
-      status: { notIn: SET_ASIDE },
+      status: { notIn: [TASK_STATUS.ARCHIVED] },
       forDate: { gte: from, lte: to },
       OR: [
         { scheduleId: schedule.id },
@@ -85,7 +85,12 @@ export async function runTasks(
       ],
     },
   });
-  return tasks.filter((t) => ofSchedule(schedule, t));
+  // A run marked failed keeps its task, so the run is not made again.
+  return tasks.filter(
+    (t) =>
+      (t.status !== TASK_STATUS.IGNORED || !!t.failedOn) &&
+      ofSchedule(schedule, t),
+  );
 }
 
 /** The run a task counts for: the run its day belongs to. */

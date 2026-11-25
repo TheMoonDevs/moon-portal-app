@@ -29,6 +29,7 @@ const MARK_COLOR: Record<string, string> = {
   doing: '#fbbf24',
   paused: '#a3a3a3',
   not_done: '#fb7185',
+  failed: '#f43f5e',
   blocked: '#fb7185',
   waiting: '#a78bfa',
 };

@@ -50,6 +50,7 @@ const STATUS_STYLE: Record<string, { icon: string; className: string }> = {
   waiting: { icon: 'help', className: 'text-violet-300' },
   blocked: { icon: 'block', className: 'text-rose-400' },
   not_done: { icon: 'cancel', className: 'text-neutral-500' },
+  failed: { icon: 'dangerous', className: 'text-rose-400' },
 };
 
 const StatusIcon = ({ status }: { status: WorkPoint['status'] }) => {

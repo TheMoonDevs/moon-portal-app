@@ -708,6 +708,9 @@ export const TaskSheet = ({
   editable,
   showPoints,
   onChanged,
+  plain = false,
+  onMoveRow,
+  lead,
 }: {
   day: Day;
   /** The parts of the sheet, in order, each with its tasks in order. */
@@ -717,6 +720,15 @@ export const TaskSheet = ({
   showPoints: boolean;
   /** After a task was given to someone or its info written. */
   onChanged?: () => void;
+  /**
+   * Plan mode: each task is its check, its words and its menu only; no
+   * marks, counts, details or chevron.
+   */
+  plain?: boolean;
+  /** Cmd/Ctrl+Up or Down: moves a task one place up (-1) or down (1). */
+  onMoveRow?: (id: string, by: -1 | 1) => void;
+  /** Something before a task's words, e.g. its project in Plan mode. */
+  lead?: (task: DayTask) => ReactNode;
 }) => {
   const inputs = useRef(new Map<string, HTMLTextAreaElement>());
   // The task an Actions dialog is open for.
@@ -768,6 +780,20 @@ export const TaskSheet = ({
   ) => {
     if (task.id === slashRow?.id && slash.onKey(e)) return;
     const el = e.currentTarget;
+    // Cmd/Ctrl+Up or Down moves the task itself, and the cursor goes with it.
+    if (
+      onMoveRow &&
+      (e.metaKey || e.ctrlKey) &&
+      !e.altKey &&
+      !e.shiftKey &&
+      (e.key === 'ArrowUp' || e.key === 'ArrowDown')
+    ) {
+      e.preventDefault();
+      if (task.draft) return;
+      onMoveRow(task.id, e.key === 'ArrowUp' ? -1 : 1);
+      setFocusId(task.id);
+      return;
+    }
     const key = statusForKey(e);
     if (key) {
       e.preventDefault();
@@ -845,7 +871,11 @@ export const TaskSheet = ({
     const points = pointsOf(task.id);
     const status = rowStatus(task, day.points, day.date);
     const moved = movedOn(task, day.date, day.today);
-    const shut = status === 'done' || status === 'archived' || moved;
+    const shut =
+      status === 'done' ||
+      status === 'archived' ||
+      status === 'failed' ||
+      moved;
     const canEdit = editable && !moved;
     const expanded = open.has(task.id);
     const count = showPoints ? readablePoints(points).length : 0;
@@ -896,6 +926,7 @@ export const TaskSheet = ({
               <StatusIcon status={rowIcon(status)} />
             )}
           </button>
+          {lead?.(task)}
           <div className="grid min-w-0 flex-1">
             <LineInput
               value={task.title}
@@ -925,70 +956,71 @@ export const TaskSheet = ({
                   'line-through decoration-neutral-500/70 auto-light:decoration-neutral-400',
               )}
             />
-            {(count > 0 ||
-              bot ||
-              !!task.goalMissed ||
-              linked ||
-              unplaced ||
-              goalOpen ||
-              details ||
-              (!moved && (status === 'doing' || status === 'waiting'))) && (
-              // The dot, count and marks sit right after the words: the
-              // words are laid out again unseen, so they land where they end.
-              <span className="pointer-events-none whitespace-pre-wrap break-words text-sm font-medium leading-6 [grid-area:1/1]">
-                <span aria-hidden className="invisible">
-                  {task.title}
-                </span>
-                {!moved && <StateDot status={status} />}
-                {task.meeting && (
-                  <MeetingTime meeting={task.meeting} quiet={shut} />
-                )}
-                {count > 0 && (
-                  <span
-                    className={cn(
-                      'ml-1.5 inline-block rounded px-1 align-[1px] text-[10px] font-medium tabular-nums leading-4',
-                      shut
-                        ? 'bg-white/[0.04] text-neutral-600 auto-light:bg-black/[0.04] auto-light:text-neutral-400'
-                        : 'bg-white/[0.07] text-neutral-400 auto-light:bg-black/[0.06] auto-light:text-neutral-500',
-                    )}
-                  >
-                    {count}
+            {!plain &&
+              (count > 0 ||
+                bot ||
+                !!task.goalMissed ||
+                linked ||
+                unplaced ||
+                goalOpen ||
+                details ||
+                (!moved && (status === 'doing' || status === 'waiting'))) && (
+                // The dot, count and marks sit right after the words: the
+                // words are laid out again unseen, so they land where they end.
+                <span className="pointer-events-none whitespace-pre-wrap break-words text-sm font-medium leading-6 [grid-area:1/1]">
+                  <span aria-hidden className="invisible">
+                    {task.title}
                   </span>
-                )}
-                {bot ? (
-                  <ClaudeMark />
-                ) : task.goalMissed ? (
-                  <MissedStar missed={task.goalMissed} />
-                ) : (
-                  (linked || goalOpen) && (
-                    <GoalLink
-                      task={task}
-                      day={day}
-                      editable={canEdit}
-                      open={goalOpen}
-                      picking={!!goalUi?.picking}
-                      onOpenChange={(o) =>
-                        setGoalUi(o ? { id: task.id, picking: false } : null)
-                      }
-                      onPicking={(picking) =>
-                        setGoalUi({ id: task.id, picking })
-                      }
-                    />
-                  )
-                )}
-                {details &&
-                  (bot || task.goalMissed || !(linked || goalOpen)) && (
-                    <TaskInfo task={task} />
+                  {!moved && <StateDot status={status} />}
+                  {task.meeting && (
+                    <MeetingTime meeting={task.meeting} quiet={shut} />
                   )}
-                {unplaced && <UnplacedMark />}
-                {task.goalId && task.forDate && task.forDate !== day.date && (
-                  // A goal's task done on another day: say which day it was for.
-                  <span className="ml-1.5 inline-block align-[1px] text-[11px] font-normal tabular-nums text-neutral-500 auto-light:text-neutral-400">
-                    for {dayjs(task.forDate).format('ddd D MMM')}
-                  </span>
-                )}
-              </span>
-            )}
+                  {count > 0 && (
+                    <span
+                      className={cn(
+                        'ml-1.5 inline-block rounded px-1 align-[1px] text-[10px] font-medium tabular-nums leading-4',
+                        shut
+                          ? 'bg-white/[0.04] text-neutral-600 auto-light:bg-black/[0.04] auto-light:text-neutral-400'
+                          : 'bg-white/[0.07] text-neutral-400 auto-light:bg-black/[0.06] auto-light:text-neutral-500',
+                      )}
+                    >
+                      {count}
+                    </span>
+                  )}
+                  {bot ? (
+                    <ClaudeMark />
+                  ) : task.goalMissed ? (
+                    <MissedStar missed={task.goalMissed} />
+                  ) : (
+                    (linked || goalOpen) && (
+                      <GoalLink
+                        task={task}
+                        day={day}
+                        editable={canEdit}
+                        open={goalOpen}
+                        picking={!!goalUi?.picking}
+                        onOpenChange={(o) =>
+                          setGoalUi(o ? { id: task.id, picking: false } : null)
+                        }
+                        onPicking={(picking) =>
+                          setGoalUi({ id: task.id, picking })
+                        }
+                      />
+                    )
+                  )}
+                  {details &&
+                    (bot || task.goalMissed || !(linked || goalOpen)) && (
+                      <TaskInfo task={task} />
+                    )}
+                  {unplaced && <UnplacedMark />}
+                  {task.goalId && task.forDate && task.forDate !== day.date && (
+                    // A goal's task done on another day: say which day it was for.
+                    <span className="ml-1.5 inline-block align-[1px] text-[11px] font-normal tabular-nums text-neutral-500 auto-light:text-neutral-400">
+                      for {dayjs(task.forDate).format('ddd D MMM')}
+                    </span>
+                  )}
+                </span>
+              )}
           </div>
           {canEdit && !task.draft && (
             <RowMenu
@@ -1003,24 +1035,26 @@ export const TaskSheet = ({
               onLinkGoal={() => setGoalUi({ id: task.id, picking: true })}
             />
           )}
-          <button
-            type="button"
-            aria-label={expanded ? 'Hide details' : 'Show details'}
-            aria-expanded={expanded}
-            onClick={() => toggle(task.id)}
-            disabled={task.draft}
-            className="flex size-7 shrink-0 items-center justify-center rounded-md text-neutral-500 hover:bg-white/[0.06] hover:text-neutral-200 disabled:opacity-0 auto-light:hover:bg-black/[0.06] auto-light:hover:text-neutral-800"
-          >
-            <Icon
-              name="expand_more"
-              className={cn(
-                'text-[18px] transition-transform',
-                expanded && 'rotate-180',
-              )}
-            />
-          </button>
+          {!plain && (
+            <button
+              type="button"
+              aria-label={expanded ? 'Hide details' : 'Show details'}
+              aria-expanded={expanded}
+              onClick={() => toggle(task.id)}
+              disabled={task.draft}
+              className="flex size-7 shrink-0 items-center justify-center rounded-md text-neutral-500 hover:bg-white/[0.06] hover:text-neutral-200 disabled:opacity-0 auto-light:hover:bg-black/[0.06] auto-light:hover:text-neutral-800"
+            >
+              <Icon
+                name="expand_more"
+                className={cn(
+                  'text-[18px] transition-transform',
+                  expanded && 'rotate-180',
+                )}
+              />
+            </button>
+          )}
         </div>
-        {expanded && (
+        {expanded && !plain && (
           <Details
             task={task}
             day={day}

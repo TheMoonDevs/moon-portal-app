@@ -211,7 +211,7 @@ export function WorkBar({ done, total }: { done: number; total: number }) {
 export function StatusMark({ status }: { status: RowStatus }) {
   const theme = useTheme();
   if (status === 'done') return <Icon name="checkCircle" size={22} color={theme.success} />;
-  if (status === 'not_done') return <Icon name="xCircle" size={22} color={theme.danger} />;
+  if (status === 'not_done' || status === 'failed') return <Icon name="xCircle" size={22} color={theme.danger} />;
   if (status === 'archived') return <Icon name="minusCircle" size={22} color={theme.textSecondary} />;
   const dot = status ? pickOf(status).color : null;
   return (
@@ -272,7 +272,7 @@ function DayTaskRow({
         <ThemedText
           style={[
             status === 'doing' && styles.doing,
-            quiet && (done || status === 'archived' || status === 'not_done') && {
+            quiet && (done || status === 'archived' || status === 'not_done' || status === 'failed') && {
               textDecorationLine: 'line-through',
               color: theme.textSecondary,
             },

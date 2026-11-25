@@ -112,7 +112,7 @@ const VIEWS: { value: View; label: string }[] = [
 const DEFAULT_VIEW: View = 'projects';
 
 /** Closed on this day: finished, let go or archived (not moved on). */
-const FINISHED: TaskRowStatus[] = ['done', 'not_done', 'archived'];
+const FINISHED: TaskRowStatus[] = ['done', 'not_done', 'failed', 'archived'];
 
 /**
  * A thin bar along a box's top border: green for what is finished, muted
@@ -947,17 +947,16 @@ export const DayLogPage = ({
 
       {planning ? (
         <p className="mt-6 px-2 text-[11px] leading-5 text-neutral-600 auto-light:text-neutral-400">
-          Write it like a note, one task per line · select lines, copy or cut,
-          and paste them above or below to reorder · Ctrl+Space or the check
-          marks a task done · a deleted line takes its task out · the order is
-          kept for the day
+          Cmd/Ctrl+↑ ↓ moves a task up or down · Enter adds the next task ·
+          Ctrl+Space done · Alt+5 failed · the ... menu has every status ·
+          finished tasks go to the bottom · the order is kept for the day
         </p>
       ) : (
         <p className="mt-6 px-2 text-[11px] leading-5 text-neutral-600 auto-light:text-neutral-400">
           Enter adds the next task · Backspace on an empty task takes it out ·
-          Ctrl+Space done · Ctrl+P doing · Ctrl+Q not done · ← → another day ·
-          Cmd+← → another company · the arrow on the right of a task shows its
-          details, notes and actions
+          Ctrl+Space done · Ctrl+P doing · Ctrl+Q not done · Alt+5 failed · ← →
+          another day · Cmd+← → another company · the arrow on the right of a
+          task shows its details, notes and actions
         </p>
       )}
     </div>

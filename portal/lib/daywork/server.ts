@@ -36,7 +36,18 @@ export const CLOSED_STATUSES: string[] = [
 export const isPutAway = (task: Pick<Task, 'status'>) =>
   task.status === TASK_STATUS.ARCHIVED || task.status === TASK_STATUS.IGNORED;
 
-/** A point status, or the two a person can also set on a task. */
+/** Marked failed: closed, so it never moves on, but kept on its own day. */
+export const isFailed = (task: Pick<Task, 'status' | 'failedOn'>) =>
+  task.status === TASK_STATUS.IGNORED && !!task.failedOn;
+
+/** The days a failed task stays on: its own day and the day it failed. */
+export const failedOnDay = (
+  task: Pick<Task, 'status' | 'failedOn' | 'forDate'>,
+  date: string,
+) => isFailed(task) && (task.failedOn === date || task.forDate === date);
+
+/** A point status, or the two a person can also set on a task. Failed
+ * closes it on its day (IGNORED with `failedOn`); it never moves on. */
 export type TaskMove = WorkPointStatus | 'todo' | 'archived';
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -128,6 +139,17 @@ export async function moveTask(
   const at = nowIso();
   const data: Partial<Task> = { updatedAt: at, flag: null };
   const done = to === 'done';
+  // Failed before and now moved on to something else: no longer failed, and
+  // a goal day it failed is no longer missed (one carried on stays missed).
+  if (to !== 'failed' && task.failedOn) {
+    data.failedOn = null;
+    if (
+      task.goalMissed &&
+      !task.goalMissed.movedTo &&
+      !task.goalMissed.mergedInto
+    )
+      data.goalMissed = null;
+  }
   if (done) {
     data.status = TASK_STATUS.DONE;
     if (task.status !== TASK_STATUS.DONE) {
@@ -142,7 +164,20 @@ export async function moveTask(
     data.completedAt = null;
     data.completedByIds = [];
     if (to === 'archived') data.status = TASK_STATUS.ARCHIVED;
-    else if (to === 'todo') data.status = TASK_STATUS.TODO;
+    else if (to === 'failed') {
+      // Closed on this day for good: it is not carried to the next one. A
+      // goal's task misses the goal's day, so the goal shows failed there.
+      data.status = TASK_STATUS.IGNORED;
+      data.failedOn = date;
+      if (task.goalId)
+        data.goalMissed = {
+          day: task.forDate ?? date,
+          at,
+          byId: userId,
+          movedTo: null,
+          mergedInto: null,
+        };
+    } else if (to === 'todo') data.status = TASK_STATUS.TODO;
     else if (to === 'paused') {
       // Started, then put down: to do again, marked so it reads as paused.
       data.status = TASK_STATUS.TODO;
@@ -265,6 +300,7 @@ export const TASK_MOVES: TaskMove[] = [
   'paused',
   'done',
   'not_done',
+  'failed',
   'blocked',
   'waiting',
   'archived',
@@ -489,6 +525,8 @@ export async function loadDay(userId: string, date: string) {
   const ors: Record<string, unknown>[] = [
     { forDate: date },
     { completedAt: { gte: range.start, lte: range.end } },
+    // Failed on this day: it stays on it.
+    { failedOn: date },
   ];
   if (date === today)
     ors.push({
@@ -508,7 +546,8 @@ export async function loadDay(userId: string, date: string) {
   for (const t of [...planned, ...worked]) byId.set(t.id, t);
   const tasks = Array.from(byId.values())
     // Archived (or let go) tasks are off the day; Your tasks brings them back.
-    .filter((t) => !isPutAway(t))
+    // Failed ones stay on their own day.
+    .filter((t) => !isPutAway(t) || failedOnDay(t, date))
     // Someone else's task without a project is not theirs to see.
     .filter((t) => !isOwnerOnly(t) || isMine(t, user.id));
   const ids = tasks.map((t) => t.id);
@@ -539,6 +578,7 @@ export type DayLine = {
 /** How a task stands on a day, as the day sheet shows it. */
 function lineStatus(task: Task, dayPoints: WorkPoint[]): DayLine['status'] {
   if (task.status === TASK_STATUS.DONE) return 'done';
+  if (isFailed(task)) return 'failed';
   if (
     task.status === TASK_STATUS.ARCHIVED ||
     task.status === TASK_STATUS.IGNORED
@@ -573,6 +613,7 @@ export async function loadDays(userId: string, from: string, to: string) {
   const ors: Record<string, unknown>[] = [
     { forDate: { gte: from, lte: to } },
     { completedAt: { gte: start, lte: end } },
+    { failedOn: { gte: from, lte: to } },
   ];
   if (today >= from && today <= to)
     ors.push({ forDate: { lt: today }, status: { in: OPEN_TASK_STATUSES } });
@@ -590,7 +631,7 @@ export async function loadDays(userId: string, from: string, to: string) {
   for (const t of [...planned, ...worked])
     if (
       t.title?.trim() &&
-      !isPutAway(t) &&
+      (!isPutAway(t) || isFailed(t)) &&
       (!isOwnerOnly(t) || isMine(t, userId))
     )
       byId.set(t.id, t);
@@ -601,6 +642,12 @@ export async function loadDays(userId: string, from: string, to: string) {
     onDay.set(date, (onDay.get(date) ?? new Set()).add(taskId));
   };
   for (const task of Array.from(byId.values())) {
+    if (isFailed(task)) {
+      // Only on its own day and the day it failed, never later.
+      put(task.forDate, task.id);
+      put(task.failedOn, task.id);
+      continue;
+    }
     put(task.forDate, task.id);
     if (task.completedAt)
       put(
@@ -615,7 +662,8 @@ export async function loadDays(userId: string, from: string, to: string) {
       put(today, task.id);
   }
   for (const point of points)
-    if (byId.has(point.taskId)) put(point.date, point.taskId);
+    if (byId.has(point.taskId) && !isFailed(byId.get(point.taskId)!))
+      put(point.date, point.taskId);
 
   const days: Record<string, DayLine[]> = {};
   for (const [date, ids] of Array.from(onDay.entries()))

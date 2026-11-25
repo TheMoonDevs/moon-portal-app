@@ -45,6 +45,10 @@ const STATUS_ICON: Record<
     icon: 'cancel',
     className: 'text-rose-400 auto-light:text-rose-700',
   },
+  failed: {
+    icon: 'dangerous',
+    className: 'text-rose-500 auto-light:text-rose-700',
+  },
   blocked: {
     icon: 'block',
     className: 'text-rose-400 auto-light:text-rose-700',
@@ -112,6 +116,8 @@ export function rowStatus(
   date?: string,
 ): TaskRowStatus {
   if (task.status === 'DONE') return 'done';
+  // Failed on its day: closed, and never moved on to the next.
+  if (task.status === 'IGNORED' && task.failedOn) return 'failed';
   if (task.status === 'ARCHIVED' || task.status === 'IGNORED')
     return 'archived';
   if (
@@ -154,6 +160,7 @@ export const statusForKey = (e: React.KeyboardEvent): PointStatus | null => {
           '2': 'not_done',
           '3': 'doing',
           '4': 'blocked',
+          '5': 'failed',
           '8': 'waiting',
         } as Record<string, PointStatus>
       )[digit ?? ''] ?? null

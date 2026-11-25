@@ -5,7 +5,7 @@ import type { Task } from './types';
  * with its colour: an open ring for to do, a coloured dot for the rest.
  */
 
-export type StatusPick = 'todo' | 'doing' | 'paused' | 'waiting' | 'blocked' | 'done';
+export type StatusPick = 'todo' | 'doing' | 'paused' | 'waiting' | 'blocked' | 'done' | 'failed';
 
 export const STATUS_PICKS: {
   value: StatusPick;
@@ -20,13 +20,15 @@ export const STATUS_PICKS: {
   { value: 'waiting', label: 'Wait', color: '#38bdf8', hint: 'Waiting on you' },
   { value: 'blocked', label: 'Blocked', color: '#f43f5e', hint: 'Stopped by something else' },
   { value: 'done', label: 'Done', color: '#22c55e', hint: 'Finished' },
+  { value: 'failed', label: 'Failed', color: '#e11d48', hint: 'Stays failed on its day, never moves on' },
 ];
 
 export const pickOf = (value: StatusPick) => STATUS_PICKS.find((p) => p.value === value)!;
 
 /** Where a task stands now, as one of the picks (archived apart). */
-export function currentPick(task: Pick<Task, 'status' | 'flag'>): StatusPick | 'archived' {
+export function currentPick(task: Pick<Task, 'status' | 'flag' | 'failedOn'>): StatusPick | 'archived' {
   if (task.status === 'DONE') return 'done';
+  if (task.status === 'IGNORED' && task.failedOn) return 'failed';
   if (task.status === 'ARCHIVED' || task.status === 'IGNORED') return 'archived';
   if (task.flag) return task.flag;
   if (task.status === 'IN_PROGRESS' || task.status === 'IN_REVIEW') return 'doing';

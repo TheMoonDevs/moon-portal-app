@@ -39,6 +39,8 @@ export type CalendarTask = {
   completedByIds?: string[] | null;
   assigneeIds?: string[] | null;
   goalMissed?: { day: string } | null;
+  /** Marked failed on its day (it never moved on). */
+  failed?: boolean;
   carriedFrom?: string | null;
 };
 

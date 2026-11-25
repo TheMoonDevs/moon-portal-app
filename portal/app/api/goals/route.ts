@@ -151,6 +151,7 @@ export async function GET(request: Request) {
             assigneeIds: true,
             goalMissed: true,
             carriedFrom: true,
+            failedOn: true,
           },
         }),
         db.goalTally.findMany({ where: { projectId: { in: ids } } }),
@@ -212,6 +213,7 @@ export async function GET(request: Request) {
       assigneeIds: t.assigneeIds ?? [],
       goalMissed: t.goalMissed?.day ? { day: t.goalMissed.day } : null,
       carriedFrom: t.carriedFrom ?? null,
+      ...(t.failedOn && { failed: true }),
     }));
   const shownTallies: CalendarTally[] = tallies
     .filter((t) => inWindow(t.from))

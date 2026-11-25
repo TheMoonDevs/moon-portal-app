@@ -49,7 +49,7 @@ export const TaskLine = ({
   return (
     <li className="flex items-center gap-2 py-1 text-xs">
       <Icon
-        name={task.goalMissed ? 'redo' : meta.icon}
+        name={task.failed ? 'cancel' : task.goalMissed ? 'redo' : meta.icon}
         className={cn('shrink-0 text-[14px]', meta.className)}
       />
       <span
@@ -64,7 +64,7 @@ export const TaskLine = ({
         {task.goalMissed && (
           <span className="text-rose-300/80 auto-light:text-rose-600">
             {' '}
-            · moved on
+            · {task.failed ? 'failed' : 'moved on'}
           </span>
         )}
       </span>
