@@ -64,20 +64,28 @@ export const LoginPassCode = ({
       <div ref={passParentRef} className="mt-8 flex flex-row gap-2 text-4xl">
         {passCodes.map((code, index) => (
           <input
-            type={index > 2 ? 'number' : 'text'}
+            // Passcodes are alphanumeric, so every box must be a text input.
+            // A type="number" input only accepts digits and "e".
+            type="text"
+            inputMode="text"
+            autoComplete="off"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
             key={code + index}
-            className="w-[1em] border-b border-neutral-600 bg-transparent text-center uppercase text-neutral-100 [appearance:textfield] focus:border-blue-600 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            className="w-[1em] border-b border-neutral-600 bg-transparent text-center uppercase text-neutral-100 focus:border-blue-600 focus:outline-none"
             placeholder=""
             autoFocus={index === 0 && code === ''}
             value={code}
             onChange={(e) => {
-              if (e.target.value.length < 1) return;
+              // Keep only letters and digits; ignore anything else.
+              const char = e.target.value
+                .replace(/[^a-zA-Z0-9]/g, '')
+                .charAt(0);
+              if (!char) return;
               setPassCodes((p) => {
                 const newPassCodes = [...p];
-                newPassCodes[index] =
-                  e.target.value.length > 1
-                    ? e.target.value.substring(0, 1)
-                    : e.target.value;
+                newPassCodes[index] = char;
                 return newPassCodes;
               });
               (e.target.nextSibling as HTMLInputElement)?.focus();
