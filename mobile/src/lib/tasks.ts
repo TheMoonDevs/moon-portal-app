@@ -29,7 +29,6 @@ export const POINT_STATUSES: { value: PointStatus; label: string }[] = [
   { value: 'waiting', label: 'Wait' },
   { value: 'blocked', label: 'Blocked' },
   { value: 'done', label: 'Done' },
-  { value: 'not_done', label: 'Not done' },
   { value: 'failed', label: 'Failed' },
 ];
 

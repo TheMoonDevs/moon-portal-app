@@ -47,7 +47,7 @@ import {
 } from './sheetParts';
 import { UpcomingContext, type UpcomingTask } from './SlashPicker';
 import type { SheetGroup } from './TaskSheet';
-import { madeByClaude, TaskSheet } from './TaskSheet';
+import { madeByClaude, SHEET_BOX, TaskSheet } from './TaskSheet';
 import type { DayTask, PlaceInput } from './useDay';
 import { useDay } from './useDay';
 import { WorklogTips } from './WorklogTips';
@@ -809,7 +809,14 @@ export const DayLogPage = ({
         />
       )}
 
-      <div className="relative rounded-2xl border border-white/[0.07] bg-white/[0.02] p-2 auto-light:border-black/10 auto-light:bg-white">
+      {/* Plan mode draws its own boxes: To do, Paused and Finished. */}
+      <div
+        className={
+          planning && !(day.loading && !day.tasks.length)
+            ? 'relative'
+            : SHEET_BOX
+        }
+      >
         {view === 'work' && !planning && <WorkBar {...workBar(mine)} />}
         {day.loading && !day.tasks.length ? (
           <div className="flex flex-col gap-2 p-1">
@@ -948,13 +955,13 @@ export const DayLogPage = ({
       {planning ? (
         <p className="mt-6 px-2 text-[11px] leading-5 text-neutral-600 auto-light:text-neutral-400">
           Cmd/Ctrl+↑ ↓ moves a task up or down · Enter adds the next task ·
-          Ctrl+Space done · Alt+5 failed · the ... menu has every status ·
-          finished tasks go to the bottom · the order is kept for the day
+          Ctrl+Space done · Ctrl+F failed · Cmd/Ctrl+P doing or paused · the ...
+          menu has every status · the order is kept for the day
         </p>
       ) : (
         <p className="mt-6 px-2 text-[11px] leading-5 text-neutral-600 auto-light:text-neutral-400">
           Enter adds the next task · Backspace on an empty task takes it out ·
-          Ctrl+Space done · Ctrl+P doing · Ctrl+Q not done · Alt+5 failed · ← →
+          Ctrl+Space done · Cmd/Ctrl+P doing or paused · Ctrl+F failed · ← →
           another day · Cmd+← → another company · the arrow on the right of a
           task shows its details, notes and actions
         </p>

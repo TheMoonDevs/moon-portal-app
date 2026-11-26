@@ -9,8 +9,8 @@ import { TaskSheet } from './TaskSheet';
 import type { Day, DayTask, PlaceInput } from './useDay';
 
 /*
- * The worklog's Plan mode: the day as a short checklist in two parts, To do
- * on top in the order it was put in, and Finished at the bottom, struck
+ * The worklog's Plan mode: the day as a short checklist in three boxes, To
+ * do on top in the order it was put in, then Paused, then Finished, struck
  * through. Each task is its check, its words and its menu, written like the
  * Default sheet (Enter adds the next task, Backspace on an empty one takes
  * it out). Cmd/Ctrl+Up and Down move a task, and the order is kept for the
@@ -75,14 +75,19 @@ export const PlanSheet = ({
     !movedOn(t, day.date, day.today) &&
     FINISHED.includes(rowStatus(t, day.points, day.date));
   const lines = sorted.filter((t) => shownIds.has(t.id));
-  const todo = lines.filter((t) => !finished(t));
+  const paused = (t: DayTask) =>
+    !t.draft && !finished(t) && rowStatus(t, day.points, day.date) === 'paused';
+  const todo = lines.filter((t) => !finished(t) && !paused(t));
+  const held = lines.filter(paused);
   const done = lines.filter(finished);
 
-  /** One place up or down among the To do tasks shown, saved for the day. */
+  /** One place up or down within its box, saved for the day. */
   const moveRow = (id: string, by: -1 | 1) => {
     if (!editable) return;
-    const index = todo.findIndex((t) => t.id === id);
-    const other = todo[index + by];
+    const box = [todo, held, done].find((b) => b.some((t) => t.id === id));
+    if (!box) return;
+    const index = box.findIndex((t) => t.id === id);
+    const other = box[index + by];
     if (index < 0 || !other || other.draft) return;
     const ids = sorted.map((t) => t.id);
     const a = ids.indexOf(id);
@@ -94,25 +99,28 @@ export const PlanSheet = ({
   const groups: SheetGroup[] = [
     {
       key: 'plan-todo',
-      title: done.length ? 'To do' : undefined,
       tasks: todo,
       add: { place: newPlace, placeholder: 'Add a task' },
+      boxed: true,
     },
-    ...(done.length
-      ? [
-          {
-            key: 'plan-finished',
-            title: 'Finished',
-            tasks: done,
-            quiet: true,
-            strike: true,
-          },
-        ]
-      : []),
-  ];
+    {
+      key: 'plan-paused',
+      title: 'Paused',
+      tasks: held,
+      boxed: true,
+    },
+    {
+      key: 'plan-finished',
+      title: 'Finished',
+      tasks: done,
+      quiet: true,
+      strike: true,
+      boxed: true,
+    },
+  ].filter((g) => g.tasks.length || g.add);
 
   return (
-    <div className="py-1">
+    <div>
       {!lines.length && !editable && (
         <p className="px-2 pb-1 pt-2 text-sm text-neutral-500">
           Nothing on this day.

@@ -40,6 +40,18 @@ export const isPutAway = (task: Pick<Task, 'status'>) =>
 export const isFailed = (task: Pick<Task, 'status' | 'failedOn'>) =>
   task.status === TASK_STATUS.IGNORED && !!task.failedOn;
 
+/**
+ * Still open and planned for a later day (moved to next week, say): it is
+ * off this day even when notes were written under it here.
+ */
+export const shiftedLater = (
+  task: Pick<Task, 'status' | 'forDate'>,
+  date: string,
+) =>
+  !!task.forDate &&
+  task.forDate > date &&
+  (OPEN_TASK_STATUSES as string[]).includes(task.status);
+
 /** The days a failed task stays on: its own day and the day it failed. */
 export const failedOnDay = (
   task: Pick<Task, 'status' | 'failedOn' | 'forDate'>,
@@ -548,6 +560,8 @@ export async function loadDay(userId: string, date: string) {
     // Archived (or let go) tasks are off the day; Your tasks brings them back.
     // Failed ones stay on their own day.
     .filter((t) => !isPutAway(t) || failedOnDay(t, date))
+    // Moved on to a later day: it shows there, not here.
+    .filter((t) => !shiftedLater(t, date))
     // Someone else's task without a project is not theirs to see.
     .filter((t) => !isOwnerOnly(t) || isMine(t, user.id));
   const ids = tasks.map((t) => t.id);
@@ -661,9 +675,11 @@ export async function loadDays(userId: string, from: string, to: string) {
     )
       put(today, task.id);
   }
-  for (const point of points)
-    if (byId.has(point.taskId) && !isFailed(byId.get(point.taskId)!))
+  for (const point of points) {
+    const task = byId.get(point.taskId);
+    if (task && !isFailed(task) && !shiftedLater(task, point.date))
       put(point.date, point.taskId);
+  }
 
   const days: Record<string, DayLine[]> = {};
   for (const [date, ids] of Array.from(onDay.entries()))
