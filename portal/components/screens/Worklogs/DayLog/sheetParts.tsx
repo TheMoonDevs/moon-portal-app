@@ -144,12 +144,17 @@ export function rowStatus(
 export const readablePoints = (points: DayPoint[]) =>
   points.filter((p, i) => p.text.trim() || i === points.length - 1);
 
-/** Status keys while typing: the same as the old editor's emoji keys. */
+/**
+ * Status keys while typing: Ctrl+Space done, Ctrl+F failed, Cmd/Ctrl+P
+ * doing (paused when it is under way already), and Alt+digit.
+ */
 export const statusForKey = (e: React.KeyboardEvent): PointStatus | null => {
+  const key = e.key.toLowerCase();
+  if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && key === 'p')
+    return 'doing';
   if (e.ctrlKey && !e.altKey && !e.metaKey) {
     if (e.key === ' ') return 'done';
-    if (e.key.toLowerCase() === 'q') return 'not_done';
-    if (e.key.toLowerCase() === 'p') return 'doing';
+    if (key === 'f') return 'failed';
   }
   if (e.altKey && !e.ctrlKey && !e.metaKey) {
     const digit = e.code.match(/^(?:Digit|Numpad)(\d)$/)?.[1];
@@ -157,7 +162,7 @@ export const statusForKey = (e: React.KeyboardEvent): PointStatus | null => {
       (
         {
           '1': 'done',
-          '2': 'not_done',
+          '2': 'failed',
           '3': 'doing',
           '4': 'blocked',
           '5': 'failed',

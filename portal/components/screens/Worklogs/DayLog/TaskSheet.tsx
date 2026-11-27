@@ -49,7 +49,10 @@ import type { Day, DayPoint, DayTask, PlaceInput, TaskMove } from './useDay';
  * work points under it, Claude's too) open with the chevron on its right.
  */
 
-const STATUS_KEYS = Object.keys(POINT_STATUSES) as PointStatus[];
+// Not done is no longer offered: Failed took its place. Old points keep it.
+const STATUS_KEYS = (Object.keys(POINT_STATUSES) as PointStatus[]).filter(
+  (s) => s !== 'not_done',
+);
 
 export const isOpen = (t: DayTask) =>
   !['DONE', 'ARCHIVED', 'IGNORED'].includes(t.status);
@@ -600,7 +603,13 @@ export type SheetGroup = {
   strike?: boolean;
   /** Claude's tasks, mixed in with the person's: a bot after each. */
   markClaude?: boolean;
+  /** A box of its own (Plan mode's To do, Paused and Finished). */
+  boxed?: boolean;
 };
+
+/** The box a day's sheet sits in, and each of Plan mode's parts. */
+export const SHEET_BOX =
+  'relative rounded-2xl border border-white/[0.07] bg-white/[0.02] p-2 auto-light:border-black/10 auto-light:bg-white';
 
 /** A task Claude made. Meetings (made by Meet) are the person's own. */
 export const madeByClaude = (t: Pick<DayTask, 'madeBy'>) =>
@@ -797,7 +806,10 @@ export const TaskSheet = ({
     const key = statusForKey(e);
     if (key) {
       e.preventDefault();
-      day.move(task.id, status === key ? 'todo' : key);
+      // Cmd/Ctrl+P goes back and forth between doing and paused.
+      if (key === 'doing')
+        day.move(task.id, status === 'doing' ? 'paused' : 'doing');
+      else day.move(task.id, status === key ? 'todo' : key);
       return;
     }
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -1074,7 +1086,10 @@ export const TaskSheet = ({
   return (
     <div className="flex flex-col">
       {groups.map((group) => (
-        <div key={group.key}>
+        <div
+          key={group.key}
+          className={cn(group.boxed && SHEET_BOX, group.boxed && 'mb-3')}
+        >
           {group.title && <SheetHeading>{group.title}</SheetHeading>}
           {bundle(group.tasks).map((item) =>
             'bundle' in item ? (
